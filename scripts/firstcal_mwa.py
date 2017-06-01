@@ -1,135 +1,98 @@
-# edited version of firstcal in capo/omni/
+# edited version of firstcal in heracal
 #! /usr/bin/env python
-import capo.hex as hx, capo.wyl as wyl, capo.red as red, capo.omni as omni
+import heracal, mp2cal
 import pylab as p, aipy as a
-import sys,optparse,glob
+import sys,optparse,glob,os
 import numpy as np
 from multiprocessing import Pool
-from IPython import embed
+import pyuvdata.uvdata as uvd
 
 o = optparse.OptionParser()
-o.set_usage('firstcal_capecod.py [options] *zen.jds.pol.uv/obsid')
+o.set_usage('firstcal_mwa.py [options] obsid')
 a.scripting.add_standard_options(o,cal=True,pol=True)
-o.add_option('--ubls', default='', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
-o.add_option('--ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
-o.add_option('--outpath', default=None,help='Output path of solution npz files. Default will be the same directory as the data files.')
+o.add_option('--ubls', dest='ubls', default='', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
+o.add_option('--ex_ubls', dest='ex_ubls', default='', help='Unique baselines to exclude, separated by commas (ex: 1_4,64_49).')
+o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated by commas (ex: 1_4,64_49).')
+o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, separated by commas (ex: 1_4,64_49).')
+o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
+o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
+o.add_option('--outpath', default='/users/wl42/data/wl42/Nov2016EoR0/omni_sol/',help='Output path of solutions.')
 o.add_option('--plot', action='store_true', default=False, help='Turn on plotting in firstcal class.')
 o.add_option('--verbose', action='store_true', default=False, help='Turn on verbose.')
 o.add_option('--ftype', dest='ftype', default='', type='string',
-             help='Type of the input file, .uvfits, or miriad, or fhd, to read fhd, simply type in the path/obsid')
+             help='Type of the input file, uvfits or fhd')
 opts,args = o.parse_args(sys.argv[1:])
-print opts.plot
-print opts.verbose
 
 #*****************************************************************************
-def flatten_reds(reds):
-    freds = []
-    for r in reds:
-        freds += r
-    return freds
-
-def firstcal(datdict):
-    datapack = datdict['dat']
-    wgtpack = datdict['wgt']
-    pp = datdict['pol']
-    fqs = datdict['fqs']
-    fqs = fqs/1e9 #  in GHz
-    dlys = np.fft.fftshift(np.fft.fftfreq(fqs.size, np.diff(fqs)[0]))
-    #gets phase solutions per frequency.
-    info = omni.pos_to_info(datdict['antpos'], pols=[pp[0]], fcal=True, ubls=datdict['ubls'], ex_ants=datdict['ex_ants'])
-    fc = omni.FirstCal(datapack,wgtpack,fqs,info)
-    sols = fc.run(finetune=True,verbose=opts.verbose,plot=False,noclean=False,offset=False,average=True,window='none')
-    
-    #Save solutions
-    filename = datdict['filename']
-#    if len(args)==1: filename=args[0]
-#    else: filename='fcgains.%s.npz'%pp #if averaging a bunch together of files together.
-    if not datdict['outpath'] is None:
-        outname='%s/%s'%(datdict['outpath'],filename.split('/')[-1])+'.'+pp
-    else:
-        outname='%s'%filename+'.'+pp
-    #    embed()
-    omni.save_gains_fc(sols,fqs, pp[0], outname, ubls=ubls, ex_ants=ex_ants)
-    return (outname+'.fc.npz')
-#*****************************************************************************
-
-### Main ###
-exec('from %s import antpos as _antpos'% opts.cal)
-pols = opts.pol.split(',')
-ex_ants = []
-ubls = []
-for a in opts.ex_ants.split(','):
-    try: ex_ants.append(int(a))
-    except: pass
-for bl in opts.ubls.split(','):
-    try:
+def bl_parse(bl_args):
+    bl_list = []
+    for bl in bl_args.split(','):
         i,j = bl.split('_')
-        ubls.append((int(i),int(j)))
-    except: pass
-print 'Excluding Antennas:',ex_ants
-if len(ubls) != None: print 'Using Unique Baselines:',ubls
-reds = omni.cal_reds_from_pos(_antpos)
-reds = flatten_reds(reds)
-#redstest = infotest.get_reds()#for plotting
+        bl_list.append((int(i),int(j)))
+    return bl_list
 
-print 'Number of redundant baselines:',len(reds)
-#Read in data here.
-bl_string = ','.join(['_'.join(map(str,k)) for k in reds])
+def ant_parse(ant_args):
+    ant_list = []
+    for a in ant_args.split(','): ant_list.append(int(a))
+    return ant_list
 
-file_group = []
+#************************************************************************************************
+exec('from %s import *'% opts.cal) # Including antpos, realpos, EastHex, SouthHex
+pols = opts.pol.split(',')
+ubls, ex_ubls, bls, ex_bls, ants, ex_ants = None, [], None, [], None, []
+if not opts.ubls == '': ubls = bl_parse(opts.ubls)
+if not opts.ex_ubls == '': ex_ubls = bl_parse(opts.ex_ubls)
+if not opts.bls == '': bls = bl_parse(opts.bls)
+if not opts.ex_bls == '': ex_bls = bl_parse(opts.ex_bls)
+if not opts.ants == '': ants = ant_parse(opts.ants)
+if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
+
+#********************************** load and wrap data ******************************************
 if not len(args) == 1: raise IOError('Do not support multiple files.')
-for fn in args:
-    if opts.ftype == 'fhd':
-        file_group.append(glob.glob(fn + '*'))
-    elif opts.ftype == 'uvfits':
-        file_group.append(fn+'.uvfits')
-    elif opts.ftype == 'miriad':
-        if len(pols) == 1:
-            file_group.append(fn)
-        else:
-            for pp in pols:
-                fnlist = fn.split('.')
-                fnlist[-2] = pp
-                file_group.append('.'.join(fnlist))
-    else:
-        raise IOError('invalid filetype, it should be miriad, uvfits, or fhd')
-npzlist = []
-times, data, flags, ginfo, fqs, exa = wyl.uv_read_fc(file_group, filetype=opts.ftype, bl_str=bl_string, p_list=pols)
-if len(exa) > 0:
-    for ii in exa:
-        if not ii in ex_ants: ex_ants.append(ii)
-print 'Excluding Antennas:',ex_ants
-arglist = []
-if opts.ftype == 'miriad': fn = '.'.join(args[0].split('.')[0:-2])
-else: fn = args[0]
-for pp in pols:
-    dict = {}
-    dict['pol'] = pp
-    dict['fqs'] = fqs
-    datapack,wgtpack = {},{}
-    for (i,j) in data.keys():
-        datapack[(i,j)] = data[(i,j)][pp]
-        wgtpack[(i,j)] = np.logical_not(flags[(i,j)][pp])
-    dict['dat'] = datapack
-    dict['wgt'] = wgtpack
-    dict['outpath'] = opts.outpath
-    dict['filename'] = fn
-    dict['ubls'] = ubls
-    dict['ex_ants'] = ex_ants
-    dict['antpos'] = _antpos
-    arglist.append(dict)
+obsid = args[0]
+uv = uvd.UVData()
+if opts.ftype == 'uvfits':
+    uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
+elif opts.ftype == 'fhd':
+    uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
+else: IOError('invalid filetype, it should be uvfits or fhd')
+ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
+for a in ex_ants_find:
+    if not a in ex_ants: ex_ants.append(a)
+reds = mp2cal.wyl.cal_reds_from_pos(antpos)
+redbls = [bl for red in reds for bl in red]
+print 'Number of redundant baselines:',len(redbls)
+wrap_list = mp2cal.wyl.uv_wrap_fc(uv,redbls,pols=pols)
 
-print "  Start Parallelism:"
+#************************************************************************************************
+def firstcal(data_wrap):
+    pp = data_wrap['pol']
+    p = pp[0]
+    outname = opts.outpath + obsid + '.' + pp + '.first.calfits'
+    if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
+    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
+    fqs = uv.freq_array[0]/1e9
+    fc = heracal.FirstCal(data_wrap['data'],data_wrap['flag'],fqs,info)
+    print "     running firstcal"
+    sols = fc.run(finetune=True,verbose=False,plot=False,noclean=False,offset=False,average=True,window='none')
+    meta = {}
+    meta['lsts'] = uv.lst_array[::uv.Nbls]
+    meta['times'] = uv.time_array[::uv.Nbls]
+    meta['freqs'] = uv.freq_array[0]
+    meta['inttime'] = uv.integration_time
+    meta['chwidth'] = uv.channel_width
+    delays = {p:{}}
+    antflags = {p:{}}
+    for a in sols.keys():
+        delays[a.pol()][a.val] = sols[a].T
+        antflags[a.pol()][a.val] = np.zeros((uv.Ntimes,uv.Nfreqs))
+        meta['chisq{0}'.format(str(a))] = np.ones((uv.Ntimes,1))
+    meta['chisq'] = np.ones_like(sols[a].T)
+    hc = heracal.omni.HERACal(meta, delays, flags=antflags, ex_ants=ex_ants, DELAY=True, appendhist=' '.join(sys.argv), optional={})
+    print('     Saving {0}'.format(outname))
+    hc.write_calfits(outname)
+
+#*****************************************************************************
 par = Pool(2)
-npzlist = par.map(firstcal, arglist)
+npzlist = par.map(firstcal, wrap_list)
 par.close()
-
-#npzlist.append(outname+'.fc.npz')
-#omni.fc_gains_to_fits(npzlist,fn)
-
-
-
-
-
-
-

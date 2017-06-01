@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import numpy as np
-import omnical, aipy, capo
+import heracal, aipy, mp2cal
 import optparse, os, sys, glob
 from astropy.io import fits
 import pickle, copy
@@ -32,8 +32,6 @@ o.add_option('--iftxt', dest='iftxt', default=False, action='store_true',
             help='Toggle: write the npz info to a ucla format txt file or not')
 o.add_option('--iffits', dest='iffits', default=False, action='store_true',
             help='Toggle: write the npz info to a ucla format fits file or not')
-o.add_option('--removedegen',dest='removedegen',default=False,action='store_true',
-             help='Toggle: turn removedegen on')
 o.add_option('--initauto',dest='initauto',default=False,action='store_true',
              help='Toggle: use auto_corr as initial guess for gains')
 o.add_option('--instru', dest='instru', default='mwa', type='string',
@@ -46,10 +44,8 @@ o.add_option('--fitdegen', dest='fitdegen', default=False, action='store_true',
              help='Toggle: project degeneracy to fitted fhd solutions')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true',
              help='Toggle: weight each gain by its amplitude before cal')
-o.add_option('--divauto', dest='divauto', default=False, action='store_true',
-             help='Toggle: use auto corr to weight visibilities before cal, need wgt_cal on')
 o.add_option('--smooth', dest='smooth', default=False, action='store_true',
-             help='Toggle: smooth data before cal by removing any signal beyond horizon, need divauto on')
+             help='Toggle: smooth data before cal by removing any signal beyond horizon, need wgt_cal on')
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/', type='string',
              help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string',
@@ -118,11 +114,6 @@ if opts.calpar != None: #create g0 if txt file is provided
             for i in cp.keys():
                 if i[0].isdigit():
                     g0[p[0]][int(i[:-1])] = cp[i] / np.abs(cp[i])
-    elif fname.endswith('.fits'):
-        g0 = capo.omni.fc_gains_from_fits(opts.calpar)
-        for key1 in g0:
-            for key2 in g0[key1]:
-                g0[key1][key2] /= np.abs(g0[key1][key2])
     elif fname.endswith('.sav'):
         cal = readsav(opts.calpar,python_dict=True)
         fqfl = np.zeros((128,384),dtype=bool)
@@ -189,7 +180,7 @@ exec('from %s import *'% opts.cal) # Including antpos, realpos, EastHex, SouthHe
 if opts.cal_all == 'model':
     print "   Loading model"
     model_files = glob.glob(opts.fhdpath+'vis_data/'+args[0]+'*') + glob.glob(opts.fhdpath+'metadata/'+args[0]+'*')
-    model_dict = capo.wyl.uv_read_omni([model_files],filetype='fhd', antstr='cross', p_list=pols, use_model=True)
+    model_dict = mp2cal.wyl.uv_read_omni([model_files],filetype='fhd', antstr='cross', p_list=pols, use_model=True)
 #################################################################################################
 
 ex_ubls = []
@@ -207,7 +198,7 @@ def diagnostic(infodict):
     ginfo = infodict['ginfo']
     freqs = infodict['freqs']
     ex_ants = infodict['ex_ants']
-    info = capo.omni.pos_to_info(antpos, pols=list(set(''.join([p]))), ex_ants=ex_ants, ex_ubls=ex_ubls, crosspols=[p])
+    info = mp2cal.wyl.pos_to_info(antpos, pols=list(set(''.join([p]))), ex_ants=ex_ants, ex_ubls=ex_ubls, crosspols=[p])
     reds = info.get_reds()
     data = {}
     for bl in d.keys():
@@ -230,8 +221,7 @@ def diagnostic(infodict):
             g0_temp = g0[p[0]][key]
             g0[p[0]][key] = np.resize(g0_temp,(1,ginfo[2]))
             if opts.initauto: g0[p[0]][key] *= auto[key]
-    m1,g1,v1 = capo.omni.redcal(data,info,gains=g0, removedegen=False)
-    m2,g2,v2 = capo.omni.redcal(data, info, gains=g1, vis=v1, uselogcal=False, removedegen=False)
+    m2,g2,v2=heracal.run_omnical(data,info,gains0=g0,maxiter=150)
     for r in reds:
         if len(r) < min_size_bl_gp: continue
         stack_data = []
@@ -266,13 +256,12 @@ def calibration(infodict):#dict=[filename, g0, timeinfo, d, f, ginfo, freqs, pol
     ex_ants = infodict['ex_ants']
     auto = infodict['auto_corr']
     mask_arr = infodict['mask']
-    amp_wgt = infodict['amp_wgt'][p[0]]
     for bl in ex_bls:
         if not bl in infodict['ex_bls']: infodict['ex_bls'].append(bl)
     print 'Getting reds from calfile'
     print 'generating info:'
     filter_length = None
-    info = capo.omni.pos_to_info(antpos, pols=list(set(''.join([p]))), ex_ants=ex_ants, ex_ubls=ex_ubls, ex_bls=infodict['ex_bls'], crosspols=[p])
+    info = mp2cal.wyl.pos_to_info(antpos, pols=list(set(''.join([p]))), ex_ants=ex_ants, ex_ubls=ex_ubls, ex_bls=infodict['ex_bls'], crosspols=[p])
 
     reds = info.get_reds()
     ### Omnical-ing! Loop Through Compressed Files ###
@@ -315,40 +304,29 @@ def calibration(infodict):#dict=[filename, g0, timeinfo, d, f, ginfo, freqs, pol
         else: data[bl] = {p: copy.copy(d[bl][p])}
     if opts.wgt_cal:
         # if weight antennas by auto corr:
-        if opts.divauto:
-            for bl in data.keys():
-                i,j = bl
-                data[bl][p] /= (auto[i]*auto[j])
-                if opts.smooth:
-                    tfq = np.fft.fftfreq(freqs.size,(freqs[1]-freqs[0]))
-                    fftdata = np.fft.fft(data[bl][p],axis=1)
-                    ri,rj = realpos[i],realpos[j]
-                    rij = np.array([ri['top_x']-rj['top_x'],ri['top_y']-rj['top_y'],ri['top_z']-rj['top_z']])
-                    inds = np.where(np.abs(tfq)>(np.linalg.norm(rij)/3e8+50e-9))
-                    fftdata[:,inds]=0
-                    data[bl][p] = np.complex64(np.fft.ifft(fftdata,axis=1))
-        else:
-            for bl in data.keys():
-                i,j = bl
-                data[bl][p] /= (np.abs(amp_wgt[i][0])*np.abs(amp_wgt[j][0]))
+        for bl in data.keys():
+            i,j = bl
+            data[bl][p] /= (auto[i]*auto[j])
+            if opts.smooth:
+                tfq = np.fft.fftfreq(freqs.size,(freqs[1]-freqs[0]))
+                fftdata = np.fft.fft(data[bl][p],axis=1)
+                ri,rj = realpos[i],realpos[j]
+                rij = np.array([ri['top_x']-rj['top_x'],ri['top_y']-rj['top_y'],ri['top_z']-rj['top_z']])
+                inds = np.where(np.abs(tfq)>(np.linalg.norm(rij)/3e8+50e-9))
+                fftdata[:,inds]=0
+                data[bl][p] = np.complex64(np.fft.ifft(fftdata,axis=1))
      #indexed by bl and then pol (backwards from everything else)
 
     wgts[p] = {} #weights dictionary by pol
     for bl in f:
         i,j = bl
         wgts[p][(j,i)] = wgts[p][(i,j)] = np.logical_not(f[bl][p]).astype(np.int)
-    print '   Logcal-ing'
-    m1,g1,v1 = capo.omni.redcal(data,info,gains=g0, removedegen=opts.removedegen) #SAK CHANGE REMOVEDEGEN
-    print '   Lincal-ing'
-    m2,g2,v2 = capo.omni.redcal(data, info, gains=g1, vis=v1, uselogcal=False, removedegen=opts.removedegen)
+    print '   Run omnical'
+    m2,g2,v2=heracal.run_omnical(data,info,gains0=g0,maxiter=150)
     if opts.wgt_cal:
-        if opts.divauto:
-            for a in g2[p[0]].keys():
-                g2[p[0]][a] *= auto[a]
-        else:
-            for a in g2[p[0]].keys():
-                g2[p[0]][a] *= np.abs(amp_wgt[a][0])
-    xtalk = capo.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
+        for a in g2[p[0]].keys():
+            g2[p[0]][a] *= auto[a]
+    xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     ############# To project out degeneracy parameters ####################
     if opts.projdegen or opts.fitdegen:
@@ -360,9 +338,9 @@ def calibration(infodict):#dict=[filename, g0, timeinfo, d, f, ginfo, freqs, pol
         ref_exp = np.exp(1j*np.angle(g2[p[0]][ref][:,fuse]/gfhd[p[0]][ref][fuse]))
         for a in g2[p[0]].keys(): g2[p[0]][a][:,fuse] /= ref_exp
         print '   projecting amplitude'
-        amppar = capo.wyl.ampproj(g2,gfhd)
+        amppar = mp2cal.wyl.ampproj(g2,gfhd)
         print '   projecting phase'
-        phspar = capo.wyl.phsproj(g2,gfhd,realpos,EastHex,SouthHex,ref)
+        phspar = mp2cal.wyl.phsproj(g2,gfhd,realpos,EastHex,SouthHex,ref)
         degen_proj = {}
         for a in g2[p[0]].keys():
             dx = realpos[a]['top_x']-realpos[ref]['top_x']
@@ -419,7 +397,7 @@ def calibration(infodict):#dict=[filename, g0, timeinfo, d, f, ginfo, freqs, pol
     if opts.cal_all == 'model':
         print '   start absolute cal'
         ref = min(g2[p[0]].keys())
-        g2 = capo.wyl.absoulte_cal(d,g2,model_dict[p],realpos,ref,ex_ants=ex_ants)
+        g2 = mp2cal.wyl.absoulte_cal(d,g2,model_dict[p],realpos,ref,ex_ants=ex_ants)
     elif opts.cal_all == 'copy':
         print '   copying non-hex cal solution from FHD run'
         for a in gfhd[p[0]].keys():
@@ -432,7 +410,7 @@ def calibration(infodict):#dict=[filename, g0, timeinfo, d, f, ginfo, freqs, pol
         npzname = opts.omnipath+filename.split('/')[-1]+'.'+ p +'.npz'
 
     print '   Saving %s'%npzname
-    capo.omni.to_npz(npzname, m2, g2, v2, xtalk)
+    mp2cal.wyl.to_npz(npzname, m2, g2, v2, xtalk)
     return npzname
 #######################################################################################################
 
@@ -445,12 +423,12 @@ for f,filename in enumerate(args):
     print "  Reading data: " + filename
     if opts.ftype == 'miriad':
         for p in pols:
-            dict0 = capo.wyl.uv_read_omni([filegroup[p]], filetype = 'miriad', antstr='cross', p_list=[p])
+            dict0 = mp2cal.wyl.uv_read_omni([filegroup[p]], filetype = 'miriad', antstr='cross', p_list=[p])
             infodict[p] = dict0[p]
             infodict[p]['filename'] = filegroup[p]
             infodict['name_dict'] = dict0['name_dict']
     else:
-        infodict = capo.wyl.uv_read_omni([filegroup[key] for key in filegroup.keys()], filetype=opts.ftype, antstr='cross', p_list=pols)
+        infodict = mp2cal.wyl.uv_read_omni([filegroup[key] for key in filegroup.keys()], filetype=opts.ftype, antstr='cross', p_list=pols)
         for p in pols:
             infodict[p]['filename'] = filename
     print "  Finish reading."
@@ -483,14 +461,14 @@ for f,filename in enumerate(args):
         print '   Excluding antennas:', ex_ants
 
         info_dict.append(infodict[p])
-    print "  Start Diagnostic:"
-    par1 = Pool(2)
-    list_exclude_bls_g2 = par1.map(diagnostic, info_dict)
-    par1.close()
-    for ii in range(len(info_dict)):
-        print '   excluded baselines:', list_exclude_bls_g2[ii][0]
-        info_dict[ii]['ex_bls'] = list_exclude_bls_g2[ii][0]
-        info_dict[ii]['amp_wgt'] = list_exclude_bls_g2[ii][1]
+#    print "  Start Diagnostic:"
+#    par1 = Pool(2)
+#    list_exclude_bls_g2 = par1.map(diagnostic, info_dict)
+#    par1.close()
+#    for ii in range(len(info_dict)):
+#        print '   excluded baselines:', list_exclude_bls_g2[ii][0]
+#        info_dict[ii]['ex_bls'] = list_exclude_bls_g2[ii][0]
+#        info_dict[ii]['amp_wgt'] = list_exclude_bls_g2[ii][1]
     print "  Start Calibration:"
     par2 = Pool(2)
     npzlist = par2.map(calibration, info_dict)
@@ -502,7 +480,7 @@ for f,filename in enumerate(args):
         pathlist = os.path.split(scrpath)[0].split('/')
         repopath = '/'.join(pathlist[0:-1])+'/'
         print '   Writing to txt:'
-        capo.wyl.writetxt(npzlist, repopath, ex_ants=ex_ants, name_dict=name_dict)
+        mp2cal.wyl.writetxt(npzlist, repopath, ex_ants=ex_ants, name_dict=name_dict)
         print '   Finish'
 
     if opts.iffits: #if True, write npz gains to fits files
@@ -510,7 +488,7 @@ for f,filename in enumerate(args):
         pathlist = os.path.split(scrpath)[0].split('/')
         repopath = '/'.join(pathlist[0:-1])+'/'
         print '   Writing to fits:'
-        capo.wyl.writefits(npzlist, repopath, ex_ants=ex_ants, name_dict=name_dict)
+        mp2cal.wyl.writefits(npzlist, repopath, ex_ants=ex_ants, name_dict=name_dict)
         print '   Finish'
 
 

@@ -2,7 +2,7 @@
 # Do not support miriad
 
 import numpy as np
-import omnical, aipy, capo
+import aipy, mp2cal
 import pickle, optparse, os, sys, glob
 import pyuvdata.uvdata as uvd
 from astropy.io import fits
@@ -115,10 +115,10 @@ for f,filename in enumerate(args):
         omnifile = opts.omnipath % (filename.split('/')[-1]+'.'+p)
         print '  Reading and applying:', omnifile, omnifile_ave
         if not opts.npz == None:
-            _,gains,_,_ = capo.omni.from_npz(omnifile_ave)
-            meta,_,_,xtalk = capo.omni.from_npz(omnifile)
+            _,gains,_,_ = mp2cal.wyl.from_npz(omnifile_ave)
+            meta,_,_,xtalk = mp2cal.wyl.from_npz(omnifile)
         else:
-            meta,gains,_,xtalk = capo.omni.from_npz(omnifile) #loads npz outputs from omni_run
+            meta,gains,_,xtalk = mp2cal.wyl.from_npz(omnifile) #loads npz outputs from omni_run
         if opts.flag_bls:
             ex_bls = []
             for ii in range(meta['ex_bls'].shape[0]):
@@ -135,10 +135,10 @@ for f,filename in enumerate(args):
                 auto_corr = uvi.data_array[auto_inds][:,0][:,:,pid].real
                 auto[a] = np.mean(np.sqrt(auto_corr)[1:-2],axis=0)
                 auto[a] /= np.mean(auto[a])
-            gains = capo.wyl.mwa_bandpass_fit(gains,auto,tile_info)
+            gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
         if opts.polyfit:
             print '   polyfitting'
-            gains = capo.wyl.poly_bandpass_fit(gains)
+            gains = mp2cal.wyl.poly_bandpass_fit(gains)
 #*********************************************************************************************
         for ii in range(0,Nblts):
             a1 = uvi.ant_1_array[ii]
