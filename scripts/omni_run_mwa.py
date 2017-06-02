@@ -121,7 +121,7 @@ def omnirun(data_wrap):
     data = data_wrap['data']
     flag = data_wrap['flag']
     auto = data_wrap['auto']
-    mask = data_wrap['mask']
+    mask_arr = data_wrap['mask']
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
     #if os.path.exists(omnisol):
@@ -233,7 +233,7 @@ def omnirun(data_wrap):
     if opts.cal_all:
         print '     start absolute cal'
         ref = min(g2[p].keys())
-        g2 = mp2cal.wyl.absoulte_cal(data,g2,realpos,ref,ex_ants=ex_ants)
+        g2 = mp2cal.wyl.absoulte_cal(data,g2,realpos,uv.freq_array[0],ref,ex_ants=ex_ants)
 
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
