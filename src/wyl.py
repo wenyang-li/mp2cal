@@ -52,7 +52,7 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
 
 
 def uv_wrap_omni(uv,pols=['xx','yy']):
-    wrap_list = []
+    data_wrap = {}
     a1 = uv.ant_1_array[:uv.Nbls]
     a2 = uv.ant_2_array[:uv.Nbls]
     data = uv.data_array
@@ -78,8 +78,8 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
                 wrap['flag'][bl][pp] = np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])
         auto_scale /= len(wrap['auto'].keys())
         for a in wrap['auto'].keys(): wrap['auto'][a] /= auto_scale
-        wrap_list.append(wrap)
-    return wrap_list
+        data_wrap[pp] = wrap
+    return data_wrap
 
 
 def polyfunc(x,z):
@@ -247,10 +247,11 @@ def cal_var_wgt(v,m,w):
     return inv
 
 
-def absoulte_cal(data,g2,model_dict,realpos,ref_antenna,ex_ants=[],maxiter=50):
+def absoulte_cal(data,g2,realpos,ref_antenna,ex_ants=[],maxiter=50):
     gt = {}
     g3 = {}
     thred_length = 50*3e8/np.max(model_dict['freqs'])
+    model_dict = data['model']
     for p in g2.keys():
         g3[p],gt[p] = {},{}
         a = g2[p].keys()[0]
@@ -409,7 +410,7 @@ def absoulte_cal(data,g2,model_dict,realpos,ref_antenna,ex_ants=[],maxiter=50):
             for a in gt[p].keys():
                 conv += np.nanmean(np.abs(g3[p][a]-gt[p][a]))
             print 'check conv: ', iter, conv
-            if conv < 0.1:
+            if conv < 0.05:
                 print 'maxiter and conv for non-hex cal:',iter,conv
                 break
             else:
@@ -466,3 +467,78 @@ def cal_reds_from_pos(position,**kwargs):
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + [i for i in range(antpos.shape[0]) if antpos[i,0] < 0]
     reds = omnical.arrayinfo.filter_reds(reds,**kwargs)
     return reds
+
+def get_phase(fqs,tau, offset=False):
+    fqs = fqs.reshape(-1,1) #need the extra axis
+    if offset:
+        delay = tau[0]
+        offset = tau[1]
+        return np.exp(-1j*(2*np.pi*fqs*delay) - offset)
+    else:
+        return np.exp(-2j*np.pi*fqs*tau)
+
+def save_gains_fc(s,fqs,outname):
+    s2 = {}
+    for k,i in s.iteritems():
+        if len(i) > 1:
+            s2[str(k)+pol] = get_phase(fqs,i,offset=True).T
+            s2['d'+str(k)] = i[0]
+            s2['o'+str(k)] = i[1]
+        else:
+            s2[str(k)+pol] = get_phase(fqs,i).T
+            s2['d'+str(k)] = i
+    np.savez(outname,**s2)
+
+def load_gains_fc(fcfile):
+    g0 = {}
+    fc = np.load(fcfile)
+    for k in fc.keys():
+        if k[0].isdigit():
+            a = int(k[:-1])
+            p = k[-1]
+            if not g0.has_key(p): g0[p] = {}
+            g0[p][a] = fc[k]
+    return g0
+
+def save_gains_omni(filename, meta, gains, vismdl, xtalk):
+    d = {}
+    metakeys = ['jds','lsts','freqs','history']
+    for key in meta:
+        if key.startswith('chisq'): d[key] = meta[key] #separate if statements  pending changes to chisqs
+        for k in metakeys:
+            if key.startswith(k): d[key] = meta[key]
+    for pol in gains:
+        for ant in gains[pol]:
+            d['%d%s' % (ant,pol)] = gains[pol][ant]
+    for pol in vismdl:
+        for bl in vismdl[pol]:
+            d['<%d,%d> %s' % (bl[0],bl[1],pol)] = vismdl[pol][bl]
+    for pol in xtalk:
+        for bl in xtalk[pol]:
+            d['(%d,%d) %s' % (bl[0],bl[1],pol)] = xtalk[pol][bl]
+    np.savez(filename,**d)
+
+def load_gains_omni(filename):
+    meta, gains, vismdl, xtalk = {}, {}, {}, {}
+    def parse_key(k):
+        bl,pol = k.split()
+        bl = tuple(map(int,bl[1:-1].split(',')))
+        return pol,bl
+    npz = np.load(filename)
+    for k in npz.files:
+        if k[0].isdigit():
+            pol,ant = k[-1:],int(k[:-1])
+            if not gains.has_key(pol): gains[pol] = {}
+            gains[pol][ant] = npz[k]
+        try: pol,bl = parse_key(k)
+        except(ValueError): continue
+        if k.startswith('<'):
+            if not vismdl.has_key(pol): vismdl[pol] = {}
+            vismdl[pol][bl] = npz[k]
+        elif k.startswith('('):
+            if not xtalk.has_key(pol): xtalk[pol] = {}
+            xtalk[pol][bl] = npz[k]
+        kws = ['chi','hist','j','l','f']
+        for kw in kws:
+            for k in [f for f in npz.files if f.startswith(kw)]: meta[k] = npz[k]
+    return meta, gains, vismdl, xtalk
