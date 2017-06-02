@@ -6,6 +6,7 @@ from astropy.io import fits
 import pickle, copy
 from multiprocessing import Pool
 from scipy.io.idl import readsav
+import pyuvdata.uvdata as uvd
 #from IPython import embed
 
 o = optparse.OptionParser()

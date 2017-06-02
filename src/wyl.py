@@ -74,8 +74,8 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
                 auto_scale += np.nanmean(wrap['auto'][a1[ii]])
             else:
                 bl = (a1[ii],a2[ii])
-                wrap['data'][bl][pp] = np.complex64(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])
-                wrap['flag'][bl][pp] = np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])
+                wrap['data'][bl] = {pp: np.complex64(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
+                wrap['flag'][bl] = {pp: np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
         auto_scale /= len(wrap['auto'].keys())
         for a in wrap['auto'].keys(): wrap['auto'][a] /= auto_scale
         data_wrap[pp] = wrap
