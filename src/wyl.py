@@ -247,10 +247,9 @@ def cal_var_wgt(v,m,w):
     return inv
 
 
-def absoulte_cal(data,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=50):
+def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=50):
     gt = {}
     g3 = {}
-    model_dict = data['model']
     thred_length = 50*3e8/np.max(fqs)
     for p in g2.keys():
         g3[p],gt[p] = {},{}

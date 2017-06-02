@@ -89,7 +89,6 @@ if opts.cal_all:
     uv_model = uvd.UVData()
     uv_model.read_fhd(model_files, use_model=True)
     model_wrap = mp2cal.wyl.uv_wrap_omni(uv_model,pols=pols)
-    for pp in pols: data_wrap[pp]['model'] = model_wrap[pp]
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
@@ -233,7 +232,7 @@ def omnirun(data_wrap):
     if opts.cal_all:
         print '     start absolute cal'
         ref = min(g2[p].keys())
-        g2 = mp2cal.wyl.absoulte_cal(data,g2,realpos,uv.freq_array[0],ref,ex_ants=ex_ants)
+        g2 = mp2cal.wyl.absoulte_cal(data,model_wrap[pp],g2,realpos,uv.freq_array[0],ref,ex_ants=ex_ants)
 
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
