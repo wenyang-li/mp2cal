@@ -440,7 +440,8 @@ def pos_to_info(position, pols=['x'], fcal=False, **kwargs):
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
     reds = omni.filter_reds(reds, **kwargs)
     if fcal:
-        info = omni.FirstCalRedundantInfo(nant)
+        from heracal.firstcal import FirstCalRedundantInfo
+        info = FirstCalRedundantInfo(nant)
     else:
         info = omni.RedundantInfo(nant)
     info.init_from_reds(reds, antpos)
