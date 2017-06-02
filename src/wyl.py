@@ -483,11 +483,11 @@ def save_gains_fc(s,fqs,outname):
     for k,i in s.iteritems():
         if len(i) > 1:
             s2[str(k)] = get_phase(fqs,i,offset=True).T
-            s2['d'+str(k[:-1])] = i[0]
-            s2['o'+str(k[:-1])] = i[1]
+            s2['d'+str(k)] = i[0]
+            s2['o'+str(k)] = i[1]
         else:
             s2[str(k)] = get_phase(fqs,i).T
-            s2['d'+str(k[:-1])] = i
+            s2['d'+str(k)] = i
     np.savez(outname,**s2)
 
 def load_gains_fc(fcfile):
