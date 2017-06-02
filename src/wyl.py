@@ -478,16 +478,16 @@ def get_phase(fqs,tau, offset=False):
     else:
         return np.exp(-2j*np.pi*fqs*tau)
 
-def save_gains_fc(s,fqs,pol,outname):
+def save_gains_fc(s,fqs,outname):
     s2 = {}
     for k,i in s.iteritems():
         if len(i) > 1:
-            s2[str(k)+pol] = get_phase(fqs,i,offset=True).T
-            s2['d'+str(k)] = i[0]
-            s2['o'+str(k)] = i[1]
+            s2[str(k)] = get_phase(fqs,i,offset=True).T
+            s2['d'+str(k[:-1])] = i[0]
+            s2['o'+str(k[:-1])] = i[1]
         else:
-            s2[str(k)+pol] = get_phase(fqs,i).T
-            s2['d'+str(k)] = i
+            s2[str(k)] = get_phase(fqs,i).T
+            s2['d'+str(k[:-1])] = i
     np.savez(outname,**s2)
 
 def load_gains_fc(fcfile):
