@@ -17,7 +17,6 @@ o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, 
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
 o.add_option('--outpath', default='/users/wl42/data/wl42/Nov2016EoR0/omni_sol/',help='Output path of solutions.')
-o.add_option('--plot', action='store_true', default=False, help='Turn on plotting in firstcal class.')
 o.add_option('--verbose', action='store_true', default=False, help='Turn on verbose.')
 o.add_option('--ftype', dest='ftype', default='', type='string',
              help='Type of the input file, uvfits or fhd')
@@ -88,9 +87,9 @@ def firstcal(data_wrap):
     wgtpack = {k : { p : np.logical_not(wgtpack[k][p]) for p in wgtpack[k]} for k in wgtpack}
     fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
-    sols = fc.run(finetune=True,verbose=False,plot=False,noclean=False,offset=False,average=True,window='none')
+    sols = fc.run(finetune=True,verbose=False,average=True,window='none')
     print('     Saving {0}'.format(outname))
-    mp2cal.wyl.save_gains_fc(sols,fqs,outname)
+    mp2cal.wyl.save_gains_fc(sols,fqs,p,outname)
 
 #*****************************************************************************
 par = Pool(2)

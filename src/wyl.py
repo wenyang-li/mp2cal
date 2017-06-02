@@ -478,7 +478,7 @@ def get_phase(fqs,tau, offset=False):
     else:
         return np.exp(-2j*np.pi*fqs*tau)
 
-def save_gains_fc(s,fqs,outname):
+def save_gains_fc(s,fqs,pol,outname):
     s2 = {}
     for k,i in s.iteritems():
         if len(i) > 1:
