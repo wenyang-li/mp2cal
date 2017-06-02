@@ -84,7 +84,7 @@ def firstcal(data_wrap):
     fqs = uv.freq_array[0]/1e9
     datpack = data_wrap['data']
     wgtpack = data_wrap['flag']
-    wgtpack = {k : { p : np.logical_not(wgtpack[k][p]) for p in wgtpack[k]} for k in wgtpack}
+    wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
     fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
     sols = fc.run(finetune=True,verbose=False,average=True,window='none')
