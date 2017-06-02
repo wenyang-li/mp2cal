@@ -436,7 +436,7 @@ def pos_to_info(position, pols=['x'], fcal=False, **kwargs):
             i = omni.Antpol(ant,pol,nant)
             antpos[i.val,0],antpos[i.val,1],antpos[i.val,2] = x,y,z
     reds = omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
-    ex_ants = [Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
+    ex_ants = [omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
     reds = omni.filter_reds(reds, **kwargs)
     if fcal:
