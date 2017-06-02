@@ -83,7 +83,10 @@ def firstcal(data_wrap):
     if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
     fqs = uv.freq_array[0]/1e9
-    fc = heracal.firstcal.FirstCal(data_wrap['data'],data_wrap['flag'],fqs,info)
+    datpack = data_wrap['data']
+    wgtpack = data_wrap['flag']
+    wgtpack = {k : { p : np.logical_not(wgtpack[k][p]) for p in wgtpack[k]} for k in wgtpack}
+    fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
     sols = fc.run(finetune=True,verbose=False,plot=False,noclean=False,offset=False,average=True,window='none')
     print('     Saving {0}'.format(outname))

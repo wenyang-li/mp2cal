@@ -45,8 +45,8 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
                 flg_temp = flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii]
                 dat_ma = np.ma.masked_array(dat_temp, mask=flg_temp)
                 dat_ma = np.mean(dat_ma,axis=0)
-                wrap['data'][bl] = np.complex64([dat_ma.data])
-                wrap['flag'][bl] = np.array([dat_ma.mask])
+                wrap['data'][bl] = {pp: np.complex64([dat_ma.data])}
+                wrap['flag'][bl] = {pp: np.array([dat_ma.mask])}
         wrap_list.append(wrap)
     return wrap_list
 
