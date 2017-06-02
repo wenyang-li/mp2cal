@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!//anaconda/bin/python
 # Do not support miriad
 
 import numpy as np
