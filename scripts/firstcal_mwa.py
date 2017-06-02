@@ -79,7 +79,7 @@ def firstcal(data_wrap):
     pp = data_wrap['pol']
     p = pp[0]
     outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
-    if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
+    #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
     fqs = uv.freq_array[0]/1e9
     datpack = data_wrap['data']

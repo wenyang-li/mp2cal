@@ -124,9 +124,9 @@ def omnirun(data_wrap):
     mask = data_wrap['mask']
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
-    if os.path.exists(omnisol):
-        print '    %s exists. Skipping...'%omnisol
-        return
+    #if os.path.exists(omnisol):
+        #print '    %s exists. Skipping...'%omnisol
+        #return
     if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
     print '     loading firstcal file: ', fcfile
     g0 = mp2cal.wyl.load_gains_fc(fcfile)
