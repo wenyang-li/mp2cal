@@ -80,8 +80,8 @@ if opts.projdegen or opts.cal_all:
     fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
     gfhd = {'x':{},'y':{}}
     for a in range(fhd_cal['cal']['N_TILE'][0]):
-        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] + fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
-        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] + fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
+        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
+        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
 
 if opts.cal_all:
     print "   Loading model"
