@@ -74,6 +74,10 @@ elif opts.ftype == 'fhd':
     uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
 else: IOError('invalid filetype, it should be uvfits or fhd')
 data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols)
+t_jd = uv.time_array[::uv.Nbls]
+t_lst = uv.lst_array[::uv.Nbls]
+freqs = uv.freq_array[0]
+SH = (uv.Ntimes, uv.Nfreqs)
 
 #********************************** load fhd ***************************************************
 if opts.projdegen or opts.cal_all:
@@ -92,6 +96,7 @@ if opts.cal_all:
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
+del uv
 for a in ex_ants_find:
     if not a in ex_ants: ex_ants.append(a)
 if opts.projdegen or opts.cal_all:
@@ -129,10 +134,6 @@ def omnirun(data_wrap):
     if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
     print '     loading firstcal file: ', fcfile
     g0 = mp2cal.wyl.load_gains_fc(fcfile)
-    t_jd = uv.time_array[::uv.Nbls]
-    t_lst = uv.lst_array[::uv.Nbls]
-    freqs = uv.freq_array[0]
-    SH = (uv.Ntimes, uv.Nfreqs)
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
@@ -231,7 +232,7 @@ def omnirun(data_wrap):
     if opts.cal_all:
         print '     start absolute cal'
         ref = min(g2[p].keys())
-#        g3 = mp2cal.wyl.absoulte_cal(data,model_wrap,g2,realpos,uv.freq_array[0],ref,ex_ants=ex_ants)
+#        g3 = mp2cal.wyl.absoulte_cal(data,model_wrap,g2,realpos,freqs,ref,ex_ants=ex_ants)
         g3, v3 = mp2cal.wyl.joint_cal(data,model_wrap,g2,gfhd,v2,realpos,freqs,ex_ants,reds)
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
