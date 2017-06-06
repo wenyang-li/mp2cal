@@ -329,8 +329,8 @@ def joint_cal(data,model_dict,g2,gfhd,v2,realpos,fqs,ex_ants,reds,maxiter=50):
                 nur[zeros] = 0.
                 nui[zeros] = 0.
                 v3[pp][bl0] = nur/den + 1.j*nui/den
-            for a in g3[p][a].keys(): conv += (np.nanmean(np.abs(g3[p][a]-gt[p][a]))/np.nanmean(np.abs(g3[p][a]+gt[p][a])))
-            for b in v3[pp][a].keys(): conv += (np.nanmean(np.abs(v3[pp][b]-vt[pp][b]))/np.nanmean(np.abs(v3[pp][b]+vt[pp][b])))
+            for a in g3[p].keys(): conv += (np.nanmean(np.abs(g3[p][a]-gt[p][a]))/np.nanmean(np.abs(gt[p][a])))
+            for b in v3[pp].keys(): conv += (np.nanmean(np.abs(v3[pp][b]-vt[pp][b]))/np.nanmean(np.abs(vt[pp][b])))
             conv /= (len(g3[p].keys())+len(v3[pp].keys()))
             print 'check conv: ', iter, conv
             if conv < 1e-4: break
