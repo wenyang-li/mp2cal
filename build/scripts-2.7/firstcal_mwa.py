@@ -17,7 +17,6 @@ o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, 
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
 o.add_option('--outpath', default='/users/wl42/data/wl42/Nov2016EoR0/omni_sol/',help='Output path of solutions.')
-o.add_option('--plot', action='store_true', default=False, help='Turn on plotting in firstcal class.')
 o.add_option('--verbose', action='store_true', default=False, help='Turn on verbose.')
 o.add_option('--ftype', dest='ftype', default='', type='string',
              help='Type of the input file, uvfits or fhd')
@@ -80,12 +79,15 @@ def firstcal(data_wrap):
     pp = data_wrap['pol']
     p = pp[0]
     outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
-    if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
+    #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
     fqs = uv.freq_array[0]/1e9
-    fc = heracal.FirstCal(data_wrap['data'],data_wrap['flag'],fqs,info)
+    datpack = data_wrap['data']
+    wgtpack = data_wrap['flag']
+    wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
+    fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
-    sols = fc.run(finetune=True,verbose=False,plot=False,noclean=False,offset=False,average=True,window='none')
+    sols = fc.run(finetune=True,verbose=False,average=True,window='none')
     print('     Saving {0}'.format(outname))
     mp2cal.wyl.save_gains_fc(sols,fqs,outname)
 

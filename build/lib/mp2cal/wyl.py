@@ -45,8 +45,8 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
                 flg_temp = flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii]
                 dat_ma = np.ma.masked_array(dat_temp, mask=flg_temp)
                 dat_ma = np.mean(dat_ma,axis=0)
-                wrap['data'][bl] = np.complex64([dat_ma.data])
-                wrap['flag'][bl] = np.array([dat_ma.mask])
+                wrap['data'][bl] = {pp: np.complex64([dat_ma.data])}
+                wrap['flag'][bl] = {pp: np.array([dat_ma.mask])}
         wrap_list.append(wrap)
     return wrap_list
 
@@ -74,8 +74,8 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
                 auto_scale += np.nanmean(wrap['auto'][a1[ii]])
             else:
                 bl = (a1[ii],a2[ii])
-                wrap['data'][bl][pp] = np.complex64(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])
-                wrap['flag'][bl][pp] = np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])
+                wrap['data'][bl] = {pp: np.complex64(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
+                wrap['flag'][bl] = {pp: np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
         auto_scale /= len(wrap['auto'].keys())
         for a in wrap['auto'].keys(): wrap['auto'][a] /= auto_scale
         data_wrap[pp] = wrap
@@ -247,11 +247,10 @@ def cal_var_wgt(v,m,w):
     return inv
 
 
-def absoulte_cal(data,g2,realpos,ref_antenna,ex_ants=[],maxiter=50):
+def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=50):
     gt = {}
     g3 = {}
-    thred_length = 50*3e8/np.max(model_dict['freqs'])
-    model_dict = data['model']
+    thred_length = 50*3e8/np.max(fqs)
     for p in g2.keys():
         g3[p],gt[p] = {},{}
         a = g2[p].keys()[0]
@@ -436,11 +435,12 @@ def pos_to_info(position, pols=['x'], fcal=False, **kwargs):
             i = omni.Antpol(ant,pol,nant)
             antpos[i.val,0],antpos[i.val,1],antpos[i.val,2] = x,y,z
     reds = omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
-    ex_ants = [Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
+    ex_ants = [omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
     reds = omni.filter_reds(reds, **kwargs)
     if fcal:
-        info = omni.FirstCalRedundantInfo(nant)
+        from heracal.firstcal import FirstCalRedundantInfo
+        info = FirstCalRedundantInfo(nant)
     else:
         info = omni.RedundantInfo(nant)
     info.init_from_reds(reds, antpos)
@@ -481,11 +481,11 @@ def save_gains_fc(s,fqs,outname):
     s2 = {}
     for k,i in s.iteritems():
         if len(i) > 1:
-            s2[str(k)+pol] = get_phase(fqs,i,offset=True).T
+            s2[str(k)] = get_phase(fqs,i,offset=True).T
             s2['d'+str(k)] = i[0]
             s2['o'+str(k)] = i[1]
         else:
-            s2[str(k)+pol] = get_phase(fqs,i).T
+            s2[str(k)] = get_phase(fqs,i).T
             s2['d'+str(k)] = i
     np.savez(outname,**s2)
 

@@ -6,6 +6,7 @@ from astropy.io import fits
 import pickle, copy
 from multiprocessing import Pool
 from scipy.io.idl import readsav
+import pyuvdata.uvdata as uvd
 #from IPython import embed
 
 o = optparse.OptionParser()
@@ -79,8 +80,8 @@ if opts.projdegen or opts.cal_all:
     fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
     gfhd = {'x':{},'y':{}}
     for a in range(fhd_cal['cal']['N_TILE'][0]):
-        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] + fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
-        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] + fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
+        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
+        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
 
 if opts.cal_all:
     print "   Loading model"
@@ -88,7 +89,6 @@ if opts.cal_all:
     uv_model = uvd.UVData()
     uv_model.read_fhd(model_files, use_model=True)
     model_wrap = mp2cal.wyl.uv_wrap_omni(uv_model,pols=pols)
-    for pp in pols: data_wrap[pp]['model'] = model_wrap[pp]
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
@@ -120,12 +120,12 @@ def omnirun(data_wrap):
     data = data_wrap['data']
     flag = data_wrap['flag']
     auto = data_wrap['auto']
-    mask = data_wrap['mask']
+    mask_arr = data_wrap['mask']
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
-    if os.path.exists(omnisol):
-        print '    %s exists. Skipping...'%omnisol
-        return
+    #if os.path.exists(omnisol):
+        #print '    %s exists. Skipping...'%omnisol
+        #return
     if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
     print '     loading firstcal file: ', fcfile
     g0 = mp2cal.wyl.load_gains_fc(fcfile)
@@ -155,7 +155,7 @@ def omnirun(data_wrap):
         i,j = bl
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
-    m2,g2,v2=heracal.run_omnical(dat,info,gains0=g0,maxiter=150)
+    m2,g2,v2=heracal.omni.run_omnical(dat,info,gains0=g0,maxiter=150)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
@@ -198,7 +198,7 @@ def omnirun(data_wrap):
             for bl in r:
                 if v2[pp].has_key(bl): yij = v2[pp][bl]
             for bl in r:
-                try: md = np.ma.masked_array(data[bl][pp],mask=f[bl][pp])
+                try: md = np.ma.masked_array(data[bl][pp],mask=flag[bl][pp])
                 except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=flag[bl[::-1]][pp],fill_value=0.0)
                 i,j = bl
                 chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(np.var(md,axis=0).data+1e-7)
@@ -218,9 +218,8 @@ def omnirun(data_wrap):
             g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
             g_temp = np.mean(g_temp,axis=0)
             g2[p[0]][a] = g_temp.data
-            if opts.instru == 'mwa':
-                for ii in range(384):
-                    if ii%16 == 8: g2[p[0]][a][ii] = (g2[p[0]][a][ii+1]+g2[p[0]][a][ii-1])/2
+            for ii in range(384):
+                if ii%16 == 8: g2[p[0]][a][ii] = (g2[p[0]][a][ii+1]+g2[p[0]][a][ii-1])/2
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
@@ -232,7 +231,7 @@ def omnirun(data_wrap):
     if opts.cal_all:
         print '     start absolute cal'
         ref = min(g2[p].keys())
-        g2 = mp2cal.wyl.absoulte_cal(data,g2,realpos,ref,ex_ants=ex_ants)
+        g2 = mp2cal.wyl.absoulte_cal(data,model_wrap[pp],g2,realpos,uv.freq_array[0],ref,ex_ants=ex_ants)
 
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
