@@ -289,8 +289,6 @@ def joint_cal(data,model_dict,g2,gfhd,v2,realpos,fqs,ex_ants,reds,maxiter=50):
                 else:
                     for a2 in gt[p].keys():
                         bl = (a1,a2)
-                        try: dv = data[bl][pp]
-                        except(KeyError): dv = data[bl[::-1]][pp].conj()
                         if bl in reds_dict.keys(): dm = vt[pp][reds_dict[bl]]*(gt[p][a2].conj())
                         elif bl[::-1] in reds_dict.keys(): dm = vt[pp][reds_dict[bl[::-1]]].conj()*(gt[p][a2].conj())
                         else:

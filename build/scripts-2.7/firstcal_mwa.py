@@ -73,6 +73,8 @@ reds = mp2cal.wyl.cal_reds_from_pos(antpos)
 redbls = [bl for red in reds for bl in red]
 print 'Number of redundant baselines:',len(redbls)
 wrap_list = mp2cal.wyl.uv_wrap_fc(uv,redbls,pols=pols)
+fqs = uv.freq_array[0]/1e9
+del uv
 
 #************************************************************************************************
 def firstcal(data_wrap):
@@ -81,7 +83,6 @@ def firstcal(data_wrap):
     outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
     #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
-    fqs = uv.freq_array[0]/1e9
     datpack = data_wrap['data']
     wgtpack = data_wrap['flag']
     wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
