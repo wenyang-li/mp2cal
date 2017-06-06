@@ -253,8 +253,8 @@ def joint_cal(data,model_dict,g2,gfhd,v2,realpos,fqs,ex_ants,reds,maxiter=50):
     for p in g2.keys():
         pp = p+p
         g3[p],gt[p],vt[pp],v3[pp] = {},{},{},{}
-        mvis = model_dict['data'][pp]
-        mwgt = model_dict['flag'][pp]
+        mvis = model_dict[pp]['data']
+        mwgt = model_dict[pp]['flag']
         reds_dict = {}
         for r in reds:
             for bl in r:
@@ -350,8 +350,8 @@ def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=5
         a = g2[p].keys()[0]
         SH = g2[p][a].shape
         pp = p+p
-        mvis = model_dict['data'][pp]
-        mwgt = model_dict['flag'][pp]
+        mvis = model_dict[pp]['data']
+        mwgt = model_dict[pp]['flag']
         for a1 in range(0,57):
             nur,nui,den = 0,0,0
             if a1 in ex_ants: continue
