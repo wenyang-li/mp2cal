@@ -247,6 +247,100 @@ def cal_var_wgt(v,m,w):
     return inv
 
 
+def joint_cal(data,model_dict,g2,gfhd,v2,realpos,fqs,ex_ants,reds,maxiter=50):
+    gt, g3, vt, v3 = {},{},{},{}
+    thred_length = 50*3e8/np.max(fqs)
+    for p in g2.keys():
+        pp = p+p
+        g3[p],gt[p],vt[pp],v3[pp] = {},{},{},{}
+        mvis = model_dict['data'][pp]
+        mwgt = model_dict['flag'][pp]
+        reds_dict = {}
+        for r in reds:
+            for bl in r:
+                if bl in v2[pp].keys(): bl0 = bl
+            for bl in r: reds_dict[bl] = bl0
+        for a1 in gfhd[p].keys():
+            if not a1 in g2[p].keys() and not np.isnan(np.mean(gfhd[p][a1])): gt[p][a1] = np.copy(gfhd[p][a1])
+        for a2 in g2[p].keys(): gt[p][a2] = np.copy(g2[p][a2])
+        for bl in v2[pp].keys(): vt[pp][bl] = np.copy(v2[pp][bl])
+        for iter in range(maxiter):
+            conv = 0
+            for a1 in gt[p].keys():
+                nur,nui,den = 0,0,0
+                if a1 < 57:
+                    for a2 in gt[p].keys():
+                        sep = np.array([realpos[a2]['top_x']-realpos[a1]['top_x'],
+                                        realpos[a2]['top_y']-realpos[a1]['top_y'],
+                                        realpos[a2]['top_z']-realpos[a1]['top_z']])
+                        if np.linalg.norm(sep) < thred_length: continue
+                        bl = (a1,a2)
+                        try: dv = data[bl][pp]
+                        except(KeyError): dv = data[bl[::-1]][pp].conj()
+                        try:
+                            dm = mvis[bl][pp]*(gt[p][a2].conj())
+                            dw = np.logical_not(mwgt[bl][pp])
+                        except(KeyError):
+                            dm = mvis[bl[::-1]][pp].conj()*(gt[p][a2].conj())
+                            dw = np.logical_not(mwgt[bl[::-1]][pp])
+                        nur += np.nansum((dv.real*dm.real+dv.imag*dm.imag)*dw,axis=0)
+                        nui += np.nansum((dv.imag*dm.real-dv.real*dm.imag)*dw,axis=0)
+                        den += np.nansum((dm.real*dm.real+dm.imag*dm.imag)*dw,axis=0)
+                else:
+                    for a2 in gt[p].keys():
+                        bl = (a1,a2)
+                        try: dv = data[bl][pp]
+                        except(KeyError): dv = data[bl[::-1]][pp].conj()
+                        if bl in reds_dict.keys(): dm = vt[pp][reds_dict[bl]]*(gt[p][a2].conj())
+                        elif bl[::-1] in reds_dict.keys(): dm = vt[pp][reds_dict[bl[::-1]]].conj()*(gt[p][a2].conj())
+                        else:
+                            sep = np.array([realpos[a2]['top_x']-realpos[a1]['top_x'],
+                                            realpos[a2]['top_y']-realpos[a1]['top_y'],
+                                            realpos[a2]['top_z']-realpos[a1]['top_z']])
+                            if np.linalg.norm(sep) < thred_length: continue
+                            try: dm = mvis[bl][pp]*(gt[p][a2].conj())
+                            except(KeyError): dm = mvis[bl[::-1]][pp].conj()*(gt[p][a2].conj())
+                        try: dv = data[bl][pp]
+                        except(KeyError): dv = data[bl[::-1]][pp].conj()
+                        try: dw = np.logical_not(mwgt[bl][pp])
+                        except(KeyError): dw = np.logical_not(mwgt[bl[::-1]][pp])
+                        nur += np.nansum((dv.real*dm.real+dv.imag*dm.imag)*dw,axis=0)
+                        nui += np.nansum((dv.imag*dm.real-dv.real*dm.imag)*dw,axis=0)
+                        den += np.nansum((dm.real*dm.real+dm.imag*dm.imag)*dw,axis=0)
+                zeros = np.where(den==0)
+                den[zeros] = 1.
+                nur[zeros] = 0.
+                nui[zeros] = 0.
+                g3[p][a1] = nur/den + 1.j*nui/den
+            for r in reds:
+                nur,nui,den = 0,0,0
+                for bl in r:
+                    if bl in v2[pp].keys(): bl0 = bl
+                for bl in r:
+                    i,j = bl
+                    try: dv = data[bl][pp]
+                    except(KeyError): dv = data[bl[::-1]][pp].conj()
+                    try: dw = np.logical_not(mwgt[bl][pp])
+                    except(KeyError): dw = np.logical_not(mwgt[bl[::-1]][pp])
+                    dg = gt[p][i]*gt[p][j].conj()
+                    nur += np.nansum((dv.real*dg.real+dv.imag*dg.imag)*dw,axis=0)
+                    nui += np.nansum((dv.imag*dg.real-dv.real*dg.imag)*dw,axis=0)
+                    den += np.nansum((dg.real*dg.real+dg.imag*dg.imag)*dw,axis=0)
+                zeros = np.where(den==0)
+                den[zeros] = 1.
+                nur[zeros] = 0.
+                nui[zeros] = 0.
+                v3[pp][bl0] = nur/den + 1.j*nui/den
+            for a in g3[p][a].keys(): conv += (np.nanmean(np.abs(g3[p][a]-gt[p][a]))/np.nanmean(np.abs(g3[p][a]+gt[p][a])))
+            for b in v3[pp][a].keys(): conv += (np.nanmean(np.abs(v3[pp][b]-vt[pp][b]))/np.nanmean(np.abs(v3[pp][b]+vt[pp][b])))
+            conv /= (len(g3[p].keys())+len(v3[pp].keys()))
+            print 'check conv: ', iter, conv
+            if conv < 1e-4: break
+            else:
+                for a in g3[p].keys(): gt[p][a] = np.copy(g3[p][a])
+                for b in v3[pp].keys(): vt[pp][b] = np.copy(v3[pp][b])
+    return g3, v3
+
 def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=50):
     gt = {}
     g3 = {}
@@ -256,8 +350,8 @@ def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=5
         a = g2[p].keys()[0]
         SH = g2[p][a].shape
         pp = p+p
-        mvis = model_dict['data']
-        mwgt = model_dict['flag']
+        mvis = model_dict['data'][pp]
+        mwgt = model_dict['flag'][pp]
         for a1 in range(0,57):
             nur,nui,den = 0,0,0
             if a1 in ex_ants: continue
@@ -413,7 +507,7 @@ def absoulte_cal(data,model_dict,g2,realpos,fqs,ref_antenna,ex_ants=[],maxiter=5
                 print 'maxiter and conv for non-hex cal:',iter,conv
                 break
             else:
-                for a in gt[p].keys(): gt[p][a] = copy.copy(g3[p][a])
+                for a in gt[p].keys(): gt[p][a] = np.copy(g3[p][a])
     return g3
 
 
