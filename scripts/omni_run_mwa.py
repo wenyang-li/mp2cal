@@ -232,11 +232,11 @@ def omnirun(data_wrap):
     if opts.cal_all:
         print '     start absolute cal'
         ref = min(g2[p].keys())
-#        g3 = mp2cal.wyl.absoulte_cal(data,model_wrap,g2,realpos,freqs,ref,ex_ants=ex_ants)
-        g3, v3 = mp2cal.wyl.joint_cal(data,model_wrap,g2,gfhd,v2,realpos,freqs,ex_ants,reds)
+#        g2 = mp2cal.wyl.absoulte_cal(data,model_wrap,g2,realpos,freqs,ref,ex_ants=ex_ants)
+        g2, v2 = mp2cal.wyl.joint_cal(data,model_wrap,g2,gfhd,v2,realpos,freqs,ex_ants,reds)
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
-    mp2cal.wyl.save_gains_omni(omnisol,m2,g3,v3,xtalk)
+    mp2cal.wyl.save_gains_omni(omnisol,m2,g2,v2,xtalk)
 
 par = Pool(2)
 npzlist = par.map(omnirun,data_list)
