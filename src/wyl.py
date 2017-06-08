@@ -82,16 +82,6 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
     return data_wrap
 
 
-def run_omnical(data, info, gains0=None, xtalk=None, maxiter=50, conv=1e-3, stepsize=.3, trust_period=1):
-    m1, g1, v1 = omnical.calib.logcal(data, info, xtalk=xtalk, gains=gains0,
-                                      maxiter=maxiter, conv=conv, stepsize=stepsize,
-                                      trust_period=trust_period)
-    m2, g2, v2 = omnical.calib.lincal(data, info, gains=g1, vis=v1, xtalk=xtalk,
-                                      conv=conv, stepsize=stepsize,
-                                      trust_period=trust_period, maxiter=maxiter)
-    return m2, g2, v2
-
-
 def polyfunc(x,z):
     sum = np.zeros((x.size))
     for ii in range(z.size):

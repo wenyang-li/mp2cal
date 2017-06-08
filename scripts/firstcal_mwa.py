@@ -90,7 +90,7 @@ def firstcal(data_wrap):
     print "     running firstcal"
     sols = fc.run(finetune=True,verbose=False,average=True,window='none')
     print('     Saving {0}'.format(outname))
-    mp2cal.wyl.save_gains_fc(sols,fqs,outname)
+    mp2cal.wyl.save_gains_fc(sols,fqs*1e9,outname)
 
 #*****************************************************************************
 par = Pool(2)
