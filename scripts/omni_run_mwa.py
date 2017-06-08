@@ -156,7 +156,7 @@ def omnirun(data_wrap):
         i,j = bl
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
-    m2,g2,v2=heracal.omni.run_omnical(dat,info,gains0=g0,maxiter=150)
+    m2,g2,v2=mp2cal.wyl.run_omnical(dat,info,gains0=g0,maxiter=150)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
