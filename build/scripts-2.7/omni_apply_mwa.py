@@ -25,14 +25,12 @@ o.add_option('--outtype', dest='outtype', default='uvfits', type='string',
              help='Type of the output file, .uvfits, or miriad, or fhd')
 o.add_option('--intype', dest='intype', default=None, type='string',
              help='Type of the input file, .uvfits or fhd')
-o.add_option('--instru', dest='instru', default='mwa', type='string',
-             help='instrument type. Default=mwa')
-o.add_option('--flag_bls',dest='flag_bls',default=False,action='store_true',
-             help='Toggle: Flag baselines which are excluded by omnical. Default=False')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string',
              help='path to metafits files')
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/', type='string',
              help='path to fhd dir for fhd output visibilities if ftype is fhd.')
+o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
+             help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 
 delays = {
@@ -54,124 +52,115 @@ delays = {
 pols = opts.pol.split(',')
 files = {}
 
-#create a dictionary of file lists
-for filename in args:
-    if opts.intype == 'fhd':
-        files[filename] = []
-        filelist = glob.glob(opts.fhdpath+'/vis_data/'+filename+'*')+glob.glob(opts.fhdpath+'/metadata/'+filename+'*')
-        files[filename] = filelist
-    elif opts.intype == 'uvfits':
-        files[filename] = filename + '.uvfits'
-    elif opts.intype == 'miriad':
-        files[filename] = {}
-        for p in pols:
-            fn = filename.split('.')
-            fn[-2] = p
-            files[filename][p] = '.'.join(fn)
-    else:
-        raise IOError('invalid filetype, it should be miriad, uvfits, or fhd')
+if not len(args) == 1: raise IOError('Do not support multiple files.')
+obsid = args[0]
 
 #start processing
-for f,filename in enumerate(args):
-    
     #create an out put filename
-    if opts.outtype == 'uvfits':
-        if opts.intype == 'fhd': suffix = 'FO'
-        else: suffix = 'O'
-        if opts.bpfit:
-            suffix = suffix + 'B'
-        if opts.polyfit:
-            suffix = suffix + 'P'
-        newfile = filename + '_' + suffix + '.uvfits'
-    if os.path.exists(newfile):
-        print '    %s exists.  Skipping...' % newfile
-        continue
+if opts.outtype == 'uvfits':
+    if opts.intype == 'fhd': suffix = 'FO'
+    else: suffix = 'O'
+    if opts.bpfit:
+        suffix = suffix + 'B'
+    if opts.polyfit:
+        suffix = suffix + 'P'
+    newfile = filename + '_' + suffix + '.uvfits'
+if os.path.exists(newfile):
+    print '    %s exists.  Skipping...' % newfile
+    continue
 
     #read in the file
-    print '  Reading', files[filename]
-    uvi = uvd.UVData()
-    if opts.intype == 'fhd':
-        uvi.read_fhd(files[filename])
-    elif opts.intype == 'uvfits':
-        uvi.read_uvfits(files[filename])
-    Nblts = uvi.Nblts
-    Nfreqs = uvi.Nfreqs
-    Nbls = uvi.Nbls
-    pollist = uvi.polarization_array
-    freqs = uvi.freq_array[0]
+print '  Reading', files[filename]
+uvi = uvd.UVData()
+if opts.intype == 'fhd':
+    uvi.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
+elif opts.intype == 'uvfits':
+    uvi.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
+Nblts = uvi.Nblts
+Nfreqs = uvi.Nfreqs
+Nbls = uvi.Nbls
+pollist = uvi.polarization_array
+freqs = uvi.freq_array[0]
+
+if opts.appfhd:
+    fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
+    gfhd = {'x':{},'y':{}}
+    for a in range(fhd_cal['cal']['N_TILE'][0]):
+        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a]
+        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a]
 
     #find npz for each pol, then apply
-    for ip,p in enumerate(pols):
-        pid = np.where(pollist == aipy.miriad.str2pol[p])[0][0]
-        omnifile_ave = ''
-        if not opts.npz == None:
-            if opts.instru == 'mwa':
-                day = int(filename)/86400
-                hdu = fits.open(opts.metafits+filename+'.metafits')
-                pointing = delays[hdu[0].header['DELAYS']]
-                omnifile_ave = opts.npz + '_' + str(day) + '_' + str(pointing) + '.' + p + '.npz'
-            else: omnifile_ave = opts.npz + '.' + p + '.npz'
-        omnifile = opts.omnipath + filename.split('/')[-1]+'.'+p+'.omni.npz'
-        print '  Reading and applying:', omnifile, omnifile_ave
-        if not opts.npz == None:
-            _,gains,_,_ = mp2cal.wyl.from_npz(omnifile_ave)
-            meta,_,_,xtalk = mp2cal.wyl.from_npz(omnifile)
-        else:
-            meta,gains,_,xtalk = mp2cal.wyl.from_npz(omnifile) #loads npz outputs from omni_run
-        if opts.flag_bls:
-            ex_bls = []
-            for ii in range(meta['ex_bls'].shape[0]):
-                ex_bls.append(tuple(meta['ex_bls'][ii]))
-            print '   bls to flag:', ex_bls
+for ip,p in enumerate(pols):
+    pid = np.where(pollist == aipy.miriad.str2pol[p])[0][0]
+    omnifile_ave = ''
+    if not opts.npz == None:
+        day = int(filename)/86400
+        hdu = fits.open(opts.metafits+filename+'.metafits')
+        pointing = delays[hdu[0].header['DELAYS']]
+        omnifile_ave = opts.npz + '_' + str(day) + '_' + str(pointing) + '.' + p + '.npz'
+    omnifile = opts.omnipath + filename.split('/')[-1]+'.'+p+'.omni.npz'
+    print '  Reading and applying:', omnifile, omnifile_ave
+    if not opts.npz == None:
+        _,gains,_,_ = mp2cal.wyl.from_npz(omnifile_ave)
+        meta,_,_,xtalk = mp2cal.wyl.from_npz(omnifile)
+    else:
+        meta,gains,_,xtalk = mp2cal.wyl.from_npz(omnifile) #loads npz outputs from omni_run
 #********************** if choose to make sols smooth ***************************
-        if opts.bpfit and opts.instru == 'mwa':
-            print '   bandpass fitting'
-            exec('from %s import tile_info'% opts.cal)
-            auto = {}
-            bi = 128*uvi.ant_1_array+uvi.ant_2_array
-            for a in gains[p[0]].keys():
-                auto_inds = np.where(bi==128*a+a)
-                auto_corr = uvi.data_array[auto_inds][:,0][:,:,pid].real
-                auto[a] = np.mean(np.sqrt(auto_corr)[1:-2],axis=0)
-                auto[a] /= np.mean(auto[a])
-            gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
-        if opts.polyfit:
-            print '   polyfitting'
-            gains = mp2cal.wyl.poly_bandpass_fit(gains)
+    if opts.bpfit:
+        print '   bandpass fitting'
+        exec('from %s import tile_info'% opts.cal)
+        auto = {}
+        bi = 128*uvi.ant_1_array+uvi.ant_2_array
+        for a in gains[p[0]].keys():
+            auto_inds = np.where(bi==128*a+a)
+            auto_corr = uvi.data_array[auto_inds][:,0][:,:,pid].real
+            auto[a] = np.mean(np.sqrt(auto_corr)[1:-2],axis=0)
+            auto[a] /= np.mean(auto[a])
+        gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
+    if opts.polyfit:
+        print '   polyfitting'
+        gains = mp2cal.wyl.poly_bandpass_fit(gains)
+    ex_ants = []
 #*********************************************************************************************
-        for ii in range(0,Nblts):
-            a1 = uvi.ant_1_array[ii]
-            a2 = uvi.ant_2_array[ii]
-            if (a1,a2) in ex_bls or (a2,a1) in ex_bls:
-                if opts.flag_bls: uvi.flag_array[:,0][:,:,pid][ii] = True
-            p1,p2 = p
-#            ti = ii/Nbls
-                #for jj in range(0,Nfreqs):
-            if opts.xtalk:
-                try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a1,a2)]
-                except(KeyError):
-                    try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a2,a1)].conj()
-                    except(KeyError): pass
-            try:
-                fuse = np.where(gains[p1][a1]!=0)
-                fnot = np.where(gains[p1][a1]==0)
-                uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p1][a1][fuse]
-                uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
-                uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
-            except(KeyError): pass
-            try:
-                fuse = np.where(gains[p2][a2]!=0)
-                fnot = np.where(gains[p2][a2]==0)
-                uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p2][a2][fuse].conj()
-                uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
-                uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
-            except(KeyError): pass
+    if opts.appfhd:
+        for a in gfhd[p[0]].keys():
+            if a > 56: continue
+            if np.isnan(np.mean(gfhd[p[0]][a])):
+                ex_ants.append(a)
+                continue
+            gains[p[0]][a] = gfhd[p[0]][a]
+    for ii in range(0,Nblts):
+        a1 = uvi.ant_1_array[ii]
+        a2 = uvi.ant_2_array[ii]
+        if a1 in ex_ants or a2 in ex_ants:
+            uvi.flag_array[:,0][:,:,pid][ii] = True
+            continue
+        p1,p2 = p
+        if opts.xtalk:
+            try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a1,a2)]
+            except(KeyError):
+                try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a2,a1)].conj()
+                except(KeyError): pass
+        try:
+            fuse = np.where(gains[p1][a1]!=0)
+            fnot = np.where(gains[p1][a1]==0)
+            uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p1][a1][fuse]
+            uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
+            uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
+        except(KeyError): pass
+        try:
+            fuse = np.where(gains[p2][a2]!=0)
+            fnot = np.where(gains[p2][a2]==0)
+            uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p2][a2][fuse].conj()
+            uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
+            uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
+        except(KeyError): pass
 
     #write file
 #uvi.history = ''
-    if opts.outtype == 'uvfits':
-        print 'writing:' + newfile
-        uvi.write_uvfits(newfile,spoof_nonessential=True)
-        print 'saving ' + newfile
+if opts.outtype == 'uvfits':
+    print 'writing:' + newfile
+    uvi.write_uvfits(newfile,spoof_nonessential=True)
+    print 'saving ' + newfile
 
 
