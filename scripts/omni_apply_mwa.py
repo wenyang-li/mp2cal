@@ -100,10 +100,10 @@ for ip,p in enumerate(pols):
     omnifile = opts.omnipath + obsid.split('/')[-1]+'.'+p+'.omni.npz'
     print '  Reading and applying:', omnifile, omnifile_ave
     if not opts.npz == None:
-        _,gains,_,_ = mp2cal.wyl.from_npz(omnifile_ave)
-        meta,_,_,xtalk = mp2cal.wyl.from_npz(omnifile)
+        _,gains,_,_ = mp2cal.wyl.load_gains_omni(omnifile_ave)
+        meta,_,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile)
     else:
-        meta,gains,_,xtalk = mp2cal.wyl.from_npz(omnifile) #loads npz outputs from omni_run
+        meta,gains,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile) #loads npz outputs from omni_run
 #********************** if choose to make sols smooth ***************************
     if opts.bpfit:
         print '   bandpass fitting'
