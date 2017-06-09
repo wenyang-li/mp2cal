@@ -6,6 +6,7 @@ import aipy, mp2cal
 import pickle, optparse, os, sys, glob
 import pyuvdata.uvdata as uvd
 from astropy.io import fits
+from scipy.io.idl import readsav
 
 ### Options ###
 o = optparse.OptionParser()
