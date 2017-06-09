@@ -19,7 +19,7 @@ delays = {
 #p = sys.argv[1]
 pols = ['xx','yy']
 for p in pols:
-    fn=glob.glob('./*'+p+'.npz')
+    fn=glob.glob('./*'+p+'.omni.npz')
     g = {}
 #    nfiles = {}
     for f in fn:
