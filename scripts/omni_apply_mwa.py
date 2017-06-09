@@ -65,9 +65,7 @@ if opts.outtype == 'uvfits':
     if opts.polyfit:
         suffix = suffix + 'P'
     newfile = filename + '_' + suffix + '.uvfits'
-if os.path.exists(newfile):
-    print '    %s exists.  Skipping...' % newfile
-    continue
+if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
     #read in the file
 print '  Reading', files[filename]
