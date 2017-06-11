@@ -1,4 +1,4 @@
-#!//anaconda/bin/python
+#!/users/wl42/anaconda2/bin/python
 # Do not support miriad
 
 import numpy as np
@@ -6,6 +6,7 @@ import aipy, mp2cal
 import pickle, optparse, os, sys, glob
 import pyuvdata.uvdata as uvd
 from astropy.io import fits
+from scipy.io.idl import readsav
 
 ### Options ###
 o = optparse.OptionParser()
@@ -64,13 +65,11 @@ if opts.outtype == 'uvfits':
         suffix = suffix + 'B'
     if opts.polyfit:
         suffix = suffix + 'P'
-    newfile = filename + '_' + suffix + '.uvfits'
-if os.path.exists(newfile):
-    print '    %s exists.  Skipping...' % newfile
-    continue
+    newfile = obsid + '_' + suffix + '.uvfits'
+if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
     #read in the file
-print '  Reading', files[filename]
+print '  Reading', obsid
 uvi = uvd.UVData()
 if opts.intype == 'fhd':
     uvi.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
@@ -94,17 +93,17 @@ for ip,p in enumerate(pols):
     pid = np.where(pollist == aipy.miriad.str2pol[p])[0][0]
     omnifile_ave = ''
     if not opts.npz == None:
-        day = int(filename)/86400
-        hdu = fits.open(opts.metafits+filename+'.metafits')
+        day = int(obsid)/86400
+        hdu = fits.open(opts.metafits+obsid+'.metafits')
         pointing = delays[hdu[0].header['DELAYS']]
         omnifile_ave = opts.npz + '_' + str(day) + '_' + str(pointing) + '.' + p + '.npz'
-    omnifile = opts.omnipath + filename.split('/')[-1]+'.'+p+'.omni.npz'
+    omnifile = opts.omnipath + obsid.split('/')[-1]+'.'+p+'.omni.npz'
     print '  Reading and applying:', omnifile, omnifile_ave
     if not opts.npz == None:
-        _,gains,_,_ = mp2cal.wyl.from_npz(omnifile_ave)
-        meta,_,_,xtalk = mp2cal.wyl.from_npz(omnifile)
+        _,gains,_,_ = mp2cal.wyl.load_gains_omni(omnifile_ave)
+        meta,_,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile)
     else:
-        meta,gains,_,xtalk = mp2cal.wyl.from_npz(omnifile) #loads npz outputs from omni_run
+        meta,gains,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile) #loads npz outputs from omni_run
 #********************** if choose to make sols smooth ***************************
     if opts.bpfit:
         print '   bandpass fitting'
