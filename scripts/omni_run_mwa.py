@@ -127,14 +127,16 @@ def omnirun(data_wrap):
     auto = data_wrap['auto']
     mask_arr = data_wrap['mask']
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
-    fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
-    #if os.path.exists(omnisol):
-        #print '    %s exists. Skipping...'%omnisol
-        #return
-    if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
-    print '     loading firstcal file: ', fcfile
-    g0 = mp2cal.wyl.load_gains_fc(fcfile)
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
+    if opts.ftype == 'fhd':
+        print '     setting g0 as units'
+        g0 = {p:{}}
+        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+    else:
+        fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
+        if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
+        print '     loading firstcal file: ', fcfile
+        g0 = mp2cal.wyl.load_gains_fc(fcfile)
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
 
