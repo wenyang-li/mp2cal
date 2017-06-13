@@ -81,11 +81,11 @@ SH = (uv.Ntimes, uv.Nfreqs)
 
 #********************************** load fhd ***************************************************
 if opts.projdegen or opts.cal_all:
-    fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
-    gfhd = {'x':{},'y':{}}
-    for a in range(fhd_cal['cal']['N_TILE'][0]):
-        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
-        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
+fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
+gfhd = {'x':{},'y':{}}
+for a in range(fhd_cal['cal']['N_TILE'][0]):
+    gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
+    gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
 
 if opts.cal_all:
     print "   Loading model"
@@ -99,10 +99,9 @@ ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
 del uv
 for a in ex_ants_find:
     if not a in ex_ants: ex_ants.append(a)
-if opts.projdegen or opts.cal_all:
-    for a in gfhd['x'].keys():
-        if np.isnan(np.mean(gfhd['x'][a])) or np.isnan(np.mean(gfhd['y'][a])):
-            if not a in ex_ants: ex_ants.append(a)
+for a in gfhd['x'].keys():
+    if np.isnan(np.mean(gfhd['x'][a])) or np.isnan(np.mean(gfhd['y'][a])):
+        if not a in ex_ants: ex_ants.append(a)
 if opts.ex_dipole:
     metafits_path = opts.metafits + filename + '.metafits'
     if os.path.exists(metafits_path):
