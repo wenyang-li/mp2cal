@@ -80,7 +80,6 @@ freqs = uv.freq_array[0]
 SH = (uv.Ntimes, uv.Nfreqs)
 
 #********************************** load fhd ***************************************************
-if opts.projdegen or opts.cal_all:
 fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
 gfhd = {'x':{},'y':{}}
 for a in range(fhd_cal['cal']['N_TILE'][0]):
