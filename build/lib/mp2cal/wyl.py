@@ -652,7 +652,7 @@ def quick_load_gains(filename):
     d = np.load(filename)
     gains = {}
     for k in d.keys():
-        if k[0].isdigit:
+        if k[0].isdigit():
             p = k[-1]
             if not gains.has_key(p): gains[p] = {}
             a = int(k[:-1])
