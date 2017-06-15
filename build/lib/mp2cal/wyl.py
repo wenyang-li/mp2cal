@@ -140,16 +140,15 @@ def mwa_bandpass_fit(gains, auto, tile_info, amp_order=2, phs_order=1, fit_refle
 #            gains[p][a] = np.resize(gains[p][a],SH)
 #    return gains
 
-def poly_bandpass_fit(gains,amp_order=4, phs_order=1):
+def poly_bandpass_fit(gains,fit_order=4):
     for p in gains.keys():
         for a in gains[p].keys():
             g = np.copy(gains[p][a])
-            fqs = np.arange(g.size)
-            z2 = np.polyfit(fqs,np.unwrap(np.angle(g)[fqs]),phs_order)
             for ff in range(24):
                 chunk = np.arange(16*ff+1,16*ff+15)
-                z1 = np.polyfit(chunk,np.abs(g)[chunk],amp_order)
-                gains[p][a][chunk] = polyfunc(chunk,z1)*np.exp(1j*polyfunc(chunk,z2))
+                z1 = np.polyfit(chunk,g.real,fit_order)
+                z2 = np.polyfit(chunk,g.imag,fit_order)
+                gains[p][a][chunk] = polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2)
     return gains
 
 
