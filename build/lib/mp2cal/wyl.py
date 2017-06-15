@@ -126,18 +126,29 @@ def mwa_bandpass_fit(gains, auto, tile_info, amp_order=2, phs_order=1, fit_refle
     return gains
 
 
-def poly_bandpass_fit(gains,amp_order=9, phs_order=1):
+#def poly_bandpass_fit(gains,amp_order=12, phs_order=1):
+#    for p in gains.keys():
+#        for a in gains[p].keys():
+#            SH = gains[p][a].shape
+#            g = copy.copy(gains[p][a])
+##            g = np.mean(gains[p][a],axis=0)
+#            fqs = np.arange(g.size)
+#            fuse = np.where(g!=0)[0]
+#            z1 = np.polyfit(fuse,np.abs(g)[fuse],amp_order)
+#            z2 = np.polyfit(fuse,np.unwrap(np.angle(g)[fuse]),phs_order)
+#            gains[p][a] = polyfunc(fqs,z1)*np.exp(1j*polyfunc(fqs,z2))
+#            gains[p][a] = np.resize(gains[p][a],SH)
+#    return gains
+
+def poly_bandpass_fit(gains,amp_order=4, phs_order=1):
     for p in gains.keys():
-        for a in gains[p].keys():
-            SH = gains[p][a].shape
-            g = copy.copy(gains[p][a])
-#            g = np.mean(gains[p][a],axis=0)
-            fqs = np.arange(g.size)
-            fuse = np.where(g!=0)[0]
-            z1 = np.polyfit(fuse,np.abs(g)[fuse],amp_order)
-            z2 = np.polyfit(fuse,np.unwrap(np.angle(g)[fuse]),phs_order)
-            gains[p][a] = polyfunc(fqs,z1)*np.exp(1j*polyfunc(fqs,z2))
-            gains[p][a] = np.resize(gains[p][a],SH)
+        g = np.copy(gains[p][a])
+        fqs = np.arange(g.size)
+        for ff in range(24):
+            chunk = np.arange(16*ff+1,16*ff+15)
+            z1 = np.polyfit(chunk,np.abs(g)[chunk],amp_order)
+            z2 = np.polyfit(chunk,np.unwrap(np.angle(g)[chunk]),phs_order)
+            gains[p][a][chunk] = polyfunc(chunk,z1)*np.exp(1j*polyfunc(chunk,z2))
     return gains
 
 
