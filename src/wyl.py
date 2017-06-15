@@ -142,13 +142,14 @@ def mwa_bandpass_fit(gains, auto, tile_info, amp_order=2, phs_order=1, fit_refle
 
 def poly_bandpass_fit(gains,amp_order=4, phs_order=1):
     for p in gains.keys():
-        g = np.copy(gains[p][a])
-        fqs = np.arange(g.size)
-        for ff in range(24):
-            chunk = np.arange(16*ff+1,16*ff+15)
-            z1 = np.polyfit(chunk,np.abs(g)[chunk],amp_order)
-            z2 = np.polyfit(chunk,np.unwrap(np.angle(g)[chunk]),phs_order)
-            gains[p][a][chunk] = polyfunc(chunk,z1)*np.exp(1j*polyfunc(chunk,z2))
+        for a in gains[p].keys():
+            g = np.copy(gains[p][a])
+            fqs = np.arange(g.size)
+            z2 = np.polyfit(fqs,np.unwrap(np.angle(g)[fqs]),phs_order)
+            for ff in range(24):
+                chunk = np.arange(16*ff+1,16*ff+15)
+                z1 = np.polyfit(chunk,np.abs(g)[chunk],amp_order)
+                gains[p][a][chunk] = polyfunc(chunk,z1)*np.exp(1j*polyfunc(chunk,z2))
     return gains
 
 
@@ -646,3 +647,14 @@ def load_gains_omni(filename):
         for kw in kws:
             for k in [f for f in npz.files if f.startswith(kw)]: meta[k] = npz[k]
     return meta, gains, vismdl, xtalk
+
+def quick_load_gains(filename):
+    d = np.load(filename)
+    gains = {}
+    for k in d.keys():
+        if k[0].isdigit:
+            p = k[-1]
+            if not gains.has_key(p): gains[p] = {}
+            a = int(k[:-1])
+            gains[p][a] = d[k]
+    return gains
