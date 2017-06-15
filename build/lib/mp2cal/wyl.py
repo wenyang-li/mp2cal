@@ -146,8 +146,8 @@ def poly_bandpass_fit(gains,fit_order=4):
             g = np.copy(gains[p][a])
             for ff in range(24):
                 chunk = np.arange(16*ff+1,16*ff+15)
-                z1 = np.polyfit(chunk,g.real,fit_order)
-                z2 = np.polyfit(chunk,g.imag,fit_order)
+                z1 = np.polyfit(chunk,g.real[chunk],fit_order)
+                z2 = np.polyfit(chunk,g.imag[chunk],fit_order)
                 gains[p][a][chunk] = polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2)
     return gains
 
