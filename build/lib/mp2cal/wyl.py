@@ -90,7 +90,8 @@ def polyfunc(x,z):
     return sum
 
 
-def mwa_bandpass_fit(gains, auto, tile_info, amp_order=2, phs_order=1, fit_reflection=True):
+def mwa_bandpass_fit(gains0, auto, tile_info, amp_order=2, phs_order=1, fit_reflection=True):
+    gains = copy.deepcopy(gains0)
     fqs = np.linspace(167.075,197.715,384)
     freq = np.arange(384)
     for p in gains.keys():
@@ -140,7 +141,8 @@ def mwa_bandpass_fit(gains, auto, tile_info, amp_order=2, phs_order=1, fit_refle
 #            gains[p][a] = np.resize(gains[p][a],SH)
 #    return gains
 
-def poly_bandpass_fit(gains,fit_order=4):
+def poly_bandpass_fit(gains0,fit_order=4):
+    gains = copy.deepcopy(gains0)
     for p in gains.keys():
         for a in gains[p].keys():
             g = np.copy(gains[p][a])
@@ -657,3 +659,20 @@ def quick_load_gains(filename):
             a = int(k[:-1])
             gains[p][a] = d[k]
     return gains
+
+def scale_gains(g0, amp_sq=1.,phs_ave=0.):
+    g = copy.deepcopy(g0)
+    for p in g.keys():
+        amp = 0
+        phs = 0
+        n = 0
+        for a in g[p].keys():
+            amp += np.abs(g[p][a])*np.abs(g[p][a])
+            phs += np.angle(g[p][a])
+            n += 1
+        amp /= n
+        phs /= n
+        q = np.sqrt(amp)*np.exp(1j*phs-1j*phs_ave)/amp_sq
+        inds = np.where(amp!=0)
+        for a in g[p].keys(): g[p][a][inds] /= q[inds]
+    return g
