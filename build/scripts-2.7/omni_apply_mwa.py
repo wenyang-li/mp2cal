@@ -1,4 +1,4 @@
-#!/users/wl42/anaconda2/bin/python
+#!//anaconda/bin/python
 # Do not support miriad
 
 import numpy as np
@@ -32,6 +32,8 @@ o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out
              help='path to fhd dir for fhd output visibilities if ftype is fhd.')
 o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
+o.add_option('--scale',dest='scale',default=False,action='store_true',
+             help='Toggle: scale gains before applying to the data. Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 
 delays = {
@@ -128,6 +130,7 @@ for ip,p in enumerate(pols):
                 ex_ants.append(a)
                 continue
             gains[p[0]][a] = gfhd[p[0]][a]
+    if opts.scale: gains = mp2cal.wyl.scale_gains(gains)
     for ii in range(0,Nblts):
         a1 = uvi.ant_1_array[ii]
         a2 = uvi.ant_2_array[ii]
