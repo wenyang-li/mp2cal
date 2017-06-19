@@ -18,16 +18,18 @@ delays = {
 o = optparse.OptionParser()
 o.set_usage('average.py [options]')
 o.set_description(__doc__)
-o.add_option('--scale', dest='scale', default=False, action='store_true', help='scale the gains before average')
+o.add_option('--scale', dest='scale', default=False, action='store_true', help='scale the gains before average,Default=False')
+o.add_option('--ap',dest='ap', default=False, action='store_true', help='average in amplitude and phase, otherwise in real and imag parts, Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 #p = sys.argv[1]
 pols = ['xx','yy']
+meta, vismdl, xtalk = {},{},{}
 for p in pols:
     fn=glob.glob('./*'+p+'.omni.npz')
     g = {}
 #    nfiles = {}
     for f in fn:
-        meta, gains, vismdl, xtalk = mp2cal.wyl.load_gains_omni(f)
+        gains = mp2cal.wyl.quick_load_gains(f)
         if opts.scale: gains = mp2cal.wyl.scale_gains(gains)
         obs = f.split('/')[-1].split('.')[0]
         metafits = '../'+obs+'.metafits'
@@ -48,8 +50,13 @@ for p in pols:
             mask = np.zeros(g[suf][p[0]][a].shape,dtype=bool)
             ind = np.where(g[suf][p[0]][a]==0)
             mask[ind] = True
-            mg = np.ma.masked_array(g[suf][p[0]][a],mask,fill_value=0.0)
-            g[suf][p[0]][a] = (np.mean(mg,axis=0)).data
+            if opts.ap:
+                amp = np.ma.masked_array(np.abs(g[suf][p[0]][a]),mask,fill_value=0.0)
+                phs = np.ma.masked_array(np.angle(g[suf][p[0]][a]),mask,fill_value=0.0)
+                g[suf][p[0]][a] = (np.mean(amp,axis=0)).data*np.exp(1j*(np.mean(phs,axis=0)).data)
+            else:
+                mg = np.ma.masked_array(g[suf][p[0]][a],mask,fill_value=0.0)
+                g[suf][p[0]][a] = (np.mean(mg,axis=0)).data
         outfn = 'omniave_'+str(suf)+'.'+p+'.npz'
         mp2cal.wyl.save_gains_omni(outfn, meta, g[suf], vismdl, xtalk)
 
