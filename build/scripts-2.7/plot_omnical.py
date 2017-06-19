@@ -28,7 +28,8 @@ fm=np.zeros((384),dtype=bool)
 badf = [0,15]
 for nn in range(0,384):
     if nn%16 in badf: fm[nn]=True
-freq=dx['freqs']
+try: freq = dx['freqs']/1e6
+except: freq = np.linspace(167.075,197.715,384)
 SH=fm.shape
 sol={}
 ampmax=1
@@ -78,7 +79,7 @@ for ii in range(0,128):
 ly=[ampmin,(ampmax+ampmin)/2,ampmax]
 lay=['%.2f'%(ampmin),'%.2f'%((ampmax+ampmin)/2),'%.2f'%(ampmax)]
 lx=[37,287]
-lax=[int(round(freq[37]/1e6)),int(round(freq[287]/1e6))]
+lax=[int(round(freq[37])),int(round(freq[287]))]
 fx=np.arange(0,384)
 fig=plt.figure()
 plt.suptitle(obs.split('/')[-1],y=0.99,size=15.0)
