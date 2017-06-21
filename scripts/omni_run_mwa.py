@@ -163,13 +163,10 @@ def omnirun(data_wrap):
 
     #*********************** project degeneracy *********************************
     if opts.projdegen or opts.cal_all:
-        fuse = []
-        for ff in range(384):
-            if not ff%16 in [0,15]: fuse.append(ff)
         print '   Projecting degeneracy'
         ref = min(g2[p].keys()) # pick a reference tile to reduce the effect of phase wrapping, it has to be a tile in east hex
-        ref_exp = np.exp(1j*np.angle(g2[p][ref][:,fuse]/gfhd[p][ref][fuse]))
-        for a in g2[p].keys(): g2[p][a][:,fuse] /= ref_exp
+        ref_exp = np.exp(1j*np.angle(g2[p][ref]*gfhd[p][ref].conj()))
+        for a in g2[p].keys(): g2[p][a] /= ref_exp
         print '   projecting amplitude'
         amppar = mp2cal.wyl.ampproj(g2,gfhd)
         print '   projecting phase'
