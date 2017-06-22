@@ -120,7 +120,7 @@ for ip,p in enumerate(pols):
         gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
     if opts.polyfit:
         print '   polyfitting'
-        if opts.ftype == 'fhd': gains = mp2cal.wyl.amp_bandpass_fit(gains)
+        if opts.intype == 'fhd': gains = mp2cal.wyl.amp_bandpass_fit(gains)
         else: gains = mp2cal.wyl.poly_bandpass_fit(gains)
     ex_ants = []
 #*********************************************************************************************
