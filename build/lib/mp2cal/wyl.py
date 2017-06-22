@@ -154,6 +154,18 @@ def poly_bandpass_fit(gains0,fit_order=4):
     return gains
 
 
+def amp_bandpass_fit(gains0,fit_order=4):
+    gains = copy.deepcopy(gains0)
+    for p in gains.keys():
+        for a in gains[p].keys():
+            g = np.abs(gains[p][a])
+            for ff in range(24):
+                chunk = np.arange(16*ff+1,16*ff+15)
+                z = np.polyfit(chunk,g[chunk],fit_order)
+                gains[p][a][chunk] = polyfunc(chunk,z)
+    return gains
+
+
 def ampproj(g2,fhd):
     amppar = {}
     for p in g2.keys():
