@@ -182,8 +182,9 @@ def omnirun(data_wrap):
                 dx = realpos[a]['top_x']
                 dy = realpos[a]['top_y']
                 proj = np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                if a > 92: proj *= phspar[p]['offset_south']
-                else: proj *= phspar[p]['offset_east']
+                if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
+                else: proj *= np.exp(1j*phspar[p]['offset_east'])
+                proj = np.resize(proj,(1,proj.size))
             else:
                 dx = realpos[a]['top_x']-realpos[ref]['top_x']
                 dy = realpos[a]['top_y']-realpos[ref]['top_y']
