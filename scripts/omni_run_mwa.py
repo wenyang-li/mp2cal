@@ -190,7 +190,7 @@ def omnirun(data_wrap):
                 proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
                 #            if a < 93 and ref > 92: proj *= phspar[p[0]]['offset_east']
                 if a > 92: proj *= phspar[p]['offset_south']
-                degen_proj[a] = proj
+            degen_proj[a] = proj
             g2[p][a] *= proj
         for bl in v2[pp].keys():
             i,j = bl
