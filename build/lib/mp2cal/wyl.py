@@ -262,6 +262,61 @@ def phsproj(omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
     return phspar
 
 
+def plane_fitting(gains,realpos,EastHex,SouthHex):
+    phspar = {}
+    for p in gains.keys():
+        phspar[p] = {}
+        phix,phiy,offset_east,offset_south = [],[],[],[]
+        for f in range(384):
+            if f%16 in [0,15]:
+                phix.append(0)
+                phiy.append(0)
+                offset_east.append(0)
+                offset_south.append(0)
+                continue
+            x1,y1,z1,x2,y2,z2 = [],[],[],[],[],[]
+            M1, M2 = np.zeros((3,3)), np.zeros((3,3))
+            p1, p2 = np.zeros((3,1)), np.zeros((3,1))
+            for a in gains[p].keys():
+                x = realpos[a]['top_x']
+                y = realpos[a]['top_y']
+                if gains[p][a].ndim == 2:
+                    z = np.angle(np.mean(gains[p][a],axis=0)[f])
+                else:
+                    z = np.angle(gains[p][a][f])
+                if a in EastHex:
+                    x1.append(x)
+                    y1.append(y)
+                    z1.append(z)
+                    M1 += np.array([[x*x, x*y, x],
+                                    [x*y, y*y, y],
+                                    [ x ,  y , 1]])
+                    p1 += np.array([[z*x],
+                                    [z*y],
+                                    [ z ]])
+                if a in SouthHex:
+                    x2.append(x)
+                    y2.append(y)
+                    z2.append(z)
+                    M2 += np.array([[x*x, x*y, x],
+                                    [x*y, y*y, y],
+                                    [ x ,  y , 1]])
+                    p2 += np.array([[z*x],
+                                    [z*y],
+                                    [ z ]])
+            C1 = np.linalg.inv(M1).dot(p1)
+            C2 = np.linalg.inv(M2).dot(p2)
+            phix.append(-(C1[0][0]+C2[0][0])/2)
+            phiy.append(-(C1[1][0]+C2[1][0])/2)
+            offset_east.append(-C1[2][0])
+            offset_south.append(-C2[2][0])
+        phspar[p]['phix'] = np.array(phix)
+        phspar[p]['phiy'] = np.array(phiy)
+        phspar[p]['offset_east'] = np.array(offset_east)
+        phspar[p]['offset_south'] = np.array(offset_south)
+    return phspar
+
+
 def cal_var_wgt(v,m,w):
     n = np.ma.masked_array(v-m,mask=w,fill_value=0.+0.j)
     var = np.var(n,axis=0).data
@@ -672,19 +727,19 @@ def quick_load_gains(filename):
             gains[p][a] = d[k]
     return gains
 
-def scale_gains(g0, amp_sq=1.,phs_ave=0.):
+def scale_gains(g0, amp_ave=1.,phs_ave=0.):
     g = copy.deepcopy(g0)
     for p in g.keys():
         amp = 0
         phs = 0
         n = 0
         for a in g[p].keys():
-            amp += np.abs(g[p][a])*np.abs(g[p][a])
+            amp += np.abs(g[p][a])
             phs += np.angle(g[p][a])
             n += 1
         amp /= n
         phs /= n
-        q = np.sqrt(amp)*np.exp(1j*phs-1j*phs_ave)/amp_sq
+        q = amp*np.exp(1j*phs-1j*phs_ave)/amp_ave
         inds = np.where(amp!=0)
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g

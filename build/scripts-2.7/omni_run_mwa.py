@@ -24,7 +24,6 @@ o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path t
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/', type='string', help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='choose to average data over time before calibration or not')
-o.add_option('--cal_all', dest='cal_all', default=False, action='store_true', help='Toggle: Do absolute cal using sky model, need the right fhdpath where model vis locate')
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
@@ -91,12 +90,12 @@ for a in range(fhd_cal['cal']['N_TILE'][0]):
         ind = np.where(gfhd['y'][a]!=0)
         gfhd['y'][a][ind] /= gfhd['y'][a][ind]
 
-if opts.cal_all:
-    print "   Loading model"
-    model_files = glob.glob(opts.fhdpath+'vis_data/'+obsid+'*') + glob.glob(opts.fhdpath+'metadata/'+obsid+'*')
-    uv_model = uvd.UVData()
-    uv_model.read_fhd(model_files, use_model=True)
-    model_wrap = mp2cal.wyl.uv_wrap_omni(uv_model,pols=pols)
+#if opts.cal_all:
+#    print "   Loading model"
+#    model_files = glob.glob(opts.fhdpath+'vis_data/'+obsid+'*') + glob.glob(opts.fhdpath+'metadata/'+obsid+'*')
+#    uv_model = uvd.UVData()
+#    uv_model.read_fhd(model_files, use_model=True)
+#    model_wrap = mp2cal.wyl.uv_wrap_omni(uv_model,pols=pols)
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
@@ -167,23 +166,31 @@ def omnirun(data_wrap):
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #*********************** project degeneracy *********************************
-    if opts.projdegen or opts.cal_all:
+    if opts.projdegen:
         print '   Projecting degeneracy'
-        ref = min(g2[p].keys()) # pick a reference tile to reduce the effect of phase wrapping, it has to be a tile in east hex
-        ref_exp = np.exp(1j*np.angle(g2[p][ref]*gfhd[p][ref].conj()))
-        for a in g2[p].keys(): g2[p][a] /= ref_exp
-        print '   projecting amplitude'
-        amppar = mp2cal.wyl.ampproj(g2,gfhd)
-        print '   projecting phase'
-        phspar = mp2cal.wyl.phsproj(g2,gfhd,realpos,EastHex,SouthHex,ref)
+        if opts.ftype == 'fhd':
+            phspar = mp2cal.wyl.plane_fitting(g2,realpos,EastHex,SouthHex)
+        else:
+            ref = min(g2[p].keys()) # pick a reference tile to reduce the effect of phase wrapping, it has to be a tile in east hex
+            ref_exp = np.exp(1j*np.angle(g2[p][ref]*gfhd[p][ref].conj()))
+            for a in g2[p].keys(): g2[p][a] /= ref_exp
+            amppar = mp2cal.wyl.ampproj(g2,gfhd)
+            phspar = mp2cal.wyl.phsproj(g2,gfhd,realpos,EastHex,SouthHex,ref)
         degen_proj = {}
         for a in g2[p].keys():
-            dx = realpos[a]['top_x']-realpos[ref]['top_x']
-            dy = realpos[a]['top_y']-realpos[ref]['top_y']
-            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-            #            if a < 93 and ref > 92: proj *= phspar[p[0]]['offset_east']
-            if a > 92: proj *= phspar[p]['offset_south']
-            degen_proj[a] = proj
+            if opts.ftype == 'fhd':
+                dx = realpos[a]['top_x']
+                dy = realpos[a]['top_y']
+                proj = np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+                if a > 92: proj *= phspar[p]['offset_south']
+                else: proj *= phspar[p]['offset_east']
+            else:
+                dx = realpos[a]['top_x']-realpos[ref]['top_x']
+                dy = realpos[a]['top_y']-realpos[ref]['top_y']
+                proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+                #            if a < 93 and ref > 92: proj *= phspar[p[0]]['offset_east']
+                if a > 92: proj *= phspar[p]['offset_south']
+                degen_proj[a] = proj
             g2[p][a] *= proj
         for bl in v2[pp].keys():
             i,j = bl
@@ -192,6 +199,7 @@ def omnirun(data_wrap):
             fnot = np.where(degenij==0)
             v2[pp][bl][fuse] /= degenij[fuse]
             v2[pp][bl][fnot] *= 0
+        if opts.ftype == 'fhd': g2 = mp2cal.wyl.scale_gains(g2)
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
@@ -230,12 +238,6 @@ def omnirun(data_wrap):
     m2['lsts'] = t_lst
     m2['freqs'] = freqs
 
-    #************************** absolute cal **********************************************
-    if opts.cal_all:
-        print '     start absolute cal'
-        ref = min(g2[p].keys())
-#        g2 = mp2cal.wyl.absoulte_cal(data,model_wrap,g2,realpos,freqs,ref,ex_ants=ex_ants)
-        g2, v2 = mp2cal.wyl.joint_cal(data,model_wrap,g2,gfhd,v2,realpos,freqs,ex_ants,reds)
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
     mp2cal.wyl.save_gains_omni(omnisol,m2,g2,v2,xtalk)
