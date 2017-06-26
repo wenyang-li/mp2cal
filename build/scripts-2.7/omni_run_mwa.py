@@ -85,6 +85,11 @@ gfhd = {'x':{},'y':{}}
 for a in range(fhd_cal['cal']['N_TILE'][0]):
     gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
     gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a] #+ fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
+    if opts.ftype == 'fhd':
+        ind = np.where(gfhd['x'][a]!=0)
+        gfhd['x'][a][ind] /= gfhd['x'][a][ind]
+        ind = np.where(gfhd['y'][a]!=0)
+        gfhd['y'][a][ind] /= gfhd['y'][a][ind]
 
 if opts.cal_all:
     print "   Loading model"

@@ -107,9 +107,6 @@ for ip,p in enumerate(pols):
     else:
         meta,gains,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile) #loads npz outputs from omni_run
 #********************** if choose to make sols smooth ***************************
-    if opts.intype == 'fhd':
-        for a in gains[p[0]].keys():
-            gains[p[0]][a] = np.abs(gains[p[0]][a])
     if opts.bpfit:
         print '   bandpass fitting'
         exec('from %s import tile_info'% opts.cal)
@@ -123,8 +120,7 @@ for ip,p in enumerate(pols):
         gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
     if opts.polyfit:
         print '   polyfitting'
-        if opts.intype == 'fhd': gains = mp2cal.wyl.amp_bandpass_fit(gains)
-        else: gains = mp2cal.wyl.poly_bandpass_fit(gains)
+        gains = mp2cal.wyl.amp_bandpass_fit(gains)
     ex_ants = []
 #*********************************************************************************************
     if opts.appfhd:
