@@ -199,7 +199,6 @@ def omnirun(data_wrap):
             fnot = np.where(degenij==0)
             v2[pp][bl][fuse] /= degenij[fuse]
             v2[pp][bl][fnot] *= 0
-        if opts.ftype == 'fhd': g2 = mp2cal.wyl.scale_gains(g2)
 
     #************************ Average cal solutions ************************************
     if not opts.tave:

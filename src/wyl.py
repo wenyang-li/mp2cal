@@ -304,12 +304,21 @@ def plane_fitting(gains,realpos,EastHex,SouthHex):
                     p2 += np.array([[z*x],
                                     [z*y],
                                     [ z ]])
+            x1 = np.array(x1)
+            x2 = np.array(x2)
+            y1 = np.array(y1)
+            y2 = np.array(y2)
             C1 = np.linalg.inv(M1).dot(p1)
             C2 = np.linalg.inv(M2).dot(p2)
-            phix.append(-(C1[0][0]+C2[0][0])/2)
-            phiy.append(-(C1[1][0]+C2[1][0])/2)
-            offset_east.append(-C1[2][0])
-            offset_south.append(-C2[2][0])
+            slope_x = (C1[0][0]+C2[0][0])/2
+            slope_y = (C1[1][0]+C2[1][0])/2
+            offset1 = np.mean(z1-slope_x*x1-slope_y*y1)
+            offset2 = np.mean(z2-slope_x*x2-slope_y*y2)
+            #Attention: append negative results here
+            phix.append(-slope_x)
+            phiy.append(-slope_y)
+            offset_east.append(-offset1)
+            offset_south.append(-offset2)
         phspar[p]['phix'] = np.array(phix)
         phspar[p]['phiy'] = np.array(phiy)
         phspar[p]['offset_east'] = np.array(offset_east)
