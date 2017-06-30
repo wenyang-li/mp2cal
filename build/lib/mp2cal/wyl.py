@@ -764,7 +764,7 @@ def fill_flags(data,flag,fit_order = 9):
         for jj in range(8):
             chunk = np.arange(48*jj,48*jj+48)
             ind = np.where(wgt[ii][chunk] > 0)
-            if ind[0].size <= 6: continue
+            if ind[0].size >= 42: continue
             x = fqs[chunk][ind]
             y = data[ii][chunk][ind]
             z1 = np.polyfit(x,y.real,fit_order)
