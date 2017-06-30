@@ -757,7 +757,7 @@ def fill_flags(data,flag,fit_order = 12):
     dout = np.copy(data)
     wgt = np.logical_not(flag)
     SH = data.shape
-    fq = np.arange(SH[1])
+    fqs = np.arange(SH[1])
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
         if time_stack[ii] == 0: continue
