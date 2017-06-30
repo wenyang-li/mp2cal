@@ -752,3 +752,21 @@ def scale_gains(g0, amp_ave=1.,phs_ave=0.):
         inds = np.where(amp!=0)
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g
+
+def fill_flags(data,flag,fit_order = 12):
+    dout = np.copy(data)
+    wgt = np.logical_not(flag)
+    SH = data.shape
+    fq = np.arange(SH[1])
+    time_stack = np.sum(wgt,axis=1)
+    for ii in range(SH[0]):
+        if time_stack[ii] == 0: continue
+        for jj in range(SH[1]):
+            ind = np.where(wgt[ii] > 0)
+            x = fqs[ind]
+            y = data[ii][ind]
+            z1 = np.polyfit(x,y.real,fit_order)
+            z2 = np.polyfit(x,y.imag,fit_order)
+            zeros = np.where(wgt[ii] == 0)
+            dout[ii][zeros] = (polyfunc(x,z1) + 1j*polyfunc(x,z2))[zeros]
+    return dout
