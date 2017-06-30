@@ -761,12 +761,11 @@ def fill_flags(data,flag,fit_order = 12):
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
         if time_stack[ii] == 0: continue
-        for jj in range(SH[1]):
-            ind = np.where(wgt[ii] > 0)
-            x = fqs[ind]
-            y = data[ii][ind]
-            z1 = np.polyfit(x,y.real,fit_order)
-            z2 = np.polyfit(x,y.imag,fit_order)
-            zeros = np.where(wgt[ii] == 0)
-            dout[ii][zeros] = (polyfunc(fqs,z1) + 1j*polyfunc(fqs,z2))[zeros]
+        ind = np.where(wgt[ii] > 0)
+        x = fqs[ind]
+        y = data[ii][ind]
+        z1 = np.polyfit(x,y.real,fit_order)
+        z2 = np.polyfit(x,y.imag,fit_order)
+        zeros = np.where(wgt[ii] == 0)
+        dout[ii][zeros] = (polyfunc(fqs,z1) + 1j*polyfunc(fqs,z2))[zeros]
     return dout
