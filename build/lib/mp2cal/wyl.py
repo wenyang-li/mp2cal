@@ -753,7 +753,7 @@ def scale_gains(g0, amp_ave=1.,phs_ave=0.):
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g
 
-def fill_flags(data,flag,fit_order = 9):
+def fill_flags(data,flag,fit_order = 6):
     dout = np.copy(data)
     wgt = np.logical_not(flag)
     SH = data.shape
@@ -764,7 +764,6 @@ def fill_flags(data,flag,fit_order = 9):
         for jj in range(8):
             chunk = np.arange(48*jj,48*jj+48)
             ind = np.where(wgt[ii][chunk] > 0)
-            if ind[0].size >= 42: continue
             x = fqs[chunk][ind]
             y = data[ii][chunk][ind]
             z1 = np.polyfit(x,y.real,fit_order)
