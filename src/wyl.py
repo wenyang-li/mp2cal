@@ -753,7 +753,7 @@ def scale_gains(g0, amp_ave=1.,phs_ave=0.):
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g
 
-def fill_flags(data,flag,fit_order = 12):
+def fill_flags(data,flag,fit_order = 9):
     dout = np.copy(data)
     wgt = np.logical_not(flag)
     SH = data.shape
@@ -761,11 +761,14 @@ def fill_flags(data,flag,fit_order = 12):
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
         if time_stack[ii] == 0: continue
-        ind = np.where(wgt[ii] > 0)
-        x = fqs[ind]
-        y = data[ii][ind]
-        z1 = np.polyfit(x,y.real,fit_order)
-        z2 = np.polyfit(x,y.imag,fit_order)
-        zeros = np.where(wgt[ii] == 0)
-        dout[ii][zeros] = (polyfunc(fqs,z1) + 1j*polyfunc(fqs,z2))[zeros]
+        for jj in range(8):
+            chunk = np.arange(48*jj,48*jj+48)
+            ind = np.where(wgt[ii][chunk] > 0)
+            if ind[0].size <= 6: continue
+            x = fqs[chunk][ind]
+            y = data[ii][chunk][ind]
+            z1 = np.polyfit(x,y.real,fit_order)
+            z2 = np.polyfit(x,y.imag,fit_order)
+            zeros = np.where(wgt[ii][chunk] == 0)
+            dout[ii][chunk][zeros] = (polyfunc(fqs[chunk],z1) + 1j*polyfunc(fqs[chunk],z2))[zeros]
     return dout
