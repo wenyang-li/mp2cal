@@ -757,17 +757,16 @@ def fill_flags(data,flag,fit_order = 6):
     dout = np.copy(data)
     wgt = np.logical_not(flag)
     SH = data.shape
-    fqs = np.arange(SH[1])
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
         if time_stack[ii] == 0: continue
         for jj in range(8):
             chunk = np.arange(48*jj,48*jj+48)
-            ind = np.where(wgt[ii][chunk] > 0)
-            x = fqs[chunk][ind]
+            ind = np.where(wgt[ii][chunk])
+            x = chunk[ind]
             y = data[ii][chunk][ind]
             z1 = np.polyfit(x,y.real,fit_order)
             z2 = np.polyfit(x,y.imag,fit_order)
-            zeros = np.where(wgt[ii][chunk] == 0)
-            dout[ii][chunk][zeros] = (polyfunc(fqs[chunk],z1) + 1j*polyfunc(fqs[chunk],z2))[zeros]
+            zeros = np.where(wgt[ii][chunk]==False)
+            dout[ii][chunk][zeros] = (polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2))[zeros]
     return dout
