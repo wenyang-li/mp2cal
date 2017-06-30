@@ -768,5 +768,5 @@ def fill_flags(data,flag,fit_order = 12):
             z1 = np.polyfit(x,y.real,fit_order)
             z2 = np.polyfit(x,y.imag,fit_order)
             zeros = np.where(wgt[ii] == 0)
-            dout[ii][zeros] = (polyfunc(x,z1) + 1j*polyfunc(x,z2))[zeros]
+            dout[ii][zeros] = (polyfunc(fqs,z1) + 1j*polyfunc(fqs,z2))[zeros]
     return dout
