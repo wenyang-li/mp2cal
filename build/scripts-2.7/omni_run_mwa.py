@@ -27,7 +27,6 @@ o.add_option('--tave', dest='tave', default=False, action='store_true', help='ch
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
-o.add_option('--fill_flag',dest='fill_flag',default=False, action='store_true', help='Toggle: fill in flagged data by doing polynomial fitting to the band')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -138,9 +137,12 @@ def omnirun(data_wrap):
     print 'flagged baselines: ', flag_bls
     fn = open(obsid + pp + '_flagbls.txt', 'wb')
     for flgbls in flag_bls: fn.write(str(flgbls)+'\n')
-    fn.close()
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
+    reds = info.get_reds()
+    redbls = [bl for red in reds for bl in red]
+    fn.write('N baselines used: '+str(len(redbls))+'\n')
+    fn.close()
     if opts.ftype == 'fhd':
         print '     setting g0 as units'
         g0 = {p:{}}
@@ -159,13 +161,9 @@ def omnirun(data_wrap):
         i,j = bl
         if not (i in info.subsetant and j in info.subsetant): continue
         if bl in ex_bls+flag_bls: continue
-        if opts.fill_flag: dat[bl] = {pp: mp2cal.wyl.fill_flags(data[bl][pp],flag[bl][pp])}
-        else: dat[bl] = {pp: np.copy(data[bl][pp])}
+        dat[bl] = {pp: np.copy(data[bl][pp])}
         if opts.tave:
-            if opts.fill_flag:
-                m = np.ma.masked_array(dat[bl][pp],mask=mask_arr)
-            else:
-                m = np.ma.masked_array(dat[bl][pp],mask=flag[bl][pp])
+            m = np.ma.masked_array(dat[bl][pp],mask=flag[bl][pp])
             m = np.mean(m,axis=0)
             dat[bl] = {pp: np.complex64(m.data.reshape(1,-1))}
         if opts.wgt_cal: dat[bl][pp] /= (auto[i]*auto[j])
