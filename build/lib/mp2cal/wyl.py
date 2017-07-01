@@ -753,16 +753,17 @@ def scale_gains(g0, amp_ave=1.,phs_ave=0.):
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g
 
-def fill_flags(data,flag,fit_order = 6):
+def fill_flags(data,flag,fit_order = 4):
     dout = np.copy(data)
     wgt = np.logical_not(flag)
     SH = data.shape
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
         if time_stack[ii] == 0: continue
-        for jj in range(8):
-            chunk = np.arange(48*jj,48*jj+48)
+        for jj in range(24):
+            chunk = np.arange(16*jj+1,16*jj+15)
             ind = np.where(wgt[ii][chunk])
+            if ind[0].size == 14: continue
             x = chunk[ind]
             y = dout[ii][chunk][ind]
             z1 = np.polyfit(x,y.real,fit_order)
