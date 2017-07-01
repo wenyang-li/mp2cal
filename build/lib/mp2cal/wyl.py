@@ -759,7 +759,7 @@ def fill_flags(data,flag,fit_order = 4):
     SH = data.shape
     time_stack = np.sum(wgt,axis=1)
     for ii in range(SH[0]):
-        if time_stack[ii] == 0: continue
+        if time_stack[ii] <= (SH[1]/2 + 1) : continue
         for jj in range(24):
             chunk = np.arange(16*jj+1,16*jj+15)
             ind = np.where(wgt[ii][chunk])
