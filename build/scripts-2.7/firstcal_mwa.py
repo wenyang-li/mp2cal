@@ -82,9 +82,16 @@ def firstcal(data_wrap):
     p = pp[0]
     outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
     #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
-    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls,ants=ants,ex_ants=ex_ants)
     datpack = data_wrap['data']
     wgtpack = data_wrap['flag']
+    flag_bls = []
+    for bl in wgtpack.keys():
+        wgt_data = np.logical_not(wgtpack[bl][pp])
+        wgt_data = np.sum(wgt_data,axis=0)
+        ind = np.where(wgt_data==0)
+        if ind[0].size > 48: flag_bls.append(bl)
+    print 'flagged baselines: ', flag_bls
+    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
     fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
