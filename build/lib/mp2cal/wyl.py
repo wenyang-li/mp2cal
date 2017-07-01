@@ -764,9 +764,11 @@ def fill_flags(data,flag,fit_order = 6):
             chunk = np.arange(48*jj,48*jj+48)
             ind = np.where(wgt[ii][chunk])
             x = chunk[ind]
-            y = data[ii][chunk][ind]
+            y = dout[ii][chunk][ind]
             z1 = np.polyfit(x,y.real,fit_order)
             z2 = np.polyfit(x,y.imag,fit_order)
-            zeros = np.where(wgt[ii][chunk]==False)
-            dout[ii][chunk][zeros] = (polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2))[zeros]
+            zeros = np.where(flag[ii][chunk])
+            d_temp = dout[ii][chunk]
+            d_temp[zeros] = (polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2))[zeros]
+            dout[ii][chunk] = d_temp
     return dout
