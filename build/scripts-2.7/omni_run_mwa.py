@@ -136,6 +136,9 @@ def omnirun(data_wrap):
         ind = np.where(wgt_data==0)
         if ind[0].size > 48: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
+    fn = open(obsid + pp + '_flagbls.txt', 'wb')
+    for flgbls in flag_bls: fn.write(str(flgbls)+'\n')
+    fn.close()
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     if opts.ftype == 'fhd':
@@ -155,6 +158,7 @@ def omnirun(data_wrap):
     for bl in data.keys():
         i,j = bl
         if not (i in info.subsetant and j in info.subsetant): continue
+        if bl in ex_bls+flag_bls: continue
         if opts.fill_flag: dat[bl] = {pp: mp2cal.wyl.fill_flags(data[bl][pp],flag[bl][pp])}
         else: dat[bl] = {pp: np.copy(data[bl][pp])}
         if opts.tave:
