@@ -135,12 +135,14 @@ def omnirun(data_wrap):
         ind = np.where(wgt_data==0)
         if ind[0].size > 48: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
-    fn = open(obsid + pp + '_flagbls.txt', 'wb')
-    for flgbls in flag_bls: fn.write(str(flgbls)+'\n')
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
+    fn = open(obsid + pp + '_flagbls.txt', 'wb')
+    for flgbls in flag_bls:
+        if flgbls[0] in info.subsetant and flgbls[1] in info.subsetant:
+            fn.write(str(flgbls)+'\n')
     fn.write('N baselines used: '+str(len(redbls))+'\n')
     fn.close()
     if opts.ftype == 'fhd':
