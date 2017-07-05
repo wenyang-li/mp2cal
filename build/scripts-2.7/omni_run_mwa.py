@@ -250,7 +250,7 @@ def omnirun(data_wrap):
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
-    m2['times'] = t_jd
+    m2['jds'] = t_jd
     m2['lsts'] = t_lst
     m2['freqs'] = freqs
 
