@@ -736,19 +736,16 @@ def quick_load_gains(filename):
             gains[p][a] = d[k]
     return gains
 
-def scale_gains(g0, amp_ave=1.,phs_ave=0.):
+def scale_gains(g0, amp_ave=1.):
     g = copy.deepcopy(g0)
     for p in g.keys():
         amp = 0
-        phs = 0
         n = 0
         for a in g[p].keys():
             amp += np.abs(g[p][a])
-            phs += np.angle(g[p][a])
             n += 1
         amp /= n
-        phs /= n
-        q = amp*np.exp(1j*phs-1j*phs_ave)/amp_ave
+        q = amp/amp_ave
         inds = np.where(amp!=0)
         for a in g[p].keys(): g[p][a][inds] /= q[inds]
     return g
