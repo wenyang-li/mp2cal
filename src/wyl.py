@@ -173,12 +173,13 @@ def ampproj(g_omni,g_fhd):
     for p in g2.keys():
         s = 0
         n = 0
+        SH = g2[p][g2[p].keys()[0]].shape
         for a in g2[p].keys():
             if np.isnan(np.mean(fhd[p][a])): continue
             ind = np.where(g2[p][a] == 0)
             fhd[p][a][ind] = 0
             g2[p][a][ind] = 1
-            s += np.abs(fhd[p][a])/np.abs(g2[p][a]))
+            s += (np.resize(np.abs(fhd[p][a]),SH)/np.abs(g2[p][a]))
             n += 1.
         amppar[p] = (s/n)
     return amppar
@@ -262,6 +263,7 @@ def phsproj(g_omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
         phspar[p]['offset_south'] = offset2
     return phspar
 
+
 def degen_project(gomni,gfhd,realpos,EastHex,SouthHex):
     gains = copy.deepcopy(gomni)
     for p in gains.keys():
@@ -277,6 +279,7 @@ def degen_project(gomni,gfhd,realpos,EastHex,SouthHex):
             if a > 92: proj *= phspar[p]['offset_south']
             gains[p][a] *= proj
     return gains
+
 
 def plane_fitting(gains,realpos,EastHex,SouthHex):
     phspar = {}
