@@ -166,14 +166,19 @@ def amp_bandpass_fit(gains0,fit_order=4):
     return gains
 
 
-def ampproj(g2,fhd):
+def ampproj(g_omni,g_fhd):
     amppar = {}
+    g2 = copy.deepcopy(g_omni)
+    fhd = copy.deepcopy(g_fhd)
     for p in g2.keys():
         s = 0
         n = 0
         SH = g2[p][g2[p].keys()[0]].shape
         for a in g2[p].keys():
             if np.isnan(np.mean(fhd[p][a])): continue
+            ind = np.where(g2[p][a] == 0)
+            fhd[ind] = 0
+            g2[ind] = 1
             s += (np.resize(np.abs(fhd[p][a]),SH)/np.abs(g2[p][a]))
             n += 1.
         amppar[p] = (s/n)
