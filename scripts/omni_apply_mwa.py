@@ -118,7 +118,7 @@ for ip,p in enumerate(pols):
             gains = mp2cal.wyl.quick_load_gains(omnifile)
 #********************** if project degeneracy ***********************************
     if opts.projdegen:
-        exec('from %s import tile_info'% opts.cal)
+        exec('from %s import *'% opts.cal)
         ref = min(gains[p[0]].keys())
         ref_exp = np.exp(1j*np.angle(gains[p[0]][ref]*gfhd[p[0]][ref].conj()))
         for a in gains[p[0]].keys(): gains[p[0]][a] /= ref_exp
