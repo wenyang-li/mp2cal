@@ -1,7 +1,6 @@
 import numpy as np
-import sys, glob, mp2cal, optparse, gc
+import sys, glob, mp2cal, optparse
 from astropy.io import fits
-from scipy.io.idl import readsav
 delays = {
 '0,5,10,15,1,6,11,16,2,7,12,17,3,8,13,18':-5,
 '0,4,8,12,1,5,9,13,2,6,10,14,3,7,11,15':-4,
@@ -19,7 +18,7 @@ delays = {
 o = optparse.OptionParser()
 o.set_usage('average.py [options]')
 o.set_description(__doc__)
-o.add_option('--fhd_path', dest='fhd_path', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/calibration/', help='path to fhd cal solutions')
+o.add_option('--fhd_path', dest='fhd_path', default='/users/wl42/data/wl42/Nov2016EoR0/fhd_sol/', help='path to fhd cal solutions')
 o.add_option('--dat_path', dest='dat_path', default='/users/wl42/data/wl42/Nov2016EoR0/', help='path to fhd cal solutions')
 o.add_option('--ap',dest='ap', default=False, action='store_true', help='average in amplitude and phase, otherwise in real and imag parts, Default=False')
 opts,args = o.parse_args(sys.argv[1:])
@@ -29,22 +28,23 @@ meta, vismdl, xtalk = {},{},{}
 fuse = []
 for ii in range(384):
     if not ii%16 in [0,15]: fuse.append(ii)
-fn=glob.glob(opts.fhd_path+'*_cal.sav')
+fn=glob.glob(opts.fhd_path+'*.xx.fhd.npy')
 fn.sort()
+obsids = []
+for f in fn:
+    obsids.append(f.split('/')[-1].split('.')[0])
 g = {}
 #    nfiles = {}
-for f in fn:
-    cals = readsav(f,python_dict=True)
-    obs = f.split('/')[-1].split('_')[0]
+for obs in obsids:
     metafits = opts.dat_path+obs+'.metafits'
     hdu = fits.open(metafits)
     day = int(obs)/86400
     suffix = str(day)+'_'+str(delays[hdu[0].header['DELAYS']])
     if not g.has_key(suffix): g[suffix]={'x':[],'y':[]}
-    g[suffix]['x'].append(cals['cal']['GAIN'][0][0])
-    g[suffix]['y'].append(cals['cal']['GAIN'][0][1])
-    del cals
-    gc.collect()
+    solx = np.load(opts.fhd_path+obs+'.xx.fhd.npy')
+    soly = np.load(opts.fhd_path+obs+'.yy.fhd.npy')
+    g[suffix]['x'].append(solx)
+    g[suffix]['y'].append(soly)
 
 for suf in g.keys():
     g[suffix]['x'] = np.array(g[suffix]['x'])
