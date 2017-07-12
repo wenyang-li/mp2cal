@@ -46,7 +46,7 @@ for obs in obsids:
     g[suffix]['x'].append(solx)
     g[suffix]['y'].append(soly)
 
-for suf in g.keys():
+for suffix in g.keys():
     g[suffix]['x'] = np.array(g[suffix]['x'])
     g[suffix]['y'] = np.array(g[suffix]['y'])
     if opts.ap:
