@@ -24,6 +24,9 @@ opts,args = o.parse_args(sys.argv[1:])
 #p = sys.argv[1]
 pols = ['xx','yy']
 meta, vismdl, xtalk = {},{},{}
+fuse = []
+for ii in range(384):
+    if not ii%16 in [0,15]: fuse.append(ii)
 for p in pols:
     fn=glob.glob('./*'+p+'.omni.npz')
     g = {}
@@ -52,7 +55,9 @@ for p in pols:
             mask[ind] = True
             if opts.ap:
                 amp = np.ma.masked_array(np.abs(g[suf][p[0]][a]),mask,fill_value=0.0)
-                phs = np.ma.masked_array(np.angle(g[suf][p[0]][a]),mask,fill_value=0.0)
+                gphs = np.angle(g[suf][p[0]][a])
+                gphs[fuse] = np.unwrap(gphs[fuse])
+                phs = np.ma.masked_array(gphs,mask,fill_value=0.0)
                 g[suf][p[0]][a] = (np.mean(amp,axis=0)).data*np.exp(1j*(np.mean(phs,axis=0)).data)
             else:
                 mg = np.ma.masked_array(g[suf][p[0]][a],mask,fill_value=0.0)

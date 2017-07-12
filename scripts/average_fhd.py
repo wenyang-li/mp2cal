@@ -21,11 +21,14 @@ o.set_usage('average.py [options]')
 o.set_description(__doc__)
 o.add_option('--fhd_path', dest='fhd_path', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/calibration/', help='path to fhd cal solutions')
 o.add_option('--dat_path', dest='fhd_path', default='/users/wl42/data/wl42/Nov2016EoR0/', help='path to fhd cal solutions')
+o.add_option('--ap',dest='ap', default=False, action='store_true', help='average in amplitude and phase, otherwise in real and imag parts, Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 #p = sys.argv[1]
 pols = ['xx','yy']
 meta, vismdl, xtalk = {},{},{}
-
+fuse = []
+for ii in range(384):
+    if not ii%16 in [0,15]: fuse.append(ii)
 fn=glob.glob(opts.fhd_path+'*_cal.sav')
 fn.sort()
 g = {}
@@ -40,12 +43,27 @@ for f in fn:
     if not g.has_key(suffix): g[suffix]={'x':[],'y':[]}
     g[suffix]['x'].append(cals['cal']['GAIN'][0][0])
     g[suffix]['y'].append(cals['cal']['GAIN'][0][1])
+    del cals
 
 for suf in g.keys():
     g[suffix]['x'] = np.array(g[suffix]['x'])
     g[suffix]['y'] = np.array(g[suffix]['y'])
-    g[suffix]['x'] = np.nanmean(g[suffix]['x'],axis=0)
-    g[suffix]['y'] = np.nanmean(g[suffix]['y'],axis=0)
+    if opts.ap:
+        ampx = np.abs(g[suffix]['x'])
+        ampy = np.abs(g[suffix]['y'])
+        phsx = np.zeros(g[suffix]['x'].shape)
+        phsy = np.zeros(g[suffix]['y'].shape)
+        phsx[:,:,fuse] = np.unwrap(np.angle(g[suffix]['x'][:,:,fuse]))
+        phsy[:,:,fuse] = np.unwrap(np.angle(g[suffix]['y'][:,:,fuse]))
+        ampx = np.nanmean(ampx,axis=0)
+        ampy = np.nanmean(ampy,axis=0)
+        phsx = np.nanmean(phsx,axis=0)
+        phsy = np.nanmean(phsy,axis=0)
+        g[suffix]['x'] = ampx*np.exp(1j*phsx)
+        g[suffix]['y'] = ampy*np.exp(1j*phsy)
+    else:
+        g[suffix]['x'] = np.nanmean(g[suffix]['x'],axis=0)
+        g[suffix]['y'] = np.nanmean(g[suffix]['y'],axis=0)
     gx = {'x': {}}
     gy = {'y': {}}
     for a in range(128):
