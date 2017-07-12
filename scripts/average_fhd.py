@@ -70,8 +70,8 @@ for suffix in g.keys():
     for a in range(128):
         gx['x'][a] = g[suffix]['x'][a]
         gy['y'][a] = g[suffix]['y'][a]
-    outfnx = 'fhdave_'+str(suf)+'.xx.npz'
-    outfny = 'fhdave_'+str(suf)+'.yy.npz'
+    outfnx = 'fhdave_'+str(suffix)+'.xx.npz'
+    outfny = 'fhdave_'+str(suffix)+'.yy.npz'
     mp2cal.wyl.save_gains_omni(outfnx, meta, gx, vismdl, xtalk)
     mp2cal.wyl.save_gains_omni(outfny, meta, gy, vismdl, xtalk)
 
