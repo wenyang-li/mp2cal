@@ -129,7 +129,6 @@ for ip,p in enumerate(pols):
             dy = realpos[a]['top_y']-realpos[ref]['top_y']
             proj = amppar[p[0]]*np.exp(1j*(dx*phspar[p[0]]['phix']+dy*phspar[p[0]]['phiy']))
             if a > 92: proj *= phspar[p[0]]['offset_south']
-            else: proj *= phspar[p[0]]['offset_east']
             gains[p[0]][a] *= proj
 #********************** if choose to make sols smooth ***************************
     if opts.bpfit:

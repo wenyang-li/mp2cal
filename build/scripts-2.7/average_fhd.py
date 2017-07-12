@@ -20,7 +20,7 @@ o = optparse.OptionParser()
 o.set_usage('average.py [options]')
 o.set_description(__doc__)
 o.add_option('--fhd_path', dest='fhd_path', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/calibration/', help='path to fhd cal solutions')
-o.add_option('--dat_path', dest='fhd_path', default='/users/wl42/data/wl42/Nov2016EoR0/', help='path to fhd cal solutions')
+o.add_option('--dat_path', dest='dat_path', default='/users/wl42/data/wl42/Nov2016EoR0/', help='path to fhd cal solutions')
 o.add_option('--ap',dest='ap', default=False, action='store_true', help='average in amplitude and phase, otherwise in real and imag parts, Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 #p = sys.argv[1]
