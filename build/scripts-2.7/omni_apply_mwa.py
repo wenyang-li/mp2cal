@@ -34,6 +34,8 @@ o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
 o.add_option('--scale',dest='scale',default=False,action='store_true',
              help='Toggle: scale gains before applying to the data. Default=False')
+o.add_option('--projdegen', dest='projdegen', default=False, action='store_true',
+             help='Toggle: Project degen to FHD solutions')
 opts,args = o.parse_args(sys.argv[1:])
 
 delays = {
@@ -83,7 +85,7 @@ Nbls = uvi.Nbls
 pollist = uvi.polarization_array
 freqs = uvi.freq_array[0]
 
-if opts.appfhd:
+if opts.appfhd or opts.projdegen:
     fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
     gfhd = {'x':{},'y':{}}
     for a in range(fhd_cal['cal']['N_TILE'][0]):
@@ -114,6 +116,21 @@ for ip,p in enumerate(pols):
         else:
             xtalk = {}
             gains = mp2cal.wyl.quick_load_gains(omnifile)
+#********************** if project degeneracy ***********************************
+    if opts.projdegen:
+        exec('from %s import tile_info'% opts.cal)
+        ref = min(gains[p[0]].keys())
+        ref_exp = np.exp(1j*np.angle(gains[p[0]][ref]*gfhd[p[0]][ref].conj()))
+        for a in gains[p[0]].keys(): gains[p[0]][a] /= ref_exp
+        amppar = mp2cal.wyl.ampproj(gains,gfhd)
+        phspar = mp2cal.wyl.phsproj(gains,gfhd,realpos,EastHex,SouthHex,ref)
+        for a in gains[p[0]].keys():
+            dx = realpos[a]['top_x']-realpos[ref]['top_x']
+            dy = realpos[a]['top_y']-realpos[ref]['top_y']
+            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+            if a > 92: proj *= phspar[p]['offset_south']
+            else: proj *= phspar[p]['offset_east']
+            gains[p[0]][a] *= proj
 #********************** if choose to make sols smooth ***************************
     if opts.bpfit:
         print '   bandpass fitting'

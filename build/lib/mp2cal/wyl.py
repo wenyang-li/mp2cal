@@ -180,7 +180,8 @@ def ampproj(g2,fhd):
     return amppar
 
 
-def phsproj(omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
+def phsproj(g_omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
+    omni = copy.deepcopy(g_omni)
     phspar = {}
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
@@ -195,70 +196,66 @@ def phsproj(omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
         ax2.append(SouthHex[:,jj][ind_south])
     for p in omni.keys():
         phspar[p] = {}
-        phspar[p]['phix'],phspar[p]['phiy'],phspar[p]['offset_east'],phspar[p]['offset_south'] = [],[],[],[]
         SH = omni[p][ref_antenna].shape
-        for tt in range(0,SH[0]):
-            slp1 = []
-            slp2 = []
-            for ff in range(0,SH[1]):
-                if ff%16 in [0,15]:
-                    slp1.append(0)
-                    slp2.append(0)
-                    continue
+        if len(SH) == 2:
+            for a in omni[p].keys(): omni[p][a] = np.mean(omni[p][a],axis=0)
+        slp1 = []
+        slp2 = []
+        for ff in range(0,384):
+            if ff%16 in [0,15]:
+                slp1.append(0)
+                slp2.append(0)
+                continue
             #***** East-West direction fit *****#
-                slope = []
-                for inds in ax1:
-                    x,tau = [],[]
-                    for ii in inds:
-                        if not ii in omni[p].keys(): continue
-                        if np.isnan(fhd[p][ii][ff]): continue
-                        x.append(realpos[ii]['top_x'])
-                        tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][tt][ff]))
-                    tau = np.unwrap(tau)
-                    if tau.size < 3: continue
-                    z = np.polyfit(x,tau,1)
-                    slope.append(z[0])
-                slope = np.array(slope)
-                slp1.append(np.median(slope)) # slope could be steep, choosing median would be more likely to avoid phase wrapping
+            slope = []
+            for inds in ax1:
+                x,tau = [],[]
+                for ii in inds:
+                    if not ii in omni[p].keys(): continue
+                    if np.isnan(fhd[p][ii][ff]): continue
+                    x.append(realpos[ii]['top_x'])
+                    tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
+                tau = np.unwrap(tau)
+                if tau.size < 3: continue
+                z = np.polyfit(x,tau,1)
+                slope.append(z[0])
+            slope = np.array(slope)
+            slp1.append(np.median(slope)) # slope could be steep, choosing median would be more likely to avoid phase wrapping
             #***** 60 deg East-South direction fit *****#
-                slope = []
-                for inds in ax2:
-                    x,tau = [],[]
-                    for ii in inds:
-                        if not ii in omni[p].keys(): continue
-                        if np.isnan(fhd[p][ii][ff]): continue
-                        x.append(realpos[ii]['top_x'])
-                        tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][tt][ff]))
-                    tau = np.unwrap(tau)
-                    if tau.size < 3: continue
-                    z = np.polyfit(x,tau,1)
-                    slope.append(z[0])
-                slope = np.array(slope)
-                slp2.append(np.median(slope))
+            slope = []
+            for inds in ax2:
+                x,tau = [],[]
+                for ii in inds:
+                    if not ii in omni[p].keys(): continue
+                    if np.isnan(fhd[p][ii][ff]): continue
+                    x.append(realpos[ii]['top_x'])
+                    tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
+                tau = np.unwrap(tau)
+                if tau.size < 3: continue
+                z = np.polyfit(x,tau,1)
+                slope.append(z[0])
+            slope = np.array(slope)
+            slp2.append(np.median(slope))
         #****** calculate offset term ************#
-            offset1, offset2 = [],[]
-            phix = np.array(slp1)
-            phiy = (np.array(slp2) - phix)/np.sqrt(3)
-            for a in omni[p].keys():
-                if np.isnan(np.mean(fhd[p][a])): continue
-                dx = realpos[a]['top_x'] - realpos[ref_antenna]['top_x']
-                dy = realpos[a]['top_y'] - realpos[ref_antenna]['top_y']
-                proj = np.exp(1j*(dx*phix+dy*phiy))
-                offset = np.exp(1j*np.angle(fhd[p][a]/omni[p][a][tt]/proj))
-                if a < 93: offset1.append(offset)
-                else: offset2.append(offset)
-            offset1 = np.array(offset1)
-            offset2 = np.array(offset2)
-            offset1 = np.mean(offset1,axis=0)
-            offset2 = np.mean(offset2,axis=0)
-            phspar[p]['phix'].append(phix)
-            phspar[p]['phiy'].append(phiy)
-            phspar[p]['offset_east'].append(offset1)
-            phspar[p]['offset_south'].append(offset2)
-        phspar[p]['phix'] = np.array(phspar[p]['phix'])
-        phspar[p]['phiy'] = np.array(phspar[p]['phiy'])
-        phspar[p]['offset_east'] = np.array(phspar[p]['offset_east'])
-        phspar[p]['offset_south'] = np.array(phspar[p]['offset_south'])
+        offset1, offset2 = [],[]
+        phix = np.array(slp1)
+        phiy = (np.array(slp2) - phix)/np.sqrt(3)
+        for a in omni[p].keys():
+            if np.isnan(np.mean(fhd[p][a])): continue
+            dx = realpos[a]['top_x'] - realpos[ref_antenna]['top_x']
+            dy = realpos[a]['top_y'] - realpos[ref_antenna]['top_y']
+            proj = np.exp(1j*(dx*phix+dy*phiy))
+            offset = np.exp(1j*np.angle(fhd[p][a]*omni[p][a].conj()/proj))
+            if a < 93: offset1.append(offset)
+            else: offset2.append(offset)
+        offset1 = np.array(offset1)
+        offset2 = np.array(offset2)
+        offset1 = np.mean(offset1,axis=0)
+        offset2 = np.mean(offset2,axis=0)
+        phspar[p]['phix'] = phix
+        phspar[p]['phiy'] = phiy
+        phspar[p]['offset_east'] = offset1
+        phspar[p]['offset_south'] = offset2
     return phspar
 
 
