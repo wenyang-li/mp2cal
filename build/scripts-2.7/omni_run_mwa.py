@@ -179,6 +179,7 @@ def omnirun(data_wrap):
     m2,g2,v2=heracal.omni.run_omnical(dat,info,gains0=g0,maxiter=150)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
+        g2 = mp2cal.wyl.scale_gains(g2)
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #*********************** project degeneracy *********************************
