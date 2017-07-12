@@ -56,7 +56,7 @@ for p in pols:
             if opts.ap:
                 amp = np.ma.masked_array(np.abs(g[suf][p[0]][a]),mask,fill_value=0.0)
                 gphs = np.angle(g[suf][p[0]][a])
-                gphs[fuse] = np.unwrap(gphs[fuse])
+                gphs[:,fuse] = np.unwrap(gphs[:,fuse])
                 phs = np.ma.masked_array(gphs,mask,fill_value=0.0)
                 g[suf][p[0]][a] = (np.mean(amp,axis=0)).data*np.exp(1j*(np.mean(phs,axis=0)).data)
             else:
