@@ -177,8 +177,8 @@ def ampproj(g_omni,g_fhd):
         for a in g2[p].keys():
             if np.isnan(np.mean(fhd[p][a])): continue
             ind = np.where(g2[p][a] == 0)
-            fhd[ind] = 0
-            g2[ind] = 1
+            fhd[p][a][ind] = 0
+            g2[p][a][ind] = 1
             s += (np.resize(np.abs(fhd[p][a]),SH)/np.abs(g2[p][a]))
             n += 1.
         amppar[p] = (s/n)
