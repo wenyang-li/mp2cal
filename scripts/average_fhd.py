@@ -1,5 +1,5 @@
 import numpy as np
-import sys, glob, mp2cal, optparse
+import sys, glob, mp2cal, optparse, gc
 from astropy.io import fits
 from scipy.io.idl import readsav
 delays = {
@@ -44,6 +44,7 @@ for f in fn:
     g[suffix]['x'].append(cals['cal']['GAIN'][0][0])
     g[suffix]['y'].append(cals['cal']['GAIN'][0][1])
     del cals
+    gc.collect()
 
 for suf in g.keys():
     g[suffix]['x'] = np.array(g[suffix]['x'])
