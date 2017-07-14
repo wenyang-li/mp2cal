@@ -822,7 +822,7 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
             elif r in reds[1]:
                 phi[i] = -np.angle(data[r][pol]) + phi[j] + gamma1
         else: redbls.append(r)
-    if len(phi.keys()) != subsetant: raise IOError('Missing antennas')
+    if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():
         g0[p][a] = np.exp(1j*phi[a])
     return g0

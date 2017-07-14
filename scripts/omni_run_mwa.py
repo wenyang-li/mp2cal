@@ -154,8 +154,6 @@ def omnirun(data_wrap):
         if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
         print '     loading firstcal file: ', fcfile
         g0 = mp2cal.wyl.load_gains_fc(fcfile)
-    reds = info.get_reds()
-    redbls = [bl for red in reds for bl in red]
 
     #*********************** organize data *************************************
     dat,wgts,xtalk = {}, {}, {}
