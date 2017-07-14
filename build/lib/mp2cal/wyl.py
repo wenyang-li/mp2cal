@@ -5,6 +5,18 @@ import copy
 import heracal.omni as omni
 
 
+def unwrap(arr):
+    brr = np.unwrap(arr)
+    crr = []
+    for ii in range(1,brr.size): crr.append(brr[ii]-brr[ii-1])
+    crr = np.unwrap(crr)
+    nn = np.round(crr[0]/(2*np.pi))
+    crr -= (nn*2.*np.pi)
+    drr = np.zeros(brr.shape)+brr[0]
+    for ii in range(crr.size): drr[ii+1] += np.sum(crr[:ii+1])
+    return drr
+
+
 def output_mask_array(flag_array):
     invf = 1 - flag_array
     sf = np.sum((np.sum(invf,axis=0)),axis=0).astype(bool)
@@ -220,7 +232,7 @@ def phsproj(g_omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
                     if np.isnan(fhd[p][ii][ff]): continue
                     x.append(realpos[ii]['top_x'])
                     tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
-                tau = np.unwrap(tau)
+                tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
@@ -235,7 +247,7 @@ def phsproj(g_omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
                     if np.isnan(fhd[p][ii][ff]): continue
                     x.append(realpos[ii]['top_x'])
                     tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
-                tau = np.unwrap(tau)
+                tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
@@ -825,10 +837,6 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():
         g0[p][a] = np.exp(-1j*phi[a])
-    return g0
-
-
-
-
+    return g0, fixants
 
 
