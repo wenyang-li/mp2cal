@@ -789,3 +789,46 @@ def fill_flags(data,flag,fit_order = 4):
             d_temp[zeros] = (polyfunc(chunk,z1) + 1j*polyfunc(chunk,z2))[zeros]
             dout[ii][chunk] = d_temp
     return dout
+
+
+def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time axis
+    p = pol[0]
+    g0 = {p: {}}
+    phi = {}
+    reds = info.get_reds()
+    reds[0].sort()
+    reds[1].sort()
+    redbls = reds[0] + reds[1]
+    redbls.sort()
+    gamma0 = np.angle(data[reds[0][0]][pol])
+    gamma1 = np.angle(data[reds[1][0]][pol])
+    SH = gamma0.shape
+    subsetant = info.subsetant
+    fixants = np.unique(reds[0][0]+reds[1][0]+(min(subsetant[np.where(subsetant>92)]),))
+    for a in fixants: phi[a] = np.zeros(SH)
+    while len(redbls) > 0:
+        i,j = redbls[0]
+        r = (i,j)
+        redbls.remove(r)
+        if phi.has_key(i) and phi.has_key(j): continue
+        elif phi.has_key(i) and not phi.has_key(j):
+            if r in reds[0]:
+                phi[j] = np.angle(data[r][pol]) + phi[i] - gamma0
+            elif r in reds[1]:
+                phi[j] = np.angle(data[r][pol]) + phi[i] - gamma1
+        elif phi.has_key(j) and not phi.has_key(i):
+            if r in reds[0]:
+                phi[i] = -np.angle(data[r][pol]) + phi[j] + gamma0
+            elif r in reds[1]:
+                phi[i] = -np.angle(data[r][pol]) + phi[j] + gamma1
+        else: redbls.append(r)
+    if len(phi.keys()) != subsetant: raise IOError('Missing antennas')
+    for a in phi.keys():
+        g0[p][a] = np.exp(1j*phi[a])
+    return g0
+
+
+
+
+
+
