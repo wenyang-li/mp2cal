@@ -837,6 +837,6 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():
         g0[p][a] = np.exp(-1j*phi[a])
-    return g0, fixants
+    return g0
 
 
