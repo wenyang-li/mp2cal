@@ -202,11 +202,13 @@ def phsproj(g_omni,fhd,realpos,EastHex,SouthHex,ref_antenna):
     phspar = {}
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
+        if ii == 3: continue
         ind_east = np.where(EastHex[ii]>0)[0]
         ind_south = np.where(SouthHex[ii]>0)[0]
         ax1.append(EastHex[ii][ind_east])
         ax1.append(SouthHex[ii][ind_south])
     for jj in range(EastHex.shape[1]):
+        if jj == 3: continue
         ind_east = np.where(EastHex[:,jj]>0)[0]
         ind_south = np.where(SouthHex[:,jj]>0)[0]
         ax2.append(EastHex[:,jj][ind_east])
