@@ -800,8 +800,8 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     reds[1].sort()
     redbls = reds[0] + reds[1]
     redbls.sort()
-    gamma0 = np.angle(data[reds[0][0]][pol])
-    gamma1 = np.angle(data[reds[1][0]][pol])
+    gamma0 = data[reds[0][0]][pol]
+    gamma1 = data[reds[1][0]][pol]
     SH = gamma0.shape
     subsetant = info.subsetant
     fixants = np.unique(reds[0][0]+reds[1][0]+(min(subsetant[np.where(subsetant>92)]),))
@@ -813,18 +813,18 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
         if phi.has_key(i) and phi.has_key(j): continue
         elif phi.has_key(i) and not phi.has_key(j):
             if r in reds[0]:
-                phi[j] = np.angle(data[r][pol]) + phi[i] - gamma0
+                phi[j] = np.angle(data[r][pol]*np.exp(1j*phi[i])*gamma0.conj())
             elif r in reds[1]:
-                phi[j] = np.angle(data[r][pol]) + phi[i] - gamma1
+                phi[j] = np.angle(data[r][pol]*np.exp(1j*phi[i])*gamma1.conj())
         elif phi.has_key(j) and not phi.has_key(i):
             if r in reds[0]:
-                phi[i] = -np.angle(data[r][pol]) + phi[j] + gamma0
+                phi[i] = np.angle(data[r][pol].conj()*np.exp(1j*phi[j])*gamma0)
             elif r in reds[1]:
-                phi[i] = -np.angle(data[r][pol]) + phi[j] + gamma1
+                phi[i] = np.angle(data[r][pol].conj()*np.exp(1j*phi[j])*gamma1)
         else: redbls.append(r)
     if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():
-        g0[p][a] = np.exp(1j*phi[a])
+        g0[p][a] = np.exp(-1j*phi[a])
     return g0
 
 
