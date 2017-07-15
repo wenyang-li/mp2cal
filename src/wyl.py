@@ -848,9 +848,9 @@ def degen_removeal(g2,realpos):
     for a in g2[g2.keys()[0]].keys():
         x = realpos[a]['top_x']
         y = realpos[a]['top_y']
-        M += np.array([x*x, x*y, x],
-                      [x*y, y*y, y],
-                      [ x ,  y , 1]])
+        M += np.array([[x*x, x*y, x],
+                       [x*y, y*y, y],
+                       [ x ,  y , 1]])
     invM = np.linalg.inv(M)
     for p in g3.keys():
         phis = np.zeros((3,384))
