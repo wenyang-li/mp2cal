@@ -814,11 +814,15 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     reds[1].sort()
     redbls = reds[0] + reds[1]
     redbls.sort()
-    gamma0 = data[reds[0][0]][pol]
-    gamma1 = data[reds[1][0]][pol]
+    gamma0 = 1.
+    gamma1 = 1.
+    for bl in reds[0]:
+        gamma0 *= np.exp(1j*np.angle(data[bl][pol]))
+    for bl in reds[1]:
+        gamma1 *= np.exp(1j*np.angle(data[bl][pol]))
     SH = gamma0.shape
     subsetant = info.subsetant
-    fixants = np.unique(reds[0][0]+reds[1][0]+(min(subsetant[np.where(subsetant>92)]),))
+    fixants = (min(subsetant), min(subsetant[np.where(subsetant>92)]))
     for a in fixants: phi[a] = np.zeros(SH)
     while len(redbls) > 0:
         i,j = redbls[0]
