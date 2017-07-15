@@ -814,12 +814,8 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     reds[1].sort()
     redbls = reds[0] + reds[1]
     redbls.sort()
-    gamma0 = 1.
-    gamma1 = 1.
-    for bl in reds[0]:
-        gamma0 *= np.exp(1j*np.angle(data[bl][pol]))
-    for bl in reds[1]:
-        gamma1 *= np.exp(1j*np.angle(data[bl][pol]))
+    gamma0 = data[reds[0][0]][pol]
+    gamma1 = data[reds[1][0]][pol]
     SH = gamma0.shape
     subsetant = info.subsetant
     fixants = (min(subsetant), min(subsetant[np.where(subsetant>92)]))
@@ -845,4 +841,28 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
         g0[p][a] = np.exp(-1j*phi[a])
     return g0
 
+
+def degen_removeal(g2,realpos):
+    g3 = copy.deepcopy(g2)
+    M = np.zeros(3,3)
+    for a in g2[g2.keys()[0]].keys():
+        x = realpos[a]['top_x']
+        y = realpos[a]['top_y']
+        M += np.array([x*x, x*y, x],
+                      [x*y, y*y, y],
+                      [ x ,  y , 1]])
+    invM = np.linalg.inv(M)
+    for p in g3.keys():
+        phis = np.zeros((3,384))
+        for a in g3[p].keys():
+            phs = np.angle(np.resize(g3[p][a],(g3[p][a].size,)))
+            phis[0] += realpos[a]['top_x']*phs
+            phis[1] += realpos[a]['top_y']*phs
+            phis[2] += phs
+        degen_par = invM.dot(phis)
+        for a in g3[p].keys():
+            degen_phs = realpos[a]['top_x']*degen_par[0]+realpos[a]['top_y']*degen_par[1]+degen_par[2]
+            g3[p][a] *= degen_phs
+    g3 = scale_gains(g3)
+    return g3
 
