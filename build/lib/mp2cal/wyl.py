@@ -10,7 +10,7 @@ def unwrap(arr):
     crr = []
     for ii in range(1,brr.size): crr.append(brr[ii]-brr[ii-1])
     crr = np.unwrap(crr)
-    nn = np.round(crr[0]/(2*np.pi))
+    nn = np.floor(crr[0]/(2*np.pi))
     crr -= (nn*2.*np.pi)
     drr = np.zeros(brr.shape)+brr[0]
     for ii in range(crr.size): drr[ii+1] += np.sum(crr[:ii+1])
