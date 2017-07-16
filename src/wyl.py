@@ -842,7 +842,7 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     return g0
 
 
-def remove_degen_hex(gomni, v2, realpos):
+def remove_degen_hex(gomni, realpos):
     g2 = copy.deepcopy(gomni)
     for p in g2.keys():
         ref_exp1 = np.exp(-1j*np.angle(g2[p][57]))
@@ -851,17 +851,17 @@ def remove_degen_hex(gomni, v2, realpos):
             if a < 93: g2[p][a] *= ref_exp1
             else: g2[p][a] *= ref_exp2
         pp = p+p
-        gamma0 = v2[pp][(57,61)]
-        gamma1 = v2[pp][(57,62)]
-        phix = -np.angle(gamma1.conj()*gamma0)/(14.)
-        phiy = -np.angle(gamma1*gamma0)/(14.*np.sqrt(3))
+        phi61 = g2[p][61]
+        phi62 = g2[p][62]
+        phix = np.angle(phi61*phi62.conj())/(14.)
+        phiy = np.angle(phi61*phi62)/(14.*np.sqrt(3))
         for a in g2[p].keys():
             if a < 93:
-                dx = realpos[a]['top_x'] - realpos[57][a]['top_x']
-                dy = realpos[a]['top_y'] - realpos[57][a]['top_y']
+                dx = realpos[a]['top_x'] - realpos[57]['top_x']
+                dy = realpos[a]['top_y'] - realpos[57]['top_y']
             else:
-                dx = realpos[a]['top_x'] - realpos[93][a]['top_x']
-                dy = realpos[a]['top_y'] - realpos[93][a]['top_y']
-            g2[p][a] *= np.exp(1j*(phix*dx+phiy*y))
+                dx = realpos[a]['top_x'] - realpos[93]['top_x']
+                dy = realpos[a]['top_y'] - realpos[93]['top_y']
+            g2[p][a] *= np.exp(1j*(phix*dx+phiy*dy))
     g2 = scale_gains(g2)
     return g2
