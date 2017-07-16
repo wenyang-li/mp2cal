@@ -27,6 +27,7 @@ o.add_option('--tave', dest='tave', default=False, action='store_true', help='ch
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
+o.add_option('--rough', dest='rough', default=False, action='store_true', help='Toggle: do rough cal instead of firstcal')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -145,15 +146,6 @@ def omnirun(data_wrap):
             fn.write(str(flgbls)+'\n')
     fn.write('N baselines used: '+str(len(redbls))+'\n')
     fn.close()
-    if opts.ftype == 'fhd':
-        print '     setting g0 as units'
-        g0 = {p:{}}
-        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
-    else:
-        fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
-        if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
-        print '     loading firstcal file: ', fcfile
-        g0 = mp2cal.wyl.load_gains_fc(fcfile)
 
     #*********************** organize data *************************************
     dat,wgts,xtalk = {}, {}, {}
@@ -161,12 +153,29 @@ def omnirun(data_wrap):
         i,j = bl
         if not (i in info.subsetant and j in info.subsetant): continue
         if bl in ex_bls+flag_bls: continue
-        dat[bl] = {pp: np.copy(data[bl][pp])}
         if opts.tave:
-            m = np.ma.masked_array(dat[bl][pp],mask=flag[bl][pp])
+            m = np.ma.masked_array(data[bl][pp],mask=flag[bl][pp])
             m = np.mean(m,axis=0)
             dat[bl] = {pp: np.complex64(m.data.reshape(1,-1))}
+        else: dat[bl] = {pp: np.copy(data[bl][pp])}
         if opts.wgt_cal: dat[bl][pp] /= (auto[i]*auto[j])
+
+    #*********************** generate g0 ***************************************
+    if opts.ftype == 'fhd':
+        print '     setting g0 as units'
+        g0 = {p:{}}
+        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+    else:
+        if opts.rough:
+            print '     start rough cal'
+            info_rough = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=[(57,61),(57,62)],ex_bls=ex_bls+flag_bls,ex_ants=ex_ants)
+            g0 = mp2cal.wyl.rough_cal(dat,info_rough,pol=pp)
+        else:
+            fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
+            if not os.path.exists(fcfile): raise IOError("File {0} does not exist".format(fcfile))
+            print '     loading firstcal file: ', fcfile
+            g0 = mp2cal.wyl.load_gains_fc(fcfile)
+
 
     #*********************** Calibrate ******************************************
     wgts[pp] = {} #weights dictionary by pol
@@ -178,6 +187,7 @@ def omnirun(data_wrap):
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
         g2 = mp2cal.wyl.scale_gains(g2)
+    if opts.rough: g2 = mp2cal.wyl.remove_degen_hex(g2, v2, antpos)
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #*********************** project degeneracy *********************************

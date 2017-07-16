@@ -814,9 +814,9 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     reds[1].sort()
     redbls = reds[0] + reds[1]
     redbls.sort()
+    SH = data[reds[0][0]][pol].shape
     gamma0 = data[reds[0][0]][pol]
     gamma1 = data[reds[1][0]][pol]
-    SH = gamma0.shape
     subsetant = info.subsetant
     fixants = (min(subsetant), min(subsetant[np.where(subsetant>92)]))
     for a in fixants: phi[a] = np.zeros(SH)
@@ -842,27 +842,26 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     return g0
 
 
-def degen_removeal(g2,realpos):
-    g3 = copy.deepcopy(g2)
-    M = np.zeros(3,3)
-    for a in g2[g2.keys()[0]].keys():
-        x = realpos[a]['top_x']
-        y = realpos[a]['top_y']
-        M += np.array([[x*x, x*y, x],
-                       [x*y, y*y, y],
-                       [ x ,  y , 1]])
-    invM = np.linalg.inv(M)
-    for p in g3.keys():
-        phis = np.zeros((3,384))
-        for a in g3[p].keys():
-            phs = np.angle(np.resize(g3[p][a],(g3[p][a].size,)))
-            phis[0] += realpos[a]['top_x']*phs
-            phis[1] += realpos[a]['top_y']*phs
-            phis[2] += phs
-        degen_par = invM.dot(phis)
-        for a in g3[p].keys():
-            degen_phs = realpos[a]['top_x']*degen_par[0]+realpos[a]['top_y']*degen_par[1]+degen_par[2]
-            g3[p][a] *= degen_phs
-    g3 = scale_gains(g3)
-    return g3
-
+def remove_degen_hex(gomni, v2, realpos):
+    g2 = copy.deepcopy(gomni)
+    for p in g2.keys():
+        ref_exp1 = np.exp(-1j*np.angle(g2[p][57]))
+        ref_exp2 = np.exp(-1j*np.angle(g2[p][93]))
+        for a in g2[p].keys():
+            if a < 93: g2[p][a] *= ref_exp1
+            else: g2[p][a] *= ref_exp2
+        pp = p+p
+        gamma0 = v2[pp][(57,61)]
+        gamma1 = v2[pp][(57,62)]
+        phix = -np.angle(gamma1.conj()*gamma0)/(14.)
+        phiy = -np.angle(gamma1*gamma0)/(14.*np.sqrt(3))
+        for a in g2[p].keys():
+            if a < 93:
+                dx = realpos[a]['top_x'] - realpos[57][a]['top_x']
+                dy = realpos[a]['top_y'] - realpos[57][a]['top_y']
+            else:
+                dx = realpos[a]['top_x'] - realpos[93][a]['top_x']
+                dy = realpos[a]['top_y'] - realpos[93][a]['top_y']
+            g2[p][a] *= np.exp(1j*(phix*dx+phiy*y))
+    g2 = scale_gains(g2)
+    return g2
