@@ -360,7 +360,7 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
 
 def degen_project_FO(gomni,antpos,EastHex,SouthHex):
     gains = scale_gains(gomni)
-    phspar = mp2cal.wyl.plane_fitting(gains,antpos,EastHex,SouthHex)
+    phspar = plane_fitting(gains,antpos,EastHex,SouthHex)
     for p in gains.keys():
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
