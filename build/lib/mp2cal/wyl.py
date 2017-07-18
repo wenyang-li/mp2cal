@@ -291,9 +291,8 @@ def plane_fitting(gains,antpos,EastHex,SouthHex):
                 offset_east.append(0)
                 offset_south.append(0)
                 continue
-            x1,y1,z1,x2,y2,z2 = [],[],[],[],[],[]
-            M1, M2 = np.zeros((3,3)), np.zeros((3,3))
-            p1, p2 = np.zeros((3,1)), np.zeros((3,1))
+            M0 = np.zeros((4,4))
+            p0 = np.zeros((4,1))
             for a in gains[p].keys():
                 x = antpos[a]['top_x']
                 y = antpos[a]['top_y']
@@ -302,40 +301,29 @@ def plane_fitting(gains,antpos,EastHex,SouthHex):
                 else:
                     z = np.angle(gains[p][a][f])
                 if a in EastHex:
-                    x1.append(x)
-                    y1.append(y)
-                    z1.append(z)
-                    M1 += np.array([[x*x, x*y, x],
-                                    [x*y, y*y, y],
-                                    [ x ,  y , 1]])
-                    p1 += np.array([[z*x],
+                    M0 += np.array([[x*x, x*y, x , 0 ],
+                                    [x*y, y*y, y , 0 ],
+                                    [ x ,  y , 1 , 0 ],
+                                    [ 0 ,  0 , 0 , 0 ]])
+                    p0 += np.array([[z*x],
                                     [z*y],
-                                    [ z ]])
+                                    [ z ],
+                                    [ 0 ]])
                 if a in SouthHex:
-                    x2.append(x)
-                    y2.append(y)
-                    z2.append(z)
-                    M2 += np.array([[x*x, x*y, x],
-                                    [x*y, y*y, y],
-                                    [ x ,  y , 1]])
-                    p2 += np.array([[z*x],
+                    M0 += np.array([[x*x, x*y, 0 , x ],
+                                    [x*y, y*y, 0 , y ],
+                                    [ 0 ,  0 , 0 , 0 ],
+                                    [ x ,  y , 0 , 1 ]])
+                    p0 += np.array([[z*x],
                                     [z*y],
+                                    [ 0 ],
                                     [ z ]])
-            x1 = np.array(x1)
-            x2 = np.array(x2)
-            y1 = np.array(y1)
-            y2 = np.array(y2)
-            C1 = np.linalg.inv(M1).dot(p1)
-            C2 = np.linalg.inv(M2).dot(p2)
-            slope_x = (C1[0][0]+C2[0][0])/2
-            slope_y = (C1[1][0]+C2[1][0])/2
-            offset1 = np.mean(z1-slope_x*x1-slope_y*y1)
-            offset2 = np.mean(z2-slope_x*x2-slope_y*y2)
+            C = np.linalg.inv(M0).dot(p0)
             #Attention: append negative results here
-            phix.append(-slope_x)
-            phiy.append(-slope_y)
-            offset_east.append(-offset1)
-            offset_south.append(-offset2)
+            phix.append(-C[0][0])
+            phiy.append(-C[1][0])
+            offset_east.append(-C[2][0])
+            offset_south.append(-C[3][0])
         phspar[p]['phix'] = np.array(phix)
         phspar[p]['phiy'] = np.array(phiy)
         phspar[p]['offset_east'] = np.array(offset_east)
@@ -365,7 +353,7 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
             dy = antpos[a]['top_y']
             proj = np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
             if a > 92: proj *= np.exp(1j*phspar2[p]['offset_south'])
-            else: proj *= np.exp(1j*phspar[p]['offset_east'])
+            else: proj *= np.exp(1j*phspar2[p]['offset_east'])
             gains[p][a] *= proj
     return gains
 
