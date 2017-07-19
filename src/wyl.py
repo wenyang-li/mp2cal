@@ -613,8 +613,8 @@ def remove_degen_hex(gomni, antpos):
         pp = p+p
         phi61 = g2[p][61]
         phi62 = g2[p][62]
-        phix = (np.angle(phi61)-np.angle(phi62))/(14.)
-        phiy = (np.angle(phi61)+np.angle(phi62))/(14.*np.sqrt(3))
+        phix = np.unwrap(np.angle(phi61)-np.angle(phi62))/(14.)
+        phiy = np.unwrap(np.angle(phi61)+np.angle(phi62))/(14.*np.sqrt(3))
         for a in g2[p].keys():
             if a < 93:
                 dx = antpos[a]['top_x'] - antpos[57]['top_x']
