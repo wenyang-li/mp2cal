@@ -120,16 +120,10 @@ for ip,p in enumerate(pols):
     if opts.projdegen:
         exec('from %s import *'% opts.cal)
         ref = min(gains[p[0]].keys())
-        ref_exp = np.exp(1j*np.angle(gains[p[0]][ref]*gfhd[p[0]][ref].conj()))
-        for a in gains[p[0]].keys(): gains[p[0]][a] /= ref_exp
-        amppar = mp2cal.wyl.ampproj(gains,gfhd)
-        phspar = mp2cal.wyl.phsproj(gains,gfhd,realpos,EastHex,SouthHex,ref)
-        for a in gains[p[0]].keys():
-            dx = realpos[a]['top_x']-realpos[ref]['top_x']
-            dy = realpos[a]['top_y']-realpos[ref]['top_y']
-            proj = amppar[p[0]]*np.exp(1j*(dx*phspar[p[0]]['phix']+dy*phspar[p[0]]['phiy']))
-            if a > 92: proj *= phspar[p[0]]['offset_south']
-            gains[p[0]][a] *= proj
+        if opts.intype == 'fhd':
+            gains = mp2cal.wyl.degen_project_FO(gains,antpos,EastHex,SouthHex)
+        elif opts.intype == 'uvfits':
+            gains = mp2cal.wyl.degen_project_OF(gains,gfhd,antpos,EastHex,SouthHex)
 #********************** if choose to make sols smooth ***************************
     if opts.bpfit:
         print '   bandpass fitting'
