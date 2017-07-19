@@ -183,13 +183,6 @@ def omnirun(data_wrap):
         g2 = mp2cal.wyl.scale_gains(g2)
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
-    #*********************** project degeneracy *********************************
-    if opts.projdegen:
-        print '   Projecting degeneracy'
-        if opts.ftype == 'fhd':
-            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,EastHex,SouthHex)
-        elif opts.ftype == 'uvfits':
-            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex)
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
@@ -219,8 +212,16 @@ def omnirun(data_wrap):
             g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
             g_temp = np.mean(g_temp,axis=0)
             g2[p[0]][a] = g_temp.data
-            for ii in range(384):
-                if ii%16 == 8: g2[p[0]][a][ii] = (g2[p[0]][a][ii+1]+g2[p[0]][a][ii-1])/2
+#            for ii in range(384):
+#                if ii%16 == 8: g2[p[0]][a][ii] = (g2[p[0]][a][ii+1]+g2[p[0]][a][ii-1])/2
+
+    #*********************** project degeneracy *********************************
+    if opts.projdegen:
+        print '   Projecting degeneracy'
+        if opts.ftype == 'fhd':
+            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,EastHex,SouthHex)
+        elif opts.ftype == 'uvfits':
+            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex)
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
