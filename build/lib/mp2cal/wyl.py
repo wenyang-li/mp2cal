@@ -550,6 +550,21 @@ def fill_flags(data,flag,fit_order = 4):
     return dout
 
 
+def fit_data(data,fit_order=4):
+    if data.ndim == 2: d = np.mean(data,axis=0)
+    else: d = data
+    fit_data = np.zeros(d.shape,dtype=np.complex64)
+    for ii in range(24):
+        chunk = np.arange(16*ii+1,16*ii+15)
+        dr = d.real[chunk]
+        di = d.imag[chunk]
+        zr = np.polyfit(chunk,dr,fit_order)
+        zi = np.polyfit(chunk,di,fit_order)
+        fit_data[chunk] = polyfunc(chunk,zr)+1j*polyfunc(chunk,zi)
+    return fit_data
+
+
+
 def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time axis
     p = pol[0]
     g0 = {p: {}}
@@ -560,8 +575,8 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     redbls = reds[0] + reds[1]
     redbls.sort()
     SH = data[reds[0][0]][pol].shape
-    gamma0 = data[reds[0][0]][pol]
-    gamma1 = data[reds[1][0]][pol]
+    gamma0 = fit_data(data[reds[0][0]][pol])
+    gamma1 = fit_data(data[reds[1][0]][pol])
     subsetant = info.subsetant
     fixants = (min(subsetant), min(subsetant[np.where(subsetant>92)]))
     for a in fixants: phi[a] = np.zeros(SH)
@@ -572,14 +587,14 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
         if phi.has_key(i) and phi.has_key(j): continue
         elif phi.has_key(i) and not phi.has_key(j):
             if r in reds[0]:
-                phi[j] = np.angle(data[r][pol]*np.exp(1j*phi[i])*gamma0.conj())
+                phi[j] = np.angle(fit_data(data[r][pol])*np.exp(1j*phi[i])*gamma0.conj())
             elif r in reds[1]:
-                phi[j] = np.angle(data[r][pol]*np.exp(1j*phi[i])*gamma1.conj())
+                phi[j] = np.angle(fit_data(data[r][pol])*np.exp(1j*phi[i])*gamma1.conj())
         elif phi.has_key(j) and not phi.has_key(i):
             if r in reds[0]:
-                phi[i] = np.angle(data[r][pol].conj()*np.exp(1j*phi[j])*gamma0)
+                phi[i] = np.angle(fit_data(data[r][pol]).conj()*np.exp(1j*phi[j])*gamma0)
             elif r in reds[1]:
-                phi[i] = np.angle(data[r][pol].conj()*np.exp(1j*phi[j])*gamma1)
+                phi[i] = np.angle(fit_data(data[r][pol]).conj()*np.exp(1j*phi[j])*gamma1)
         else: redbls.append(r)
     if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():
