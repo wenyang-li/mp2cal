@@ -185,37 +185,9 @@ def omnirun(data_wrap):
     if opts.projdegen:
         print '   Projecting degeneracy'
         if opts.ftype == 'fhd':
-            phspar = mp2cal.wyl.plane_fitting(g2,antpos,EastHex,SouthHex)
-        else:
-            ref = min(g2[p].keys()) # pick a reference tile to reduce the effect of phase wrapping, it has to be a tile in east hex
-            ref_exp = np.exp(1j*np.angle(g2[p][ref]*gfhd[p][ref].conj()))
-            for a in g2[p].keys(): g2[p][a] /= ref_exp
-            amppar = mp2cal.wyl.ampproj(g2,gfhd)
-            phspar = mp2cal.wyl.phsproj(g2,gfhd,antpos,EastHex,SouthHex,ref)
-        degen_proj = {}
-        for a in g2[p].keys():
-            if opts.ftype == 'fhd':
-                dx = antpos[a]['top_x']
-                dy = antpos[a]['top_y']
-                proj = np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
-                else: proj *= np.exp(1j*phspar[p]['offset_east'])
-                proj = np.resize(proj,(1,proj.size))
-            else:
-                dx = antpos[a]['top_x']-antpos[ref]['top_x']
-                dy = antpos[a]['top_y']-antpos[ref]['top_y']
-                proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                #            if a < 93 and ref > 92: proj *= phspar[p[0]]['offset_east']
-                if a > 92: proj *= phspar[p]['offset_south']
-            degen_proj[a] = proj
-            g2[p][a] *= proj
-        for bl in v2[pp].keys():
-            i,j = bl
-            degenij = (degen_proj[j].conj()*degen_proj[i])
-            fuse = np.where(degenij!=0)
-            fnot = np.where(degenij==0)
-            v2[pp][bl][fuse] /= degenij[fuse]
-            v2[pp][bl][fnot] *= 0
+            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,EastHex,SouthHex)
+        elif opts.ftype == 'uvfits':
+            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex)
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
