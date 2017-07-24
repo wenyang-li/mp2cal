@@ -198,7 +198,7 @@ def ampproj(g_omni,g_fhd):
     return amppar
 
 
-def phsproj(g_omni,fhd,antpos,EastHex,SouthHex,ref_antenna):
+def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
     omni = copy.deepcopy(g_omni)
     phspar = {}
     ax1,ax2 = [],[]
@@ -216,7 +216,8 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex,ref_antenna):
         ax2.append(SouthHex[:,jj][ind_south])
     for p in omni.keys():
         phspar[p] = {}
-        SH = omni[p][ref_antenna].shape
+        a0 = omni[p].keys()[0]
+        SH = omni[p][a0].shape
         if len(SH) == 2:
             for a in omni[p].keys(): omni[p][a] = np.mean(omni[p][a],axis=0)
         slp1 = []
@@ -233,8 +234,8 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex,ref_antenna):
                 for ii in inds:
                     if not ii in omni[p].keys(): continue
                     if np.isnan(fhd[p][ii][ff]): continue
-                    x.append(antpos[ii]['top_x'])
-                    tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
+                    x.append(float(np.argwhere(inds==ii)))
+                    tau.append(np.angle(fhd[p][ii][ff]*omni[p][ii][ff].conj()))
                 tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
@@ -248,34 +249,16 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex,ref_antenna):
                 for ii in inds:
                     if not ii in omni[p].keys(): continue
                     if np.isnan(fhd[p][ii][ff]): continue
-                    x.append(antpos[ii]['top_x'])
-                    tau.append(np.angle(fhd[p][ii][ff]/omni[p][ii][ff]))
+                    x.append(float(np.argwhere(inds==ii)))
+                    tau.append(np.angle(fhd[p][ii][ff]*omni[p][ii][ff].conj()))
                 tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
             slope = np.array(slope)
             slp2.append(np.median(slope))
-        #****** calculate offset term ************#
-        offset1, offset2 = [],[]
-        phix = np.array(slp1)
-        phiy = (np.array(slp2) - phix)/np.sqrt(3)
-        for a in omni[p].keys():
-            if np.isnan(np.mean(fhd[p][a])): continue
-            dx = antpos[a]['top_x'] - antpos[ref_antenna]['top_x']
-            dy = antpos[a]['top_y'] - antpos[ref_antenna]['top_y']
-            proj = np.exp(1j*(dx*phix+dy*phiy))
-            offset = np.exp(1j*np.angle(fhd[p][a]*omni[p][a].conj()/proj))
-            if a < 93: offset1.append(offset)
-            else: offset2.append(offset)
-        offset1 = np.array(offset1)
-        offset2 = np.array(offset2)
-        offset1 = np.mean(offset1,axis=0)
-        offset2 = np.mean(offset2,axis=0)
-        phspar[p]['phix'] = phix
-        phspar[p]['phiy'] = phiy
-        phspar[p]['offset_east'] = offset1
-        phspar[p]['offset_south'] = offset2
+        phspar[p]['phi1'] = np.array(slp1)
+        phspar[p]['phi2'] = np.array(slp2)
     return phspar
 
 
@@ -334,16 +317,25 @@ def plane_fitting(gains,antpos,EastHex,SouthHex):
 def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
     gains = copy.deepcopy(gomni)
     for p in gains.keys():
-        ref = min(gains[p].keys())
-        ref_exp = np.exp(1j*np.angle(gains[p][ref]*gfhd[p][ref].conj()))
-        for a in gains[p].keys(): gains[p][a] /= ref_exp
-        amppar = ampproj(gains,gfhd)
-        phspar = phsproj(gains,gfhd,antpos,EastHex,SouthHex,ref)
+        ref1 = min(gains[p].keys())
+        ref2 = max(gains[p].keys())
+        ref_exp1 = np.exp(1j*np.angle(gains[p][ref1]*gfhd[p][ref1].conj()))
+        ref_exp2 = np.exp(1j*np.angle(gains[p][ref2]*gfhd[p][ref2].conj()))
         for a in gains[p].keys():
-            dx = antpos[a]['top_x']-antpos[ref]['top_x']
-            dy = antpos[a]['top_y']-antpos[ref]['top_y']
-            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-            if a > 92: proj *= phspar[p]['offset_south']
+            if a < 93: gains[p][a] /= ref_exp1
+            else: gains[p][a] /= ref_exp2
+        amppar = ampproj(gains,gfhd)
+        phspar = phsproj(gains,gfhd,antpos,EastHex,SouthHex)
+        for a in gains[p].keys():
+            if a < 93:
+                dx = antpos[a]['top_x']-antpos[ref1]['top_x']
+                dy = antpos[a]['top_y']-antpos[ref1]['top_y']
+            else:
+                dx = antpos[a]['top_x']-antpos[ref2]['top_x']
+                dy = antpos[a]['top_y']-antpos[ref2]['top_y']
+            nx = dx/14.-dy/np.sqrt(3)/14.
+            ny = -2*dy/np.sqrt(3)/14.
+            proj = amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))
             gains[p][a] *= proj
         ratio = {p:{}}
         for a in gains[p].keys(): ratio[p][a] = gains[p][a]*gfhd[p][a].conj()
@@ -610,11 +602,10 @@ def remove_degen_hex(gomni, antpos):
         for a in g2[p].keys():
             if a < 93: g2[p][a] *= ref_exp1
             else: g2[p][a] *= ref_exp2
-        pp = p+p
         phi61 = g2[p][61]
         phi62 = g2[p][62]
-        phix = np.unwrap(np.angle(phi61)-np.angle(phi62))/(14.)
-        phiy = np.unwrap(np.angle(phi61)+np.angle(phi62))/(14.*np.sqrt(3))
+        phi1 = np.angle(phi61)-np.angle(phi62)
+        phi2 = np.angle(phi61)+np.angle(phi62)
         for a in g2[p].keys():
             if a < 93:
                 dx = antpos[a]['top_x'] - antpos[57]['top_x']
@@ -622,6 +613,8 @@ def remove_degen_hex(gomni, antpos):
             else:
                 dx = antpos[a]['top_x'] - antpos[93]['top_x']
                 dy = antpos[a]['top_y'] - antpos[93]['top_y']
-            g2[p][a] *= np.exp(1j*(phix*dx+phiy*dy))
+            nx = dx/14.-dy/np.sqrt(3)/14.
+            ny = -2*dy/np.sqrt(3)/14.
+            g2[p][a] *= np.exp(1j*(phi1*nx+phi2*ny))
     g2 = scale_gains(g2)
     return g2
