@@ -65,6 +65,7 @@ obsid = args[0]
 if opts.outtype == 'uvfits':
     if opts.intype == 'fhd': suffix = 'FO'
     else: suffix = 'O'
+    if not opts.npz == None: suffix = suffix + 'A'
     if opts.bpfit:
         suffix = suffix + 'B'
     if opts.polyfit:
