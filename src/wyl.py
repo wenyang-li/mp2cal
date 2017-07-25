@@ -542,13 +542,17 @@ def fill_flags(data,flag,fit_order = 4):
     return dout
 
 
-def fit_data(data,fit_order=9):
+def fit_data(data,fit_order=4):
     if data.ndim == 2: d = np.mean(data,axis=0)
     else: d = data
-    fq = np.arange(d.size)
-    zr = np.polyfit(fq,d.real,fit_order)
-    zi = np.polyfit(fq,d.imag,fit_order)
-    fit_data = polyfunc(fq,zr) + 1j*polyfunc(fq,zi)
+    fit_data = np.zeros(d.shape,dtype=np.complex64)
+    for ii in range(24):
+        chunk = np.arange(16*ii+1,16*ii+15)
+        dr = d.real[chunk]
+        di = d.imag[chunk]
+        zr = np.polyfit(chunk,dr,fit_order)
+        zi = np.polyfit(chunk,di,fit_order)
+        fit_data[chunk] = polyfunc(chunk,zr)+1j*polyfunc(chunk,zi)
     return fit_data
 
 
