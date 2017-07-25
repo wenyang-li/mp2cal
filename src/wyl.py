@@ -598,10 +598,10 @@ def remove_degen_hex(gomni, antpos):
         for a in g2[p].keys():
             if a < 93: g2[p][a] *= ref_exp1
             else: g2[p][a] *= ref_exp2
+        phi58 = g2[p][58]
         phi61 = g2[p][61]
-        phi62 = g2[p][62]
-        phi1 = np.angle(phi61)-np.angle(phi62)
-        phi2 = np.angle(phi61)+np.angle(phi62)
+        phi1 = np.angle(phi58)
+        phi2 = np.angle(phi61)
         for a in g2[p].keys():
             if a < 93:
                 dx = antpos[a]['top_x'] - antpos[57]['top_x']
