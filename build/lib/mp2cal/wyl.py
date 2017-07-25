@@ -10,9 +10,8 @@ def unwrap(arr):
     crr = []
     for ii in range(1,brr.size): crr.append(brr[ii]-brr[ii-1])
     crr = np.unwrap(crr)
-    nn = np.floor(crr[0]/(2*np.pi))
+    nn = np.round(crr[0]/(2*np.pi))
     crr -= (nn*2.*np.pi)
-    if np.mean(crr) > 6: crr -= (2.*np.pi)
     drr = np.zeros(brr.shape)+brr[0]
     for ii in range(crr.size): drr[ii+1] += np.sum(crr[:ii+1])
     return drr
@@ -241,8 +240,8 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
-            slope = np.array(slope)
-            slp1.append(np.median(slope)) # slope could be steep, choosing median would be more likely to avoid phase wrapping
+            slope = np.unwrap(slope)
+            slp1.append(np.mean(slope))
             #***** 60 deg East-South direction fit *****#
             slope = []
             for inds in ax2:
@@ -256,8 +255,8 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
-            slope = np.array(slope)
-            slp2.append(np.median(slope))
+            slope = np.unwrap(slope)
+            slp2.append(np.mean(slope))
         phspar[p]['phi1'] = np.array(slp1)
         phspar[p]['phi2'] = np.array(slp2)
     return phspar
