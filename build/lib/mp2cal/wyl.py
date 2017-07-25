@@ -615,6 +615,6 @@ def remove_degen_hex(gomni, antpos):
                 dy = antpos[a]['top_y'] - antpos[93]['top_y']
             nx = dx/14.-dy/np.sqrt(3)/14.
             ny = -2*dy/np.sqrt(3)/14.
-            g2[p][a] *= np.exp(1j*(phi1*nx+phi2*ny))
+            g2[p][a] *= np.exp(-1j*(phi1*nx+phi2*ny))
     g2 = scale_gains(g2)
     return g2
