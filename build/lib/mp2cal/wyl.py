@@ -376,7 +376,7 @@ def degen_project_simple(g_input,g_target,antpos):
         ratio = {p:{}}
         for a in g_output[p].keys(): ratio[p][a] = g_input[p][a]*g_target[p][a].conj()
         phspar = plane_fitting(ratio,antpos)
-        for a in gains[p].keys():
+        for a in g_input[p].keys():
             dx = antpos[a]['top_x']
             dy = antpos[a]['top_y']
             proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
