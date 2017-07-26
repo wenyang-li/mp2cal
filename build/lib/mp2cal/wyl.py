@@ -203,16 +203,16 @@ def phsproj(g_input,g_target,antpos,EastHex,SouthHex): #only returns slopes
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
         if ii == 3: continue
-        ind_east = np.where(EastHex[ii]>0)[0]
-        ind_south = np.where(SouthHex[ii]>0)[0]
-        ax1.append(EastHex[ii][ind_east])
-        ax1.append(SouthHex[ii][ind_south])
+        ind_east = EastHex[ii]
+        ind_south = SouthHex[ii]
+        ax1.append(ind_east)
+        ax1.append(ind_south)
     for jj in range(EastHex.shape[1]):
         if jj == 3: continue
-        ind_east = np.where(EastHex[:,jj]>0)[0]
-        ind_south = np.where(SouthHex[:,jj]>0)[0]
-        ax2.append(EastHex[:,jj][ind_east])
-        ax2.append(SouthHex[:,jj][ind_south])
+        ind_east = EastHex[:,jj]
+        ind_south = SouthHex[:,jj]
+        ax2.append(ind_east)
+        ax2.append(ind_south)
     for p in g_input.keys():
         phspar[p] = {}
         a0 = g_input[p].keys()[0]
@@ -237,12 +237,13 @@ def phsproj(g_input,g_target,antpos,EastHex,SouthHex): #only returns slopes
                     if np.isnan(g_target[p][ii][ff]): continue
                     x.append(float(np.argwhere(inds==ii)))
                     tau.append(np.angle(g_target[p][ii][ff]*g_input[p][ii][ff].conj()))
+                if len(tau) < 3: continue
+                if np.round(x[-1])-np.round(x[0])+1 != len(x): continue
                 tau = unwrap(tau)
-                if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
             slope = np.unwrap(slope)
-            slp1.append(np.mean(slope))
+            slp1.append(np.median(slope))
             #***** 60 deg East-South direction fit *****#
             slope = []
             for inds in ax2:
@@ -254,12 +255,13 @@ def phsproj(g_input,g_target,antpos,EastHex,SouthHex): #only returns slopes
                     if np.isnan(g_target[p][ii][ff]): continue
                     x.append(float(np.argwhere(inds==ii)))
                     tau.append(np.angle(g_target[p][ii][ff]*g_input[p][ii][ff].conj()))
+                if len(tau) < 3: continue
+                if np.round(x[-1])-np.round(x[0])+1 != len(x): continue
                 tau = unwrap(tau)
-                if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
                 slope.append(z[0])
             slope = np.unwrap(slope)
-            slp2.append(np.mean(slope))
+            slp2.append(np.median(slope))
         phspar[p]['phi1'] = np.array(slp1)
         phspar[p]['phi2'] = np.array(slp2)
     return phspar
