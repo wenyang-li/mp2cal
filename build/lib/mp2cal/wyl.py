@@ -179,27 +179,26 @@ def amp_bandpass_fit(gains0,fit_order=4):
     return gains
 
 
-def ampproj(g_omni,g_fhd):
+def ampproj(g_input,g_target):
     amppar = {}
-    g2 = copy.deepcopy(g_omni)
-    fhd = copy.deepcopy(g_fhd)
-    for p in g2.keys():
+    for p in g_input.keys():
         s = 0
         n = 0
-        SH = g2[p][g2[p].keys()[0]].shape
-        for a in g2[p].keys():
-            if np.isnan(np.mean(fhd[p][a])): continue
-            ind = np.where(g2[p][a] == 0)
-            fhd[p][a][ind] = 0
-            g2[p][a][ind] = 1
-            s += (np.resize(np.abs(fhd[p][a]),SH)/np.abs(g2[p][a]))
+        SH = g_input[p][g_input[p].keys()[0]].shape
+        for a in g_input[p].keys():
+            if not a in g_target[p].keys(): continue
+            if np.isnan(np.mean(g_target[p][a])): continue
+            if np.isnan(np.mean(g_input[p][a])): continue
+            ind = np.where(g_input[p][a] == 0)
+            g_target[p][a][ind] = 0
+            g_input[p][a][ind] = 1
+            s += (np.resize(np.abs(g_target[p][a]),SH)/np.abs(g_input[p][a]))
             n += 1.
         amppar[p] = (s/n)
     return amppar
 
 
-def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
-    omni = copy.deepcopy(g_omni)
+def phsproj(g_input,g_target,antpos,EastHex,SouthHex): #only returns slopes
     phspar = {}
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
@@ -214,12 +213,12 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
         ind_south = np.where(SouthHex[:,jj]>0)[0]
         ax2.append(EastHex[:,jj][ind_east])
         ax2.append(SouthHex[:,jj][ind_south])
-    for p in omni.keys():
+    for p in g_input.keys():
         phspar[p] = {}
-        a0 = omni[p].keys()[0]
-        SH = omni[p][a0].shape
+        a0 = g_input[p].keys()[0]
+        SH = g_input[p][a0].shape
         if len(SH) == 2:
-            for a in omni[p].keys(): omni[p][a] = np.mean(omni[p][a],axis=0)
+            for a in g_input[p].keys(): g_input[p][a] = np.mean(g_input[p][a],axis=0)
         slp1 = []
         slp2 = []
         for ff in range(0,384):
@@ -232,10 +231,12 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
             for inds in ax1:
                 x,tau = [],[]
                 for ii in inds:
-                    if not ii in omni[p].keys(): continue
-                    if np.isnan(fhd[p][ii][ff]): continue
+                    if not ii in g_input[p].keys(): continue
+                    if not ii in g_target[p].keys(): continue
+                    if np.isnan(g_input[p][ii][ff]): continue
+                    if np.isnan(g_target[p][ii][ff]): continue
                     x.append(float(np.argwhere(inds==ii)))
-                    tau.append(np.angle(fhd[p][ii][ff]*omni[p][ii][ff].conj()))
+                    tau.append(np.angle(g_target[p][ii][ff]*g_input[p][ii][ff].conj()))
                 tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
@@ -247,10 +248,12 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
             for inds in ax2:
                 x,tau = [],[]
                 for ii in inds:
-                    if not ii in omni[p].keys(): continue
-                    if np.isnan(fhd[p][ii][ff]): continue
+                    if not ii in g_input[p].keys(): continue
+                    if not ii in g_target[p].keys(): continue
+                    if np.isnan(g_input[p][ii][ff]): continue
+                    if np.isnan(g_target[p][ii][ff]): continue
                     x.append(float(np.argwhere(inds==ii)))
-                    tau.append(np.angle(fhd[p][ii][ff]*omni[p][ii][ff].conj()))
+                    tau.append(np.angle(g_target[p][ii][ff]*g_input[p][ii][ff].conj()))
                 tau = unwrap(tau)
                 if tau.size < 3: continue
                 z = np.polyfit(x,tau,1)
@@ -262,7 +265,7 @@ def phsproj(g_omni,fhd,antpos,EastHex,SouthHex): #only returns slopes
     return phspar
 
 
-def plane_fitting(gains,antpos,EastHex,SouthHex):
+def plane_fitting(gains,antpos):
     phspar = {}
     for p in gains.keys():
         phspar[p] = {}
@@ -283,7 +286,7 @@ def plane_fitting(gains,antpos,EastHex,SouthHex):
                     z = np.angle(np.mean(gains[p][a],axis=0)[f])
                 else:
                     z = np.angle(gains[p][a][f])
-                if a in EastHex:
+                if 56 < a < 93:
                     M0 += np.array([[x*x, x*y, x , 0 ],
                                     [x*y, y*y, y , 0 ],
                                     [ x ,  y , 1 , 0 ],
@@ -292,7 +295,7 @@ def plane_fitting(gains,antpos,EastHex,SouthHex):
                                     [z*y],
                                     [ z ],
                                     [ 0 ]])
-                if a in SouthHex:
+                if 92 < a < 128:
                     M0 += np.array([[x*x, x*y, 0 , x ],
                                     [x*y, y*y, 0 , y ],
                                     [ 0 ,  0 , 0 , 0 ],
@@ -339,7 +342,7 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
             gains[p][a] *= proj
         ratio = {p:{}}
         for a in gains[p].keys(): ratio[p][a] = gains[p][a]*gfhd[p][a].conj()
-        phspar2 = plane_fitting(ratio,antpos,EastHex,SouthHex)
+        phspar2 = plane_fitting(ratio,antpos)
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
             dy = antpos[a]['top_y']
@@ -350,9 +353,9 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
     return gains
 
 
-def degen_project_FO(gomni,antpos,EastHex,SouthHex):
+def degen_project_FO(gomni,antpos):
     gains = scale_gains(gomni)
-    phspar = plane_fitting(gains,antpos,EastHex,SouthHex)
+    phspar = plane_fitting(gains,antpos)
     for p in gains.keys():
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
@@ -363,6 +366,22 @@ def degen_project_FO(gomni,antpos,EastHex,SouthHex):
             gains[p][a] *= proj
     return gains
 
+
+def degen_project_simple(g_input,g_target,antpos):
+    g_output = copy.deepcopy(g_input)
+    amppar = ampproj(g_input,g_target)
+    for p in g_output.keys():
+        ratio = {p:{}}
+        for a in g_output[p].keys(): ratio[p][a] = g_input[p][a]*g_target[p][a].conj()
+        phspar = plane_fitting(ratio,antpos)
+        for a in gains[p].keys():
+            dx = antpos[a]['top_x']
+            dy = antpos[a]['top_y']
+            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+            if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
+            else: proj *= np.exp(1j*phspar[p]['offset_east'])
+            g_output[p][a] *= proj
+    return g_output
 
 
 def cal_var_wgt(v,m,w):

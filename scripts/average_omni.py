@@ -14,7 +14,7 @@ delays = {
 '12,8,4,0,13,9,5,1,14,10,6,2,15,11,7,3':4,
 '15,10,5,0,16,11,6,1,17,12,7,2,18,13,8,3':5,
 }
-
+exec('from PhaseII_cal import *')
 o = optparse.OptionParser()
 o.set_usage('average.py [options]')
 o.set_description(__doc__)
@@ -30,6 +30,7 @@ for ii in range(384):
 for p in pols:
     fn=glob.glob('./*'+p+'.omni.npz')
     g = {}
+    fid = {}
 #    nfiles = {}
     for f in fn:
         gains = mp2cal.wyl.quick_load_gains(f)
@@ -39,13 +40,18 @@ for p in pols:
         hdu = fits.open(metafits)
         day = int(obs)/86400
         suffix = str(day)+'_'+str(delays[hdu[0].header['DELAYS']])
-        if not g.has_key(suffix): g[suffix]={p[0]:{}}
+        if not g.has_key(suffix):
+            g[suffix]={p[0]:{}}
+            fid[suffix]={p[0]:gains}
+        else:
+            gains = mp2cal.wyl.degen_project_simple(gains,fid[suffix][p[0]],antpos)
 #        if not nfiles.has_key(suffix): nfiles[suffix]=0
 #        nfiles[suffix]+=1
         for a in gains[p[0]].keys():
             if np.isnan(np.mean(gains[p[0]][a])): continue
             if not g[suffix][p[0]].has_key(a): g[suffix][p[0]][a] = []
             g[suffix][p[0]][a].append(gains[p[0]][a])
+        del gains
 #    print nfiles
     for suf in g.keys():
         for a in g[suf][p[0]].keys():
