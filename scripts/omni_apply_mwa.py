@@ -122,7 +122,7 @@ for ip,p in enumerate(pols):
         exec('from %s import *'% opts.cal)
         ref = min(gains[p[0]].keys())
         if opts.intype == 'fhd':
-            gains = mp2cal.wyl.degen_project_FO(gains,antpos,EastHex,SouthHex)
+            gains = mp2cal.wyl.degen_project_FO(gains,antpos)
         elif opts.intype == 'uvfits':
             gains = mp2cal.wyl.degen_project_OF(gains,gfhd,antpos,EastHex,SouthHex)
 #********************** if choose to make sols smooth ***************************

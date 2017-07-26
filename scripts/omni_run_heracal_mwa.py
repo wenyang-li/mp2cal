@@ -219,7 +219,7 @@ def omnirun(data_wrap):
     if opts.projdegen:
         print '   Projecting degeneracy'
         if opts.ftype == 'fhd':
-            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,EastHex,SouthHex)
+            g2 = mp2cal.wyl.degen_project_FO(g2,antpos)
         elif opts.ftype == 'uvfits':
             g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex)
 
