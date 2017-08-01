@@ -343,7 +343,10 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
             proj = amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))
             gains[p][a] *= proj
         ratio = {p:{}}
-        for a in gains[p].keys(): ratio[p][a] = gains[p][a]*gfhd[p][a].conj()
+        for a in gains[p].keys():
+            r = gains[p][a]*gfhd[p][a].conj()
+            if np.isnan(np.mean(r)): continue
+            ratio[p][a] = r
         phspar2 = plane_fitting(ratio,antpos)
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
@@ -374,7 +377,10 @@ def degen_project_simple(g_input,g_target,antpos):
     amppar = ampproj(g_input,g_target)
     for p in g_output.keys():
         ratio = {p:{}}
-        for a in g_output[p].keys(): ratio[p][a] = g_input[p][a]*g_target[p][a].conj()
+        for a in g_output[p].keys():
+            r = g_input[p][a]*g_target[p][a].conj()
+            if np.isnan(np.mean(r)): continue
+            ratio[p][a] = r
         phspar = plane_fitting(ratio,antpos)
         for a in g_input[p].keys():
             dx = antpos[a]['top_x']

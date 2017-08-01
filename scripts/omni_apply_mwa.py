@@ -144,10 +144,10 @@ for ip,p in enumerate(pols):
 #*********************************************************************************************
     if opts.appfhd:
         for a in gfhd[p[0]].keys():
-            if a > 56: continue
             if np.isnan(np.mean(gfhd[p[0]][a])):
                 ex_ants.append(a)
                 continue
+            if a > 56: continue
             gains[p[0]][a] = gfhd[p[0]][a]
     if opts.scale: gains = mp2cal.wyl.scale_gains(gains)
     for ii in range(0,Nblts):
