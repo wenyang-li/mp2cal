@@ -44,8 +44,8 @@ for p in pols:
             g[suffix]={p[0]:{}}
             fid[suffix]={p[0]:gains}
         else:
-            gains = mp2cal.wyl.degen_project_OF(gains,fid[suffix][p[0]],antpos,EastHex,SouthHex)
-        #gains = mp2cal.wyl.degen_project_simple(gains,fid[suffix][p[0]],antpos)
+#            gains = mp2cal.wyl.degen_project_OF(gains,fid[suffix][p[0]],antpos,EastHex,SouthHex)
+            gains = mp2cal.wyl.degen_project_simple(gains,fid[suffix][p[0]],antpos)
 #        if not nfiles.has_key(suffix): nfiles[suffix]=0
 #        nfiles[suffix]+=1
         for a in gains[p[0]].keys():

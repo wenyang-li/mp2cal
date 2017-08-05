@@ -20,8 +20,7 @@ o.add_option('--bpfit',dest='bpfit',default=False,action='store_true',
 o.add_option('--polyfit',dest='polyfit',default=False,action='store_true',
              help='Toggle: do a polyfit to sols over the band. Default=False')
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load omnical solution files. Include final / in path.')
-o.add_option('--npz',dest='npz',default=None,type='string',
-             help='specify npz file names for gain solutions, (format: path/name, without .pol.npz), otherwise read gain solutions from npz according to obsid and omnipath')
+
 o.add_option('--outtype', dest='outtype', default='uvfits', type='string',
              help='Type of the output file, .uvfits, or miriad, or fhd')
 o.add_option('--intype', dest='intype', default=None, type='string',
@@ -32,10 +31,10 @@ o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out
              help='path to fhd dir for fhd output visibilities if ftype is fhd.')
 o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
-o.add_option('--scale',dest='scale',default=False,action='store_true',
-             help='Toggle: scale gains before applying to the data. Default=False')
-o.add_option('--projdegen', dest='projdegen', default=False, action='store_true',
-             help='Toggle: Project degen to FHD solutions')
+o.add_option('--ave',dest='ave',default=False,action='store_true',
+             help='Toggle: apply averaged calibration solution. Default=False')
+o.add_option('--nodegen', dest='nodegen', default=False, action='store_true',
+             help='Toggle: Do not project degeneracy')
 opts,args = o.parse_args(sys.argv[1:])
 
 delays = {
@@ -65,7 +64,7 @@ obsid = args[0]
 if opts.outtype == 'uvfits':
     if opts.intype == 'fhd': suffix = 'FO'
     else: suffix = 'O'
-    if not opts.npz == None: suffix = suffix + 'A'
+    if opts.ave: suffix = suffix + 'A'
     if opts.bpfit:
         suffix = suffix + 'B'
     if opts.polyfit:
@@ -97,14 +96,14 @@ if opts.appfhd or opts.projdegen:
 for ip,p in enumerate(pols):
     pid = np.where(pollist == aipy.miriad.str2pol[p])[0][0]
     omnifile_ave = ''
-    if not opts.npz == None:
+    if opts.ave:
         day = int(obsid)/86400
         hdu = fits.open(opts.metafits+obsid+'.metafits')
         pointing = delays[hdu[0].header['DELAYS']]
-        omnifile_ave = opts.npz + '_' + str(day) + '_' + str(pointing) + '.' + p + '.npz'
+        omnifile_ave = opts.omnipath + 'omniave' + '_' + str(day) + '_' + str(pointing) + '.' + p + '.npz'
     omnifile = opts.omnipath + obsid.split('/')[-1]+'.'+p+'.omni.npz'
     print '  Reading and applying:', omnifile, omnifile_ave
-    if not opts.npz == None:
+    if opts.ave:
         if opts.xtalk:
             _,gains,_,_ = mp2cal.wyl.load_gains_omni(omnifile_ave)
             _,_,_,xtalk = mp2cal.wyl.load_gains_omni(omnifile)
@@ -118,7 +117,8 @@ for ip,p in enumerate(pols):
             xtalk = {}
             gains = mp2cal.wyl.quick_load_gains(omnifile)
 #********************** if project degeneracy ***********************************
-    if opts.projdegen:
+    if not opts.nodegen:
+        print "   Project Degeneracy"
         exec('from %s import *'% opts.cal)
         ref = min(gains[p[0]].keys())
         if opts.intype == 'fhd':
@@ -149,7 +149,6 @@ for ip,p in enumerate(pols):
                 continue
             if a > 56: continue
             gains[p[0]][a] = gfhd[p[0]][a]
-    if opts.scale: gains = mp2cal.wyl.scale_gains(gains)
     for ii in range(0,Nblts):
         a1 = uvi.ant_1_array[ii]
         a2 = uvi.ant_2_array[ii]

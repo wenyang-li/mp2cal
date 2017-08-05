@@ -1,6 +1,6 @@
 #!//anaconda/bin/python
 import numpy as np
-import omnical, aipy, mp2cal
+import heracal, aipy, mp2cal
 import optparse, os, sys, glob
 from astropy.io import fits
 import pickle, copy
@@ -165,20 +165,25 @@ def omnirun(data_wrap):
         g0 = {p:{}}
         for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
     else:
-        print '     start rough cal'
-        info_rough = mp2cal.wyl.pos_to_info(antpos,pols=[p],ubls=[(57,61),(57,62)],ex_ants=ex_ants)
-        g0 = mp2cal.wyl.rough_cal(dat,info_rough,pol=pp)
+        fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
+        if os.path.exists(fcfile):
+            print '     loading firstcal file: ', fcfile
+            g0 = mp2cal.wyl.load_gains_fc(fcfile)
+        else:
+            print '     firstcal not found, start rough cal'
+            info_rough = mp2cal.wyl.pos_to_info(antpos,pols=[p],ubls=[(57,61),(57,62)],ex_ants=ex_ants)
+            g0 = mp2cal.wyl.rough_cal(dat,info_rough,pol=pp)
 
     #*********************** Calibrate ******************************************
-#    wgts[pp] = {} #weights dictionary by pol
-#    for bl in flag:
-#        i,j = bl
-#        wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
+    wgts[pp] = {} #weights dictionary by pol
+    for bl in flag:
+        i,j = bl
+        wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
-    m1,g1,v1 = omnical.calib.logcal(dat,info,gains=g0,maxiter=150,conv=1e-3, stepsize=.3, trust_period=1)
-    m2,g2,v2 = omnical.calib.lincal(dat, info, gains=g1, vis=v1,maxiter=150,conv=1e-3, stepsize=.3, trust_period=1)
+    m2,g2,v2 = mp2cal.run_omnical_fine(dat,info,gains0=g0)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
+    xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
     g2 = mp2cal.wyl.remove_degen_hex(g2, antpos)
 
 
