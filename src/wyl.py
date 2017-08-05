@@ -626,7 +626,7 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
 
 
 def run_omnical_fine(data, info, gains0=None, xtalk=None, maxiter=1000, conv1=1e-3,
-                     stepsize1=.3, conv2=1e-5,stepsize2=0.01, trust_period=1):
+                     stepsize1=.3, conv2=1e-6,stepsize2=0.05, trust_period=1):
     
     m1,g1,v1 = omnical.calib.logcal(data, info, xtalk=xtalk, gains=gains0,
                                     maxiter=maxiter, conv=conv1, stepsize=stepsize1,
