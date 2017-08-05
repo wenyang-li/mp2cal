@@ -203,6 +203,9 @@ def ampproj(g_input,g_target):
                 InvK_target[ind] = 1/K_target[ind]
                 s1 += InvK_input
                 s2 += InvK_target
+        ind = np.where(s2 == 0)
+        s2[ind] = 1
+        s1[ind] = 0
         amppar[p] = np.sqrt(s1/s2)
     return amppar
 
