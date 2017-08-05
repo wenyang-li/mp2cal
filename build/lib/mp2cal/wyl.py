@@ -182,19 +182,28 @@ def amp_bandpass_fit(gains0,fit_order=4):
 def ampproj(g_input,g_target):
     amppar = {}
     for p in g_input.keys():
-        s = 0
-        n = 0
+        s1 = 0
+        s2 = 0
         SH = g_input[p][g_input[p].keys()[0]].shape
-        for a in g_input[p].keys():
-            if not a in g_target[p].keys(): continue
-            if np.isnan(np.mean(g_target[p][a])): continue
-            if np.isnan(np.mean(g_input[p][a])): continue
-            ind = np.where(g_input[p][a] == 0)
-            g_target[p][a][ind] = 0
-            g_input[p][a][ind] = 1
-            s += (np.resize(np.abs(g_target[p][a]),SH)/np.abs(g_input[p][a]))
-            n += 1.
-        amppar[p] = (s/n)
+        for a1 in g_input[p].keys():
+            if not a1 in g_target[p].keys(): continue
+            if np.isnan(np.mean(g_target[p][a1])): continue
+            if np.isnan(np.mean(g_input[p][a1])): continue
+            for a2 in g_input[p].keys():
+                if a2 < a1: continue
+                if not a2 in g_target[p].keys(): continue
+                if np.isnan(np.mean(g_target[p][a2])): continue
+                if np.isnan(np.mean(g_input[p][a2])): continue
+                K_input = np.abs(g_input[p][a1]*g_input[p][a2].conj())
+                K_target = np.resize(np.abs(g_target[p][a1]*g_target[p][a2].conj()),SH)
+                ind = np.where(K_input*K_target > 0)
+                InvK_input = np.zeros(SH)
+                InvK_target = np.zeros(SH)
+                InvK_input[ind] = 1/K_input[ind]
+                InvK_target[ind] = 1/K_target[ind]
+                s1 += InvK_input
+                s2 += InvK_target
+        amppar[p] = np.sqrt(s1/s2)
     return amppar
 
 
