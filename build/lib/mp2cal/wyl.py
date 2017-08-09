@@ -179,34 +179,29 @@ def amp_bandpass_fit(gains0,fit_order=4):
     return gains
 
 
-def ampproj(g_input,g_target):
-    amppar = {}
+def amp(g_input,g_target):
+    amppar={}
     for p in g_input.keys():
-        s1 = 0
-        s2 = 0
+        s = 0
+        n = 0
         SH = g_input[p][g_input[p].keys()[0]].shape
-        for a1 in g_input[p].keys():
-            if not a1 in g_target[p].keys(): continue
-            if np.isnan(np.mean(g_target[p][a1])): continue
-            if np.isnan(np.mean(g_input[p][a1])): continue
-            for a2 in g_input[p].keys():
-                if a2 < a1: continue
-                if not a2 in g_target[p].keys(): continue
-                if np.isnan(np.mean(g_target[p][a2])): continue
-                if np.isnan(np.mean(g_input[p][a2])): continue
-                K_input = np.abs(g_input[p][a1]*g_input[p][a2].conj())
-                K_target = np.resize(np.abs(g_target[p][a1]*g_target[p][a2].conj()),SH)
-                ind = np.where(K_input*K_target > 0)
-                InvK_input = np.zeros(SH)
-                InvK_target = np.zeros(SH)
-                InvK_input[ind] = 1/K_input[ind]
-                InvK_target[ind] = 1/K_target[ind]
-                s1 += InvK_input
-                s2 += InvK_target
-        ind = np.where(s2 == 0)
-        s2[ind] = 1
-        s1[ind] = 0
-        amppar[p] = np.sqrt(s1/s2)
+        for a in g_input[p].keys():
+            if not a in g_target[p].keys(): continue
+            if np.isnan(np.mean(g_target[p][a])): continue
+            if np.isnan(np.mean(g_input[p][a])): continue
+            num = np.ones(SH)
+            amp_in = np.abs(g_input[p][a])
+            amp_ta = np.resize(np.abs(g_target[p][a]),SH)
+            ind = np.where(amp_in==0)
+            amp_in[ind] = 1.
+            amp_ta[ind] = 0.
+            num[ind] = 0
+            s += amp_ta/amp_in
+            n += num
+        ind = np.where(n==0)
+        n[ind] = 1.
+        s[ind] = 0.
+        amppar[p] = s/n
     return amppar
 
 
