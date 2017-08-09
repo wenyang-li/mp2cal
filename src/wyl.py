@@ -179,8 +179,8 @@ def amp_bandpass_fit(gains0,fit_order=4):
     return gains
 
 
-def amp(g_input,g_target):
-    amppar={}
+def ampproj(g_input,g_target):
+    amppar = {}
     for p in g_input.keys():
         s = 0
         n = 0
