@@ -139,12 +139,6 @@ def omnirun(data_wrap):
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
-    fn = open(obsid + pp + '_flagbls.txt', 'wb')
-    for flgbls in flag_bls:
-        if flgbls[0] in info.subsetant and flgbls[1] in info.subsetant:
-            fn.write(str(flgbls)+'\n')
-    fn.write('N baselines used: '+str(len(redbls))+'\n')
-    fn.close()
 
     #*********************** organize data *************************************
     dat,wgts,xtalk = {}, {}, {}
@@ -184,8 +178,6 @@ def omnirun(data_wrap):
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
-    g2 = mp2cal.wyl.remove_degen_hex(g2, antpos)
-
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
@@ -222,9 +214,10 @@ def omnirun(data_wrap):
     if opts.projdegen:
         print '   Projecting degeneracy'
         if opts.ftype == 'fhd':
-            g2 = mp2cal.wyl.degen_project_FO(g2,antpos)
+            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
         elif opts.ftype == 'uvfits':
-            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex)
+            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
+    else: g2 = mp2cal.wyl.remove_degen_hex(g2, antpos)
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'

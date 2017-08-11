@@ -326,7 +326,7 @@ def plane_fitting(gains,antpos):
     return phspar
 
 
-def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
+def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
     gains = copy.deepcopy(gomni)
     for p in gains.keys():
         ref1 = min(gains[p].keys())
@@ -362,10 +362,26 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex):
             if a > 92: proj *= np.exp(1j*phspar2[p]['offset_south'])
             else: proj *= np.exp(1j*phspar2[p]['offset_east'])
             gains[p][a] *= proj
+        if not v2 == {}:
+            pp = p+p
+            for bl in v2[pp].keys():
+                i,j = bl
+                if i < 93: v2[pp][bl] *= (ref_exp1*np.exp(-1j*phspar2[p]['offset_east']))
+                else: v2[pp][bl] *= (ref_exp2*np.exp(-1j*phspar2[p]['offset_south']))
+                if j < 93: v2[pp][bl] *= (ref_exp1.conj()*np.exp(1j*phspar2[p]['offset_east']))
+                else: v2[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
+                dx = antpos[i]['top_x']-antpos[j]['top_x']
+                dy = antpos[i]['top_y']-antpos[j]['top_y']
+                nx = dx/14.-dy/np.sqrt(3)/14.
+                ny = -2*dy/np.sqrt(3)/14.
+                proj = amppar[p]*amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
+                proj = np.resize(proj,v2[pp][bl].shape)
+                ind = np.where(proj!=0)
+                v2[pp][bl][ind] /= proj[ind]
     return gains
 
 
-def degen_project_FO(gomni,antpos):
+def degen_project_FO(gomni,antpos,v2={}):
     gains = scale_gains(gomni)
     phspar = plane_fitting(gains,antpos)
     for p in gains.keys():
@@ -376,6 +392,18 @@ def degen_project_FO(gomni,antpos):
             if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
             else: proj *= np.exp(1j*phspar[p]['offset_east'])
             gains[p][a] *= proj
+        if not v2 == {}:
+            pp = p+p
+            for bl in v2[pp].keys():
+                i,j = bl
+                if i < 93: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
+                else: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
+                if j < 93: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
+                else: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
+                dx = antpos[i]['top_x']-antpos[j]['top_x']
+                dy = antpos[i]['top_y']-antpos[j]['top_y']
+                proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+                v2[pp][bl][ind] *= proj
     return gains
 
 
@@ -672,3 +700,4 @@ def remove_degen_hex(gomni, antpos):
             g2[p][a] *= np.exp(-1j*(phi1*nx+phi2*ny))
     g2 = scale_gains(g2)
     return g2
+
