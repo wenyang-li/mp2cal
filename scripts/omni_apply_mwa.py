@@ -85,11 +85,7 @@ Nbls = uvi.Nbls
 pollist = uvi.polarization_array
 freqs = uvi.freq_array[0]
 
-fhd_cal = readsav(opts.fhdpath+'calibration/'+obsid+'_cal.sav',python_dict=True)
-gfhd = {'x':{},'y':{}}
-for a in range(fhd_cal['cal']['N_TILE'][0]):
-    gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a]
-    gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a]
+gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
 
     #find npz for each pol, then apply
 for ip,p in enumerate(pols):

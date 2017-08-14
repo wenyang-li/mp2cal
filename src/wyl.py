@@ -3,6 +3,7 @@ import subprocess, datetime, os
 from astropy.io import fits
 import copy
 import heracal
+from scipy.io.idl import readsav
 
 
 def unwrap(arr):
@@ -580,6 +581,15 @@ def quick_load_gains(filename):
             a = int(k[:-1])
             gains[p][a] = d[k]
     return gains
+
+
+def load_gains_fhd(fhdsav):
+    fhd_cal = readsav(fhdsav,python_dict=True)
+    gfhd = {'x':{},'y':{}}
+    for a in range(fhd_cal['cal']['N_TILE'][0]):
+        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a]
+        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a]
+    return gfhd
 
 
 def fill_flags(data,flag,fit_order = 4):
