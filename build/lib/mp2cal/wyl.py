@@ -184,8 +184,8 @@ def ampproj(g_input,g_target):
     amppar = {}
     for p in g_input.keys():
         s = 0
-        n = 0
         SH = g_input[p][g_input[p].keys()[0]].shape
+        n = np.zeros(SH)
         for a in g_input[p].keys():
             if not a in g_target[p].keys(): continue
             if np.isnan(np.mean(g_target[p][a])): continue
