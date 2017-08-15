@@ -670,20 +670,17 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     return g0
 
 
-def run_omnical_fine(data, info, gains0=None, xtalk=None, maxiter=1000, conv1=1e-3,
-                     stepsize1=.3, conv2=1e-6,stepsize2=0.05, trust_period=1):
+def run_omnical(data, info, gains0=None, xtalk=None, maxiter=500, conv=1e-3,
+                     stepsize=.3, trust_period=1):
     
     m1,g1,v1 = omnical.calib.logcal(data, info, xtalk=xtalk, gains=gains0,
-                                    maxiter=maxiter, conv=conv1, stepsize=stepsize1,
+                                    maxiter=maxiter, conv=conv, stepsize=stepsize,
                                     trust_period=trust_period)
     m2,g2,v2 = omnical.calib.lincal(data, info, xtalk=xtalk, gains=g1, vis=v1,
-                                    maxiter=maxiter, conv=conv1, stepsize=stepsize1,
+                                    maxiter=maxiter, conv=conv, stepsize=stepsize,
                                     trust_period=trust_period)
-    m3,g3,v3 = omnical.calib.lincal(data, info, xtalk=xtalk, gains=g2, vis=v2,
-                                    maxiter=maxiter, conv=conv2, stepsize=stepsize2,
-                                    trust_period=trust_period)
-    _, g4,v4 = omnical.calib.removedegen(data, info, g3, v3, nondegenerategains=gains0)
-    return m3,g4,v4
+
+    return m2,g2,v2
 
 
 def remove_degen_hex(gomni, antpos):
