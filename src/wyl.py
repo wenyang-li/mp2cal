@@ -183,8 +183,8 @@ def amp_bandpass_fit(gains0,fit_order=4):
 def ampproj(g_input,g_target):
     amppar = {}
     for p in g_input.keys():
-        s = 0
         SH = g_input[p][g_input[p].keys()[0]].shape
+        s = np.zeros(SH)
         n = np.zeros(SH)
         for a in g_input[p].keys():
             if not a in g_target[p].keys(): continue

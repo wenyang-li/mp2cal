@@ -183,6 +183,8 @@ def omnirun(data_wrap):
         chi_mask[ind] = True
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
+        ind = np.where(np.isnan(g2[p][a]))
+        g2[p][a][ind] = 0
         if opts.tave:
             g2[p][a] = np.resize(g2[p][a],(SH[1]))
             stack_mask = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
