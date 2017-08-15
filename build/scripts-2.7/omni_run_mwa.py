@@ -159,7 +159,7 @@ def omnirun(data_wrap):
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical_fine(dat,info,gains0=g0)
-    m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-6)
+    m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-8)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
@@ -184,8 +184,8 @@ def omnirun(data_wrap):
         chi_mask[ind] = True
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
-        ind = np.where(np.isnan(g2[p][a]))
-        g2[p][a][ind] = 0
+#        ind = np.where(np.isnan(g2[p][a]))
+#        g2[p][a][ind] = 0
         if opts.tave:
             g2[p][a] = np.resize(g2[p][a],(SH[1]))
             stack_mask = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
