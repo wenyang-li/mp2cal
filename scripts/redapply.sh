@@ -1,6 +1,7 @@
 ### Submit the sbatch array command to do omniapply
 
 obs_file_name='/users/wl42/IDL/FHD/Observations/AllNov2016'
+#obs_file_name='/users/wl42/IDL/FHD/Observations/obslist'
 #obs_file_name='TESTFC'
 mem='60G'
 time='2:00:00'

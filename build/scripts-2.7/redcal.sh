@@ -1,7 +1,8 @@
 ### Submit the sbatch array command to do omnical
 
 obs_file_name='/users/wl42/IDL/FHD/Observations/AllNov2016'
-#obs_file_name='ALL'
+#obs_file_name='/users/wl42/IDL/FHD/Observations/obslist'
+#obs_file_name='PROJ'
 poscal='PhaseII_cal'
 #pol='xx,yy'
 mem='60G'

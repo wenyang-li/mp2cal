@@ -27,7 +27,7 @@ o.add_option('--intype', dest='intype', default=None, type='string',
              help='Type of the input file, .uvfits or fhd')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string',
              help='path to metafits files')
-o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_PhaseII_Longrun_EoR0/', type='string',
+o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_MWA_PhaseII_EoR0/', type='string',
              help='path to fhd dir for fhd output visibilities if ftype is fhd.')
 o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
