@@ -404,7 +404,7 @@ def degen_project_FO(gomni,antpos,v2={}):
                 dx = antpos[i]['top_x']-antpos[j]['top_x']
                 dy = antpos[i]['top_y']-antpos[j]['top_y']
                 proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                v2[pp][bl][ind] *= proj
+                v2[pp][bl] *= proj
     return gains
 
 
