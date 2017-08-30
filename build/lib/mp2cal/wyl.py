@@ -725,16 +725,16 @@ def orgdata(uv,reds):
     for r in reds:
         data['xx'][r[0]] = {}
         data['yy'][r[0]] = {}
-    for bl in r:
-        i,j = bl
-        try:
+        for bl in r:
+            i,j = bl
             try:
-                ind = np.where(b==128*i+j)[0][0]
-                data['xx'][r[0]][bl] = dx[ind]
-                data['yy'][r[0]][bl] = dy[ind]
-            except:
-                ind=np.where(b==128*j+i)[0][0]
-                data['xx'][r[0]][bl] = dx[ind].conj()
-                data['yy'][r[0]][bl] = dy[ind].conj()
-        except: pass
+                try:
+                    ind = np.where(b==128*i+j)[0][0]
+                    data['xx'][r[0]][bl] = dx[ind]
+                    data['yy'][r[0]][bl] = dy[ind]
+                except:
+                    ind = np.where(b==128*j+i)[0][0]
+                    data['xx'][r[0]][bl] = dx[ind].conj()
+                    data['yy'][r[0]][bl] = dy[ind].conj()
+            except: pass
     return data
