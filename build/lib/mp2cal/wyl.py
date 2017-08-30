@@ -708,3 +708,33 @@ def remove_degen_hex(gomni, antpos):
     g2 = scale_gains(g2)
     return g2
 
+
+def orgdata(uv,reds):
+    a1 = uv.ant_1_array[:uv.Nbls]
+    a2 = uv.ant_2_array[:uv.Nbls]
+    b = 128*a1+a2
+    dx = uv.data_array[:,0][:,:,0].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+    fx = uv.flag_array[:,0][:,:,0].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+    dx = np.ma.masked_array(dx,fx)
+    dx = np.mean(dx,axis=0).data
+    dy = uv.data_array[:,0][:,:,1].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+    fy = uv.flag_array[:,0][:,:,1].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+    dy = np.ma.masked_array(dy,fy)
+    dy = np.mean(dy,axis=0).data
+    data = {'xx':{},'yy':{}}
+    for r in reds:
+        data['xx'][r[0]] = {}
+        data['yy'][r[0]] = {}
+    for bl in r:
+        i,j = bl
+        try:
+            try:
+                ind = np.where(b==128*i+j)[0][0]
+                data['xx'][r[0]][bl] = dx[ind]
+                data['yy'][r[0]][bl] = dy[ind]
+            except:
+                ind=np.where(b==128*j+i)[0][0]
+                data['xx'][r[0]][bl] = dx[ind].conj()
+                data['yy'][r[0]][bl] = dy[ind].conj()
+        except: pass
+    return data
