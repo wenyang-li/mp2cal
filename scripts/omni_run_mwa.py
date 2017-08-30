@@ -110,7 +110,7 @@ uv2 = uvd.UVData()
 uv2.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
 all_red = mp2cal.wyl.cal_reds_from_pos(antpos)
 testdata = mp2cal.wyl.orgdata(uv2,all_red)
-for pp in pols
+for pp in pols:
     for r in all_red:
         red_data = []
         for bl in r: red_data.append(testdata[pp][r[0]][bl][fuse])
