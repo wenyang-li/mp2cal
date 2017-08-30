@@ -121,7 +121,7 @@ for pp in pols:
             ratio=np.abs(testdata[pp][r[0]][bl][fuse]-ave)/sig
             if np.where(ratio>2.5)[0].size>8: non_red_bls[pp].append(bl)
 print 'outlier baselines: ', non_red_bls
-
+del uv2, testdata, red_data
 #################################################################################################
 
 data_list = []
