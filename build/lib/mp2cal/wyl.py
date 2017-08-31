@@ -410,8 +410,8 @@ def degen_project_FO(gomni,antpos,v2={}):
 
 def gainamp_cal_FO(gomni,gfhd):
     g2 = copy.deepcopy(gomni)
-    for p in g2[p].keys():
-        for a in g2[p][a].keys():
+    for p in g2.keys():
+        for a in g2[p].keys():
             g2[p][a] *= gfhd[p][a]
     amppar = ampproj(g2,gfhd)
     return amppar
