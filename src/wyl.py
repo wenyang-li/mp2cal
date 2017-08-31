@@ -408,6 +408,41 @@ def degen_project_FO(gomni,antpos,v2={}):
     return gains
 
 
+def gainamp_cal_FO(gomni,gfhd):
+    g2 = copy.deepcopy(gomni)
+    for p in g2[p].keys():
+        for a in g2[p][a].keys():
+            g2[p][a] *= gfhd[p][a]
+    amppar = ampproj(g2,gfhd)
+    return amppar
+
+
+def degen_project_FO2(gomni,gfhd,antpos,v2={}):
+    amppar = gainamp_cal_FO(gomni,gfhd)
+    phspar = plane_fitting(gains,antpos)
+    for p in gains.keys():
+        for a in gains[p].keys():
+            dx = antpos[a]['top_x']
+            dy = antpos[a]['top_y']
+            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+            if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
+            else: proj *= np.exp(1j*phspar[p]['offset_east'])
+            gains[p][a] *= proj
+        if not v2 == {}:
+            pp = p+p
+            for bl in v2[pp].keys():
+                i,j = bl
+                if i < 93: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
+                else: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
+                if j < 93: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
+                else: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
+                dx = antpos[i]['top_x']-antpos[j]['top_x']
+                dy = antpos[i]['top_y']-antpos[j]['top_y']
+                proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+                v2[pp][bl] *= proj
+    return gains
+
+
 def degen_project_simple(g_input,g_target,antpos):
     g_output = copy.deepcopy(g_input)
     amppar = ampproj(g_input,g_target)
