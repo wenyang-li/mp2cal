@@ -418,7 +418,8 @@ def gainamp_cal_FO(gomni,gfhd):
 
 
 def degen_project_FO2(gomni,gfhd,antpos,v2={}):
-    amppar = gainamp_cal_FO(gomni,gfhd)
+    gains = copy.deepcopy(gomni)
+    amppar = gainamp_cal_FO(gains,gfhd)
     phspar = plane_fitting(gains,antpos)
     for p in gains.keys():
         for a in gains[p].keys():
