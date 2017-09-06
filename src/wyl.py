@@ -195,14 +195,14 @@ def ampproj(g_input,g_target):
             amp_ta = np.resize(np.abs(g_target[p][a]),SH)
             ind = np.where(amp_in==0)
             amp_in[ind] = 1.
-            amp_ta[ind] = 0.
+            amp_ta[ind] = 1.
             num[ind] = 0
-            s += amp_ta/amp_in
+            s += np.log(amp_ta/amp_in)
             n += num
         ind = np.where(n==0)
         n[ind] = 1.
         s[ind] = 0.
-        amppar[p] = s/n
+        amppar[p] = np.exp(s/n)
     return amppar
 
 
