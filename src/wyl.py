@@ -41,12 +41,14 @@ def scale_gains(g0, amp_ave=1.):
         amp = 0
         n = 0
         for a in g[p].keys():
-            amp += np.abs(g[p][a])
+            amp_temp = np.abs(g[p][a])
+            ind = np.where(amp_temp == 0)
+            amp_temp[ind] = 1
+            amp += np.log(np.abs(amp_temp))
             n += 1
         amp /= n
-        q = amp/amp_ave
-        inds = np.where(amp!=0)
-        for a in g[p].keys(): g[p][a][inds] /= q[inds]
+        q = amp - np.log(amp_ave)
+        for a in g[p].keys(): g[p][a] /= np.exp(q)
     return g
 
 
