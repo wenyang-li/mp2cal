@@ -208,7 +208,7 @@ def ampproj(g_input,g_target):
     return amppar
 
 
-def phsproj(g_input,g_target,antpos,EastHex,SouthHex): #only returns slopes
+def phsproj(g_input,g_target,EastHex,SouthHex): #only returns slopes
     phspar = {}
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
@@ -340,7 +340,7 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
             if a < 93: gains[p][a] /= ref_exp1
             else: gains[p][a] /= ref_exp2
         amppar = ampproj(gains,gfhd)
-        phspar = phsproj(gains,gfhd,antpos,EastHex,SouthHex)
+        phspar = phsproj(gains,gfhd,EastHex,SouthHex)
         for a in gains[p].keys():
             if a < 93:
                 dx = antpos[a]['top_x']-antpos[ref1]['top_x']
@@ -348,8 +348,8 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
             else:
                 dx = antpos[a]['top_x']-antpos[ref2]['top_x']
                 dy = antpos[a]['top_y']-antpos[ref2]['top_y']
-            nx = dx/14.-dy/np.sqrt(3)/14.
-            ny = -2*dy/np.sqrt(3)/14.
+            nx = np.round(dx/14.-dy/np.sqrt(3)/14.)
+            ny = np.round(-2*dy/np.sqrt(3)/14.)
             proj = amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))
             gains[p][a] *= proj
         ratio = {p:{}}
@@ -375,8 +375,8 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
                 else: v2[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
                 dx = antpos[i]['top_x']-antpos[j]['top_x']
                 dy = antpos[i]['top_y']-antpos[j]['top_y']
-                nx = dx/14.-dy/np.sqrt(3)/14.
-                ny = -2*dy/np.sqrt(3)/14.
+                nx = np.round(dx/14.-dy/np.sqrt(3)/14.)
+                ny = np.round(-2*dy/np.sqrt(3)/14.)
                 proj = amppar[p]*amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
                 proj = np.resize(proj,v2[pp][bl].shape)
                 ind = np.where(proj!=0)
@@ -740,8 +740,8 @@ def remove_degen_hex(gomni, antpos):
             else:
                 dx = antpos[a]['top_x'] - antpos[93]['top_x']
                 dy = antpos[a]['top_y'] - antpos[93]['top_y']
-            nx = dx/14.-dy/np.sqrt(3)/14.
-            ny = -2*dy/np.sqrt(3)/14.
+            nx = np.round(dx/14.-dy/np.sqrt(3)/14.)
+            ny = np.round(-2*dy/np.sqrt(3)/14.)
             g2[p][a] *= np.exp(-1j*(phi1*nx+phi2*ny))
     g2 = scale_gains(g2)
     return g2
