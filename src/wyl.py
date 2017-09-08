@@ -321,10 +321,10 @@ def plane_fitting(gains,antpos,conv=1e-12,maxiter=50):
             Cmax = np.max(np.abs(Ci))
         if iter > 45: print 'iter:', iter
             #Attention: append negative results here
-        phspar[p]['phix'] = C[0]
-        phspar[p]['phiy'] = C[1]
-        phspar[p]['offset_east'] = C[2]
-        phspar[p]['offset_south'] = C[3]
+        phspar[p]['phix'] = -C[0]
+        phspar[p]['phiy'] = -C[1]
+        phspar[p]['offset_east'] = -C[2]
+        phspar[p]['offset_south'] = -C[3]
     return phspar
 
 
