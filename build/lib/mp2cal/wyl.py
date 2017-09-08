@@ -284,9 +284,23 @@ def plane_fitting(gains,antpos,conv=1e-12,maxiter=50):
         C = np.zeros((4,384))
         Cmax = 100
         iter = 0
+        M0 = np.zeros((4,4))
+        for a in gains[p].keys():
+            x = antpos[a]['top_x']
+            y = antpos[a]['top_y']
+            if 56 < a < 93:
+                M0 += np.array([[x*x, x*y, x , 0 ],
+                                [x*y, y*y, y , 0 ],
+                                [ x ,  y , 1 , 0 ],
+                                [ 0 ,  0 , 0 , 0 ]])
+            if 92 < a < 128:
+                M0 += np.array([[x*x, x*y, 0 , x ],
+                                [x*y, y*y, 0 , y ],
+                                [ 0 ,  0 , 0 , 0 ],
+                                [ x ,  y , 0 , 1 ]])
+        invM = np.linalg.inv(M0)
         while (Cmax>conv and iter<maxiter):
             iter += 1
-            M0 = np.zeros((4,4))
             p0 = np.zeros((4,384))
             for a in gains[p].keys():
                 x = antpos[a]['top_x']
@@ -298,28 +312,14 @@ def plane_fitting(gains,antpos,conv=1e-12,maxiter=50):
                 z -= (C[0]*x+C[1]*y)
                 if 56 < a < 93:
                     z -= C[2]
-                    M0 += np.array([[x*x, x*y, x , 0 ],
-                                    [x*y, y*y, y , 0 ],
-                                    [ x ,  y , 1 , 0 ],
-                                    [ 0 ,  0 , 0 , 0 ]])
-                    p0 += np.array([z*x,
-                                    z*y,
-                                     z ,
-                                np.zeros(z.shape)])
+                    p0 += np.array([z*x,z*y,z,np.zeros(z.shape)])
                 if 92 < a < 128:
                     z -= C[3]
-                    M0 += np.array([[x*x, x*y, 0 , x ],
-                                    [x*y, y*y, 0 , y ],
-                                    [ 0 ,  0 , 0 , 0 ],
-                                    [ x ,  y , 0 , 1 ]])
-                    p0 += np.array([z*x,
-                                    z*y,
-                                np.zeros(z.shape),
-                                     z  ])
-                Ci = np.linalg.inv(M0).dot(p0)
-                C += Ci
-                Cmax = np.max(np.abs(Ci))
-            if iter > 45: print 'iter:', iter
+                    p0 += np.array([z*x,z*y,np.zeros(z.shape),z])
+            Ci = invM.dot(p0)
+            C += Ci
+            Cmax = np.max(np.abs(Ci))
+        if iter > 45: print 'iter:', iter
             #Attention: append negative results here
         phspar[p]['phix'] = C[0]
         phspar[p]['phiy'] = C[1]
