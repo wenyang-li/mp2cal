@@ -277,55 +277,54 @@ def phsproj(g_input,g_target,EastHex,SouthHex): #only returns slopes
     return phspar
 
 
-def plane_fitting(gains,antpos):
+def plane_fitting(gains,antpos,conv=1e-12,maxiter=50):
     phspar = {}
     for p in gains.keys():
         phspar[p] = {}
-        phix,phiy,offset_east,offset_south = [],[],[],[]
-        for f in range(384):
-            if f%16 in [0,15]:
-                phix.append(0)
-                phiy.append(0)
-                offset_east.append(0)
-                offset_south.append(0)
-                continue
+        C = np.zeros((4,384))
+        Cmax = 100
+        iter = 0
+        while (Cmax>conv and iter<maxiter):
+            iter += 1
             M0 = np.zeros((4,4))
-            p0 = np.zeros((4,1))
+            p0 = np.zeros((4,384))
             for a in gains[p].keys():
                 x = antpos[a]['top_x']
                 y = antpos[a]['top_y']
                 if gains[p][a].ndim == 2:
-                    z = np.angle(np.mean(gains[p][a],axis=0)[f])
+                    z = np.angle(np.mean(gains[p][a],axis=0))
                 else:
-                    z = np.angle(gains[p][a][f])
+                    z = np.angle(gains[p][a])
+                z -= (C[0]*x+C[1]*y)
                 if 56 < a < 93:
+                    z -= C[2]
                     M0 += np.array([[x*x, x*y, x , 0 ],
                                     [x*y, y*y, y , 0 ],
                                     [ x ,  y , 1 , 0 ],
                                     [ 0 ,  0 , 0 , 0 ]])
-                    p0 += np.array([[z*x],
-                                    [z*y],
-                                    [ z ],
-                                    [ 0 ]])
+                    p0 += np.array([z*x,
+                                    z*y,
+                                     z ,
+                                np.zeros(z.shape)])
                 if 92 < a < 128:
+                    z -= C[3]
                     M0 += np.array([[x*x, x*y, 0 , x ],
                                     [x*y, y*y, 0 , y ],
                                     [ 0 ,  0 , 0 , 0 ],
                                     [ x ,  y , 0 , 1 ]])
-                    p0 += np.array([[z*x],
-                                    [z*y],
-                                    [ 0 ],
-                                    [ z ]])
-            C = np.linalg.inv(M0).dot(p0)
+                    p0 += np.array([z*x,
+                                    z*y,
+                                np.zeros(z.shape),
+                                     z  ])
+                Ci = np.linalg.inv(M0).dot(p0)
+                C += Ci
+                Cmax = np.max(np.abs(Ci))
+            if iter > 45: print 'iter:', iter
             #Attention: append negative results here
-            phix.append(-C[0][0])
-            phiy.append(-C[1][0])
-            offset_east.append(-C[2][0])
-            offset_south.append(-C[3][0])
-        phspar[p]['phix'] = np.array(phix)
-        phspar[p]['phiy'] = np.array(phiy)
-        phspar[p]['offset_east'] = np.array(offset_east)
-        phspar[p]['offset_south'] = np.array(offset_south)
+        phspar[p]['phix'] = C[0]
+        phspar[p]['phiy'] = C[1]
+        phspar[p]['offset_east'] = C[2]
+        phspar[p]['offset_south'] = C[3]
     return phspar
 
 
