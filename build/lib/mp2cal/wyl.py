@@ -277,7 +277,7 @@ def phsproj(g_input,g_target,EastHex,SouthHex): #only returns slopes
     return phspar
 
 
-def plane_fitting(gains,antpos,conv=1e-12,maxiter=50):
+def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
     phspar = {}
     for p in gains.keys():
         phspar[p] = {}
