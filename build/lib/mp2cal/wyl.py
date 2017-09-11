@@ -533,7 +533,7 @@ def get_phase(fqs,tau, offset=False):
     if offset:
         delay = tau[0]
         offset = tau[1]
-        return np.exp(-1j*(2*np.pi*fqs*delay) - offset)
+        return np.exp(-1j*(2*np.pi*fqs*delay - offset))
     else:
         return np.exp(-2j*np.pi*fqs*tau)
 
