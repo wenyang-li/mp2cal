@@ -185,9 +185,9 @@ def omnirun(data_wrap):
     for bl in dat.keys():
         i,j = bl
         ind = np.where(dat[bl][pp]==0)
-        dat[bl][pp][ind] = 1
-        g2[p][i][ind] = 1
-        g2[p][j][ind] = 1
+        dat[bl][pp][ind] = 4
+        g2[p][i][ind] = 2
+        g2[p][j][ind] = 2
         dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
