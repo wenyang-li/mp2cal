@@ -184,6 +184,10 @@ def omnirun(data_wrap):
     m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=1000, conv=1e-12)
     for bl in dat.keys():
         i,j = bl
+        ind = np.where(dat[bl][pp]==0)
+        dat[bl][pp][ind] = 1
+        g2[p][i][ind] = 1
+        g2[p][j][ind] = 1
         dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
