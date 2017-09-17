@@ -1,6 +1,6 @@
 #!//anaconda/bin/python
 import numpy as np
-import heracal, aipy, mp2cal
+import hera_cal, aipy, mp2cal
 import optparse, os, sys, glob
 from astropy.io import fits
 import pickle, copy
@@ -181,19 +181,22 @@ def omnirun(data_wrap):
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
-    for iter in range(50):
-        m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=1000, conv=1e-12)
-        maxdiff = 0
-        for a in g2[p].keys():
-            amax = np.nanmax(np.abs(g2[p][a]-g0[p][a])/np.abs(g0[p][a]))
-            if amax > maxdiff: maxdiff = amax
-        if maxdiff < 1e-6:
-            print 'omnical iter:', iter
-            break
-        g0 = copy.deepcopy(g2)
+    m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=1000, conv=1e-12)
+    for bl in data.keys():
+        i,j = bl
+        dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
-    xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
+    reds2 = hera_cal.redcal.add_pol_reds(reds,pols=[pp])
+    calibrator = hera_cal.redcal.RedundantCalibrator(reds2)
+    data = mp2cal.wyl.wrap_linsolve(data)
+    print '   start linsolve'
+    slog = calibrator.logcal(data)
+    slin = calibrator.lincal(data,slog)
+    m2,g3,v2 = mp2cal.wyl.unpack_linsolve(slin)
+    for a in g2[p].keys(): g2[p][a] *= g3[p][a]
+    print '   end linsolve'
+#xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
@@ -208,8 +211,8 @@ def omnirun(data_wrap):
                 i,j = bl
                 chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(np.var(md,axis=0).data+1e-7)
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
-        m2['chisq'] = chisq / float(DOF)
-        chi = m2['chisq']
+        m2['chisq2'] = chisq / float(DOF)
+        chi = m2['chisq2']
         chi_mask = np.zeros(chi.shape,dtype=bool)
         ind = np.where(chi>1.2)
         chi_mask[ind] = True

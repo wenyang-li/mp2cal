@@ -111,6 +111,13 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
         data_wrap[pp] = wrap
     return data_wrap
 
+def wrap_linsolve(data):
+    data2 = {}
+    for bl in data.keys():
+        for pol in data[bl].keys():
+            i,j = bl
+            data2[(i,j,pol)] = data[bl][pol]
+    return data2
 
 def polyfunc(x,z):
     sum = np.zeros((x.size))
@@ -118,7 +125,6 @@ def polyfunc(x,z):
         sum *= x
         sum += z[ii]
     return sum
-
 
 def mwa_bandpass_fit(gains0, auto, tile_info, amp_order=2, phs_order=1, fit_reflection=True):
     gains = copy.deepcopy(gains0)
@@ -565,11 +571,8 @@ def load_gains_fc(fcfile):
 
 def save_gains_omni(filename, meta, gains, vismdl, xtalk):
     d = {}
-    metakeys = ['jds','lsts','freqs','history']
     for key in meta:
-        if key.startswith('chisq'): d[key] = meta[key] #separate if statements  pending changes to chisqs
-        for k in metakeys:
-            if key.startswith(k): d[key] = meta[key]
+        d[key] = meta[key] #separate if statements  pending changes to chisqs
     for pol in gains:
         for ant in gains[pol]:
             d['%d%s' % (ant,pol)] = gains[pol][ant]
@@ -594,17 +597,16 @@ def load_gains_omni(filename):
             pol,ant = k[-1:],int(k[:-1])
             if not gains.has_key(pol): gains[pol] = {}
             gains[pol][ant] = npz[k]
-        try: pol,bl = parse_key(k)
-        except(ValueError): continue
         if k.startswith('<'):
+            pol,bl = parse_key(k)
             if not vismdl.has_key(pol): vismdl[pol] = {}
             vismdl[pol][bl] = npz[k]
         elif k.startswith('('):
+            pol,bl = parse_key(k)
             if not xtalk.has_key(pol): xtalk[pol] = {}
             xtalk[pol][bl] = npz[k]
-        kws = ['chi','hist','j','l','f']
-        for kw in kws:
-            for k in [f for f in npz.files if f.startswith(kw)]: meta[k] = npz[k]
+        else:
+            meta[k] = npz[k]
     return meta, gains, vismdl, xtalk
 
 
@@ -775,3 +777,42 @@ def orgdata(uv,reds):
                     data['yy'][r[0]][bl] = dy[ind].conj()
             except: pass
     return data
+
+
+def lincalplus(data,info,g2,v2,conv=1e-7):
+    Nants = info.nAntenna
+    Nubls = info.ublcount.size
+    Nbls = np.sum(info.ublcount)
+    A0 = np.zeros((Nbls,Nants+Nbls))
+    A1 = np.zeros((Nbls,Nants+Nbls))
+    reds = info.get_reds()
+    for nn in range(Nbls):
+        i,j = info.bl2d[nn]
+        blind = info.nAntenna + info.bltoubl[nn]
+        A0[nn][i] = 1
+        A0[nn][j] = 1
+        A0[nn][blind] = 1
+        A1[nn][i] = 1
+        A1[nn][j] = -1
+        A1[nn][blind] = 1
+    R = np.linalg.pinv(A0.T.dot(A0)).dot(A0.T)
+    I = np.linalg.pinv(A1.T.dot(A1)).dot(A1.T)
+    bl0 = data.keys()[0]
+    for pol in data[bl0].keys():
+        nt,nf = data[bl0][pol].shape
+        p = pol[0]
+        SFR = np.zeros(())
+
+def unpack_linsolve(s):
+    m, g, v = {}, {}, {}
+    for key in s[0].keys(): m[key] = s[key]
+    for key in s[1].keys():
+        if len(key) == 2:
+            a, p = key
+            if not g.has_key(p): g[p] = {}
+            g[p][a] = s[key]
+        elif len(key) == 3:
+            i, j, pp = key
+            if not v.has_key(pp): v[pp] = {}
+            v[pp][(i,j)] = s[key]
+    return m, g, v
