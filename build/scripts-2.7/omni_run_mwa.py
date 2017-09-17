@@ -185,17 +185,22 @@ def omnirun(data_wrap):
     for bl in dat.keys():
         i,j = bl
         ind = np.where(dat[bl][pp]==0)
-        dat[bl][pp][ind] = 4
-        g2[p][i][ind] = 2
-        g2[p][j][ind] = 2
         dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
+        dat[bl][pp][ind] = 1
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     reds2 = hera_cal.redcal.add_pol_reds(reds,pols=[pp])
     calibrator = hera_cal.redcal.RedundantCalibrator(reds2)
     data = mp2cal.wyl.wrap_linsolve(data)
     print '   start linsolve'
-    slog = calibrator.logcal(data)
+    slog = {}
+    for a in g2[p].keys():
+        k = (a,p)
+        slog[k] = np.ones(g2[p][a].shape,dtype=np.complex64)
+    for bl in v2[pp].keys():
+        i,j = bl
+        k = (i,j,pp)
+        slog[k] = v2[pp][bl]
     slin = calibrator.lincal(data,slog)
     m2,g3,v2 = mp2cal.wyl.unpack_linsolve(slin)
     for a in g2[p].keys(): g2[p][a] *= g3[p][a]
