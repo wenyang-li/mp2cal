@@ -182,7 +182,7 @@ def omnirun(data_wrap):
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
     m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=1000, conv=1e-12)
-    for bl in data.keys():
+    for bl in dat.keys():
         i,j = bl
         dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
     if opts.wgt_cal:
