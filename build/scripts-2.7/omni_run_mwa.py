@@ -181,31 +181,10 @@ def omnirun(data_wrap):
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
-    m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=1000, conv=1e-12)
-    for bl in dat.keys():
-        i,j = bl
-        ind = np.where(dat[bl][pp]==0)
-        dat[bl][pp] /= (g2[p][i]*g2[p][j].conj())
-        dat[bl][pp][ind] = 1
+    m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-7)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
-    reds2 = hera_cal.redcal.add_pol_reds(reds,pols=[pp])
-    calibrator = hera_cal.redcal.RedundantCalibrator(reds2)
-    data = mp2cal.wyl.wrap_linsolve(data)
-    print '   start linsolve'
-    slog = {}
-    for a in g2[p].keys():
-        k = (a,p)
-        slog[k] = np.ones(g2[p][a].shape,dtype=np.complex64)
-    for bl in v2[pp].keys():
-        i,j = bl
-        k = (i,j,pp)
-        slog[k] = v2[pp][bl]
-    slin = calibrator.lincal(data,slog)
-    m2,g3,v2 = mp2cal.wyl.unpack_linsolve(slin)
-    for a in g2[p].keys(): g2[p][a] *= g3[p][a]
-    print '   end linsolve'
-#xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
+    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
