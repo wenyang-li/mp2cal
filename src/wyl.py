@@ -841,7 +841,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
             vs[ubli] = v2[pp][bl].flatten()
             ubl_map[bl] = ubli
         for ii in range(SH[0]*SH[1]):
-            if ii%16 in [0,16]: continue #specific for mwa
+            if ii%16 in [0,15]: continue #specific for mwa
             dt = ii/SH[1]
             df = ii%SH[1]
             nbls = len(bl2d)
@@ -888,7 +888,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 S = np.linalg.pinv(A.transpose().dot(A)).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
-            print (dt,df),"  iter3: ", iter, "  conv: ", componentchange
+            print (dt,df),"  fine iter: ", iter, "  conv: ", componentchange
         for a in g2[p].keys():
             g2[p][a] = np.resize(gs[info.ant_index(a)],SH)
         for bl in v2[pp].keys():

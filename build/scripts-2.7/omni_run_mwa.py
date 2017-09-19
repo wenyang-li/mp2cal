@@ -182,7 +182,7 @@ def omnirun(data_wrap):
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
     m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
-    g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info)
+    g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
