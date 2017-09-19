@@ -186,7 +186,7 @@ def omnirun(data_wrap):
     print '   do fine conv'
     g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
     end_time = time.time()
-    caltime = end_time - start_time
+    caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
