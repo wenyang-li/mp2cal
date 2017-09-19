@@ -1,5 +1,5 @@
 #!//anaconda/bin/python
-import numpy as np
+import numpy as np, time
 import heracal, aipy, mp2cal
 import optparse, os, sys, glob
 from astropy.io import fits
@@ -179,10 +179,15 @@ def omnirun(data_wrap):
     for bl in flag:
         i,j = bl
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
+    start_time = time.time()
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
     m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
+    print '   do fine conv'
     g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
+    end_time = time.time()
+    caltime = end_time - start_time
+    print '   time expense: ', caltime
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
     xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
