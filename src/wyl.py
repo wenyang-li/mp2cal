@@ -284,31 +284,48 @@ def phsproj(g_input,g_target,EastHex,SouthHex): #only returns slopes
 
 
 def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
+    fuse = []
+    for ii in range(384):
+        if not ii%16 in [0,15]: fuse.append(ii)
+    mask = np.zeros((4,384))
+    mask[:,fuse] = 1
     phspar = {}
     for p in gains.keys():
         phspar[p] = {}
-        C = np.zeros((4,384))
-        Cmax = 100
-        iter = 0
-        M0 = np.zeros((4,4))
+        A0 = np.zeros((4,4))
+        p0 = np.zeros((4,384))
+        Ants = gains[p].keys()
+        Ants.sort()
+        na = len(gains[p].keys())
+        M0 = np.zeros((na,4))
+        p1 = np.zeros((na,384))
         for a in gains[p].keys():
             x = antpos[a]['top_x']
             y = antpos[a]['top_y']
+            if gains[p][a].ndim == 2: z = np.angle(np.mean(gains[p][a],axis=0))
+            else: z = np.angle(gains[p][a])
+            ai = Ants.index(a)
+            M0[ai][0] = x
+            M0[ai][1] = y
             if 56 < a < 93:
-                M0 += np.array([[x*x, x*y, x , 0 ],
+                A0 += np.array([[x*x, x*y, x , 0 ],
                                 [x*y, y*y, y , 0 ],
                                 [ x ,  y , 1 , 0 ],
                                 [ 0 ,  0 , 0 , 0 ]])
+                p0 += np.array([z*x,z*y,z,np.zeros(z.shape)])
+                M0[ai][2] = 1
             if 92 < a < 128:
-                M0 += np.array([[x*x, x*y, 0 , x ],
+                A0 += np.array([[x*x, x*y, 0 , x ],
                                 [x*y, y*y, 0 , y ],
                                 [ 0 ,  0 , 0 , 0 ],
                                 [ x ,  y , 0 , 1 ]])
-        invM = np.linalg.inv(M0)
-        while (Cmax>conv and iter<maxiter):
-            iter += 1
-            p0 = np.zeros((4,384))
+                p0 += np.array([z*x,z*y,np.zeros(z.shape),z])
+                M0[ai][3] = 1
+        C = (np.linalg.inv(A0).dot(p0))*mask
+        MTMiMT = np.linalg.pinv(M0.transpose().dot(M0)).dot(M0.transpose())
+        for iter in range(maxiter):
             for a in gains[p].keys():
+                ai = Ants.index(a)
                 x = antpos[a]['top_x']
                 y = antpos[a]['top_y']
                 if gains[p][a].ndim == 2:
@@ -316,16 +333,14 @@ def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
                 else:
                     z = np.angle(gains[p][a])
                 z -= (C[0]*x+C[1]*y)
-                if 56 < a < 93:
-                    z -= C[2]
-                    p0 += np.array([z*x,z*y,z,np.zeros(z.shape)])
-                if 92 < a < 128:
-                    z -= C[3]
-                    p0 += np.array([z*x,z*y,np.zeros(z.shape),z])
-            Ci = invM.dot(p0)
-            C += Ci
-            Cmax = np.max(np.abs(Ci))
-        if iter > 45: print 'iter:', iter
+                if 56 < a < 93: Z -= C[2]
+                if 92 < a < 128: Z -= C[3]
+                p1[ai] = z
+            Ci = MTMiMT.dot(p1)
+            C += Ci*mask
+            Cmax = np.max(np.abs(Ci[:,fuse]))
+            if Cmax < conv: break
+        print 'iter:', iter, ' proj component change: Cmax', Cmax
             #Attention: append negative results here
         phspar[p]['phix'] = -C[0]
         phspar[p]['phiy'] = -C[1]
