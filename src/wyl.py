@@ -333,8 +333,8 @@ def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
                 else:
                     z = np.angle(gains[p][a])
                 z -= (C[0]*x+C[1]*y)
-                if 56 < a < 93: Z -= C[2]
-                if 92 < a < 128: Z -= C[3]
+                if 56 < a < 93: z -= C[2]
+                if 92 < a < 128: z -= C[3]
                 p1[ai] = z
             Ci = MTMiMT.dot(p1)
             C += Ci*mask
