@@ -903,7 +903,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 return fchange
             for iter in range(maxiter):
                 map(buildM,np.arange(nbls))
-                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
+                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-10).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
             print (dt,df),"  fine iter: ", iter, "  conv: ", componentchange
