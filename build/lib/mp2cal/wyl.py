@@ -865,9 +865,9 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
             nbls = len(bl2d)
             na = info.nAntenna
             nubl = len(info.ublcount)
-            A = np.zeros((2*nbls,2*(na+nubl)))
-            M = np.zeros((2*nbls))
-            S = np.zeros((2*(na+nubl)))
+            A = np.zeros((2*nbls,2*(na+nubl)),dtype=np.float32)
+            M = np.zeros((2*nbls),dtype=np.float32)
+            S = np.zeros((2*(na+nubl)),dtype=np.float32)
             componentchange = 100
             def buildM(b):
                 a1,a2 = bl2d[b]
@@ -893,7 +893,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 M[2*b+1] = dvij.imag
                 return True
             def updata_sol(n):
-                ds = S[2*n] + 1j*S[2*n+1]
+                ds = np.complex64(S[2*n] + 1j*S[2*n+1])
                 if n < na:
                     gs[n][ii] += ds
                     fchange = np.abs(ds/gs[n][ii])
