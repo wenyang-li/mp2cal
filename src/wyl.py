@@ -340,7 +340,7 @@ def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
             C += Ci*mask
             Cmax = np.max(np.abs(Ci[:,fuse]))
             if Cmax < conv: break
-        print 'iter:', iter, ' proj component change: Cmax', Cmax
+        #print 'iter:', iter, ' proj component change: Cmax', Cmax
             #Attention: append negative results here
         phspar[p]['phix'] = -C[0]
         phspar[p]['phiy'] = -C[1]
@@ -865,9 +865,9 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
             nbls = len(bl2d)
             na = info.nAntenna
             nubl = len(info.ublcount)
-            A = np.zeros((2*nbls,2*(na+nubl)))
-            M = np.zeros((2*nbls))
-            S = np.zeros((2*(na+nubl)))
+            A = np.zeros((2*nbls,2*(na+nubl)),dtype=np.float32)
+            M = np.zeros((2*nbls),dtype=np.float32)
+            S = np.zeros((2*(na+nubl)),dtype=np.float32)
             componentchange = 100
             def buildM(b):
                 a1,a2 = bl2d[b]
@@ -893,7 +893,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 M[2*b+1] = dvij.imag
                 return True
             def updata_sol(n):
-                ds = S[2*n] + 1j*S[2*n+1]
+                ds = np.complex64(S[2*n] + 1j*S[2*n+1])
                 if n < na:
                     gs[n][ii] += ds
                     fchange = np.abs(ds/gs[n][ii])
@@ -903,7 +903,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 return fchange
             for iter in range(maxiter):
                 map(buildM,np.arange(nbls))
-                S = np.linalg.pinv(A.transpose().dot(A)).dot(A.transpose()).dot(M)
+                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
             print (dt,df),"  fine iter: ", iter, "  conv: ", componentchange

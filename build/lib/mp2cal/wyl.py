@@ -340,7 +340,7 @@ def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
             C += Ci*mask
             Cmax = np.max(np.abs(Ci[:,fuse]))
             if Cmax < conv: break
-        print 'iter:', iter, ' proj component change: Cmax', Cmax
+        #print 'iter:', iter, ' proj component change: Cmax', Cmax
             #Attention: append negative results here
         phspar[p]['phix'] = -C[0]
         phspar[p]['phiy'] = -C[1]
@@ -903,7 +903,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                 return fchange
             for iter in range(maxiter):
                 map(buildM,np.arange(nbls))
-                S = np.linalg.pinv(A.transpose().dot(A)).dot(A.transpose()).dot(M)
+                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
             print (dt,df),"  fine iter: ", iter, "  conv: ", componentchange
