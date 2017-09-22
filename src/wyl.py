@@ -901,12 +901,12 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
                     vs[n-na][ii] += ds
                     fchange = np.abs(ds/vs[n-na][ii])
                 return fchange
-            for iter in range(maxiter):
+            for iter3 in range(maxiter):
                 map(buildM,np.arange(nbls))
-                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-10).dot(A.transpose()).dot(M)
+                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
-            print (dt,df),"  fine iter: ", iter, "  conv: ", componentchange
+            print (dt,df),"  fine iter: ", iter3, "  conv: ", componentchange
         for a in g2[p].keys():
             g2[p][a] = np.resize(gs[info.ant_index(a)],SH)
         for bl in v2[pp].keys():
