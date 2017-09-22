@@ -40,8 +40,12 @@ sol={}
 ampmax=1
 ampmin=1
 count=0
-gx = mp2cal.wyl.quick_load_gains(obs+'.xx.omni.npz')
-gy = mp2cal.wyl.quick_load_gains(obs+'.yy.omni.npz')
+try:
+    gx = mp2cal.wyl.quick_load_gains(obs+'.xx.omni.npz')
+    gy = mp2cal.wyl.quick_load_gains(obs+'.yy.omni.npz')
+except:
+    gx = mp2cal.wyl.quick_load_gains(obs+'.xx.npz')
+    gy = mp2cal.wyl.quick_load_gains(obs+'.yy.npz')
 if opts.pdj:
     exec("from PhaseII_cal import *")
     gx = mp2cal.wyl.degen_project_FO(gx,antpos)
