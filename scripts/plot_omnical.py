@@ -1,8 +1,13 @@
-import numpy as np
-import sys, matplotlib.pyplot as plt
+import numpy as np, mp2cal
+import optparse, os, sys, matplotlib.pyplot as plt
 
 # usage: python plot_omnical obsid
-obs=sys.argv[1]
+o = optparse.OptionParser()
+o.set_usage('plot_omnical.py [options] obsid')
+o.set_description(__doc__)
+o.add_option('--pdj', dest='pdj', default=False, action='store_true', help='Toggle: proj degen to 1')
+opts,args = o.parse_args(sys.argv[1:])
+obs = args[0]
 name = { 0: '11', 1: '12', 2: '13', 3: '14', 4: '15', 5: '16', 6: '17', 7: '18', 8: '21', 9: '22', 10: '23',
 11: '24', 12: '25', 13: '26', 14: '27', 15: '28', 16: '31', 17: '32', 18: '33', 19: '34', 20: '35', 21: '36',
 22: '37', 23: '38', 24: '41', 25: '42', 26: '43', 27: '44', 28: '45', 29: '46', 30: '47', 31: '48', 32: '61',
@@ -35,11 +40,17 @@ sol={}
 ampmax=1
 ampmin=1
 count=0
+gx = mp2cal.wyl.quick_load_gains(dx)
+gy = mp2cal.wyl.quick_load_gains(dy)
+if opts.pdj:
+    exec("from PhaseII_cal import *")
+    gx = mp2cal.wyl.degen_project_FO(gx,antpos)
+    gy = mp2cal.wyl.degen_project_FO(gy,antpos)
 for ii in range(0,128):
     sol[ii]={}
     try: 
-        x=dx[str(ii)+'x']
-        y=dy[str(ii)+'y']
+        x=gx['x'][ii]
+        y=gy['y'][ii]
         exist=True
     except(KeyError):
         x=np.ones(SH)
