@@ -24,6 +24,7 @@ o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path t
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_MWA_PhaseII_EoR0/', type='string', help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='choose to average data over time before calibration or not')
+o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
@@ -79,7 +80,10 @@ freqs = uv.freq_array[0]
 SH = (uv.Ntimes, uv.Nfreqs)
 
 #********************************** load fhd ***************************************************
-gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
+if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav'):
+    gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
+else:
+    gfhd = {'x':{}, 'y':{}}
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
@@ -183,8 +187,9 @@ def omnirun(data_wrap):
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
     m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
-    print '   do fine conv'
-    g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
+    if opts.conv:
+        print '   do fine conv'
+        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
