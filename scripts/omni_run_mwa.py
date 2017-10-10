@@ -212,6 +212,7 @@ def omnirun(data_wrap):
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         m2['chisq2'] = chisq / float(DOF)
         chi = m2['chisq2']
+        m2['flags'] = mask_arr
         chi_mask = np.zeros(chi.shape,dtype=bool)
         ind = np.where(chi>1.2)
         chi_mask[ind] = True
