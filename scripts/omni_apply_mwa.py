@@ -81,6 +81,17 @@ if opts.intype == 'fhd':
     uvi.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
 elif opts.intype == 'uvfits':
     uvi.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
+    flags_file = opts.fhdpath + '/vis_data/' + obsid + '_flags.sav'
+    flag_file_dict = readsav(flags_file, python_dict=True)
+    if 'flag_arr' in flag_file_dict: weights_key = 'flag_arr'
+    elif 'vis_weights' in flag_file_dict: weights_key = 'vis_weights'
+    else: raise ValueError('No recognized key for visibility weights in flags_file.')
+    pollist = uvi.polarization_array
+    for p in pols:
+        pid = np.where(pollist == aipy.miriad.str2pol[p])[0][0]
+        uvi.flag_array[:, 0, :, pid] = flag_file_dict[weights_key][pid] <= 0
+
+
 Nblts = uvi.Nblts
 Nfreqs = uvi.Nfreqs
 Nbls = uvi.Nbls
@@ -149,9 +160,6 @@ for ip,p in enumerate(pols):
     for ii in range(0,Nblts):
         a1 = uvi.ant_1_array[ii]
         a2 = uvi.ant_2_array[ii]
-        if a1 in ex_ants or a2 in ex_ants:
-            uvi.flag_array[:,0][:,:,pid][ii] = True
-            continue
         p1,p2 = p
         if opts.xtalk:
             try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a1,a2)]
@@ -163,14 +171,12 @@ for ip,p in enumerate(pols):
             fnot = np.where(gains[p1][a1]==0)
             uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p1][a1][fuse]
             uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
-            uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
         except(KeyError): pass
         try:
             fuse = np.where(gains[p2][a2]!=0)
             fnot = np.where(gains[p2][a2]==0)
             uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p2][a2][fuse].conj()
             uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
-            uvi.flag_array[:,0][:,:,pid][ii][fnot] = True
         except(KeyError): pass
 
     #write file
