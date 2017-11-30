@@ -2,7 +2,7 @@ import numpy as np, omnical, aipy
 import subprocess, datetime, os
 from astropy.io import fits
 import copy
-import heracal
+import hera_cal
 from scipy.io.idl import readsav
 
 
@@ -511,17 +511,17 @@ def pos_to_info(position, pols=['x'], fcal=False, **kwargs):
         except(KeyError): continue
         for z, pol in enumerate(pols):
             z = 2**z
-            i = heracal.omni.Antpol(ant,pol,nant)
+            i = hera_cal.omni.Antpol(ant,pol,nant)
             antpos[i.val,0],antpos[i.val,1],antpos[i.val,2] = x,y,z
-    reds = heracal.omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
-    ex_ants = [heracal.omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
+    reds = hera_cal.omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
+    ex_ants = [hera_cal.omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
-    reds = heracal.omni.filter_reds(reds, **kwargs)
+    reds = hera_cal.omni.filter_reds(reds, **kwargs)
     if fcal:
-        from heracal.firstcal import FirstCalRedundantInfo
+        from hera_cal.firstcal import FirstCalRedundantInfo
         info = FirstCalRedundantInfo(nant)
     else:
-        info = heracal.omni.RedundantInfo(nant)
+        info = hera_cal.omni.RedundantInfo(nant)
     info.init_from_reds(reds, antpos)
     return info
 
@@ -797,30 +797,6 @@ def orgdata(uv,reds):
     return data
 
 
-def lincalplus(data,info,g2,v2,conv=1e-7):
-    Nants = info.nAntenna
-    Nubls = info.ublcount.size
-    Nbls = np.sum(info.ublcount)
-    A0 = np.zeros((Nbls,Nants+Nbls))
-    A1 = np.zeros((Nbls,Nants+Nbls))
-    reds = info.get_reds()
-    for nn in range(Nbls):
-        i,j = info.bl2d[nn]
-        blind = info.nAntenna + info.bltoubl[nn]
-        A0[nn][i] = 1
-        A0[nn][j] = 1
-        A0[nn][blind] = 1
-        A1[nn][i] = 1
-        A1[nn][j] = -1
-        A1[nn][blind] = 1
-    R = np.linalg.pinv(A0.T.dot(A0)).dot(A0.T)
-    I = np.linalg.pinv(A1.T.dot(A1)).dot(A1.T)
-    bl0 = data.keys()[0]
-    for pol in data[bl0].keys():
-        nt,nf = data[bl0][pol].shape
-        p = pol[0]
-        SFR = np.zeros(())
-
 def unpack_linsolve(s):
     m, g, v = {}, {}, {}
     for key in s[0].keys(): m[key] = s[key]
@@ -912,87 +888,3 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
         for bl in v2[pp].keys():
             v2[pp][bl] = np.resize(vs[ubl_map[bl]],SH)
     return g2,v2
-
-def fine_iter2(g2,v2,data,info,conv=1e-7,maxiter=500):
-    for p in g2.keys():
-        pp = p+p
-        bl2d = []
-        for ii in range(info.bl2d.shape[0]):
-            bl2d.append(tuple(info.bl2d[ii]))
-        a0 = g2[p].keys()[0]
-        SH = g2[p][a0].shape
-        gs = {}
-        vs = {}
-        ant_map = {}
-        ubl_map = {}
-        for a in g2[p].keys():
-            ai = info.ant_index(a)
-            ant_map[ai] = a
-            gs[ai] = g2[p][a].flatten()
-        for bl in v2[pp].keys():
-            i0 = info.ant_index(bl[0])
-            j0 = info.ant_index(bl[1])
-            bli = bl2d.index((i0,j0))
-            ubli = info.bltoubl[bli]
-            vs[ubli] = v2[pp][bl].flatten()
-            ubl_map[bl] = ubli
-        for ii in range(SH[0]*SH[1]):
-            if ii%16 in [0,15]: continue #specific for mwa
-            dt = ii/SH[1]
-            df = ii%SH[1]
-            nbls = len(bl2d)
-            na = info.nAntenna
-            nubl = len(info.ublcount)
-            Ar = np.zeros((nbls,(na+nubl)),dtype=np.float32)
-            Ai = np.zeros((nbls,(na+nubl)),dtype=np.float32)
-            Mr = np.zeros((nbls),dtype=np.float32)
-            Mi = np.zeros((nbls),dtype=np.float32)
-            Sr = np.zeros(((na+nubl)),dtype=np.float32)
-            Si = np.zeros(((na+nubl)),dtype=np.float32)
-            componentchange = 100
-            def buildA(b):
-                a1,a2 = bl2d[b]
-                u = info.bltoubl[b]
-                yabs = np.abs(vs[u][ii])
-                Ar[b,a1] = yabs
-                Ar[b,a2] = yabs
-                Ar[b,na+u] = yabs
-                Ai[b,a1] = yabs
-                Ai[b,a2] = -yabs
-                Ai[b,na+u] = yabs
-                return True
-            def buildM(b):
-                a1,a2 = bl2d[b]
-                u = info.bltoubl[b]
-                gigj_yij = gs[a1][ii]*gs[a2][ii].conj()*vs[u][ii]
-                try: dvij = (data[(ant_map[a1],ant_map[a2])][pp][dt][df] - gigj_yij)/gigj_yij
-                except(KeyError): dvij = (data[(ant_map[a2],ant_map[a1])][pp][dt][df].conj() - gigj_yij)/gigj_yij
-                Mr[b] = dvij.real
-                Mi[b] = dvij.imag
-                return True
-            def updata_sol(n):
-                ds = np.complex64(Sr[n] + 1j*Si[n])
-                if n < na:
-                    gs[n][ii] *= np.complex64(1+ds)
-                    fchange = np.abs(ds)
-                else:
-                    vs[n-na][ii] *= np.complex64(1+ds)
-                    fchange = np.abs(ds)
-                return fchange
-            map(buildA,np.arange(nbls))
-            ArTAriArT = np.linalg.pinv(Ar.transpose().dot(Ar),rcond=1e-8).dot(Ar.transpose())
-            AiTAiiAiT = np.linalg.pinv(Ai.transpose().dot(Ai),rcond=1e-8).dot(Ai.transpose())
-            for iter3 in range(maxiter):
-                map(buildM,np.arange(nbls))
-                Sr = ArTAriArT.dot(Mr)
-                Si = AiTAiiAiT.dot(Mi)
-                componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
-                if componentchange < conv: break
-            print (dt,df),"  fine iter: ", iter3, "  conv: ", componentchange
-        for a in g2[p].keys():
-            g2[p][a] = np.resize(gs[info.ant_index(a)],SH)
-        for bl in v2[pp].keys():
-            v2[pp][bl] = np.resize(vs[ubl_map[bl]],SH)
-    return g2,v2
-
-

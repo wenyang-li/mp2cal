@@ -1,6 +1,6 @@
-# edited version of firstcal in heracal
+# edited version of firstcal in hera_cal
 #! /usr/bin/env python
-import heracal, mp2cal
+import hera_cal, mp2cal
 import pylab as p, aipy as a
 import sys,optparse,glob,os
 import numpy as np
@@ -93,7 +93,7 @@ def firstcal(data_wrap):
     print 'flagged baselines: ', flag_bls
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
-    fc = heracal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
+    fc = hera_cal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
     print "     running firstcal"
     sols = fc.run(finetune=True,verbose=False,average=True,window='none')
     print('     Saving {0}'.format(outname))

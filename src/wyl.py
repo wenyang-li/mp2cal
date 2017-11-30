@@ -2,7 +2,7 @@ import numpy as np, omnical, aipy
 import subprocess, datetime, os
 from astropy.io import fits
 import copy
-import heracal
+import hera_cal
 from scipy.io.idl import readsav
 
 
@@ -511,17 +511,17 @@ def pos_to_info(position, pols=['x'], fcal=False, **kwargs):
         except(KeyError): continue
         for z, pol in enumerate(pols):
             z = 2**z
-            i = heracal.omni.Antpol(ant,pol,nant)
+            i = hera_cal.omni.Antpol(ant,pol,nant)
             antpos[i.val,0],antpos[i.val,1],antpos[i.val,2] = x,y,z
-    reds = heracal.omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
-    ex_ants = [heracal.omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
+    reds = hera_cal.omni.compute_reds(nant, pols, antpos[:nant],tol=0.01)
+    ex_ants = [hera_cal.omni.Antpol(i,nant).ant() for i in range(antpos.shape[0]) if antpos[i,0] < 0]
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
-    reds = heracal.omni.filter_reds(reds, **kwargs)
+    reds = hera_cal.omni.filter_reds(reds, **kwargs)
     if fcal:
-        from heracal.firstcal import FirstCalRedundantInfo
+        from hera_cal.firstcal import FirstCalRedundantInfo
         info = FirstCalRedundantInfo(nant)
     else:
-        info = heracal.omni.RedundantInfo(nant)
+        info = hera_cal.omni.RedundantInfo(nant)
     info.init_from_reds(reds, antpos)
     return info
 

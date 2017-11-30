@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import numpy as np, time
-import heracal, aipy, mp2cal
+import hera_cal, aipy, mp2cal
 import optparse, os, sys, glob
 from astropy.io import fits
 import pickle, copy
@@ -186,7 +186,7 @@ def omnirun(data_wrap):
     start_time = time.time()
     print '   Run omnical'
 #    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
-    m2,g2,v2 = heracal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
+    m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
         g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
@@ -195,7 +195,7 @@ def omnirun(data_wrap):
     print '   time expense: ', caltime
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
-    xtalk = heracal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
+    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
     if not opts.tave:
