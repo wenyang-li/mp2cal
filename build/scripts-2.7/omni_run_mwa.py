@@ -138,10 +138,11 @@ def omnirun(data_wrap):
     flag = data_wrap['flag']
     auto = data_wrap['auto']
     mask_arr = data_wrap['mask']
+    flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
     flag_bls = []
     for bl in flag.keys():
-        wgt_data = np.logical_not(flag[bl][pp]) + mask_arr
-        wgt_data = np.sum(wgt_data,axis=0)
+        wgt_data = np.logical_not(flag[bl][pp])
+        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
