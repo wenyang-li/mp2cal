@@ -206,8 +206,8 @@ def omnirun(data_wrap):
             for bl in r:
                 if v2[pp].has_key(bl): yij = v2[pp][bl]
             for bl in r:
-                try: md = np.ma.masked_array(data[bl][pp],mask=flag[bl][pp])
-                except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=flag[bl[::-1]][pp],fill_value=0.0)
+                try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr)
+                except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr)
                 i,j = bl
                 chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(np.var(md,axis=0).data+1e-7)
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
