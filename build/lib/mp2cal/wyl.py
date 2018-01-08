@@ -65,6 +65,7 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
         wrap['pol'] = pp
         wrap['data'] = {}
         wrap['flag'] = {}
+        wrap['mask'] = output_mask_array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs))
         for ii in range(uv.Nbls):
             if (a1[ii],a2[ii]) in redbls: bl = (a1[ii],a2[ii])
             elif (a2[ii],a1[ii]) in redbls: bl = (a2[ii],a1[ii])

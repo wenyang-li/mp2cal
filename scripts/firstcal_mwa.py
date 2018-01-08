@@ -84,12 +84,14 @@ def firstcal(data_wrap):
     #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
     datpack = data_wrap['data']
     wgtpack = data_wrap['flag']
+    mask_arr = data_wrap['mask']
+    flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
     flag_bls = []
     for bl in wgtpack.keys():
         wgt_data = np.logical_not(wgtpack[bl][pp])
-        wgt_data = np.sum(wgt_data,axis=0)
+        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
-        if ind[0].size > 48: flag_bls.append(bl)
+        if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
     info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
     wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
