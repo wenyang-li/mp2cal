@@ -10,7 +10,7 @@ import pyuvdata.uvdata as uvd
 o = optparse.OptionParser()
 o.set_usage('firstcal_mwa.py [options] obsid')
 a.scripting.add_standard_options(o,cal=True,pol=True)
-o.add_option('--ubls', dest='ubls', default='57_61,57_62', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
+o.add_option('--ubls', dest='ubls', default='', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ex_ubls', dest='ex_ubls', default='', help='Unique baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, separated by commas (ex: 1_4,64_49).')
