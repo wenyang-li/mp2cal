@@ -353,8 +353,11 @@ def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
 def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
     gains = copy.deepcopy(gomni)
     for p in gains.keys():
-        ref1 = min(gains[p].keys())
-        ref2 = max(gains[p].keys())
+        a_omni = gomni[p].keys()
+        a_fhd = gfhd[p].keys()
+        a_pool = [i for i in a_omni if i in a_fhd]
+        ref1 = min(a_pool)
+        ref2 = max(a_pool)
         ref_exp1 = np.exp(1j*np.angle(gains[p][ref1]*gfhd[p][ref1].conj()))
         ref_exp2 = np.exp(1j*np.angle(gains[p][ref2]*gfhd[p][ref2].conj()))
         for a in gains[p].keys():
@@ -471,8 +474,11 @@ def degen_project_simple(g_input,g_target,antpos):
     g_output = copy.deepcopy(g_input)
     amppar = ampproj(g_input,g_target)
     for p in g_output.keys():
+        a_input = g_input[p].keys()
+        a_target = a_target[p].keys()
+        a_pool = [i for i in a_input if i in a_target]
         ratio = {p:{}}
-        for a in g_output[p].keys():
+        for a in a_pool:
             r = g_input[p][a]*g_target[p][a].conj()
             if np.isnan(np.mean(r)): continue
             ratio[p][a] = r
