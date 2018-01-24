@@ -20,7 +20,7 @@ o.set_usage('average.py [options]')
 o.set_description(__doc__)
 o.add_option('--scale', dest='scale', default=False, action='store_true', help='scale the gains before average,Default=False')
 o.add_option('--ap',dest='ap', default=False, action='store_true', help='average in amplitude and phase, otherwise in real and imag parts, Default=False')
-o.add_option('--over',dest='over', default=False, action='store_true', help='average solutions from day to day with the same pointing', Default=False')
+o.add_option('--over',dest='over', default=False, action='store_true', help='average solutions from day to day with the same pointing, Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 #p = sys.argv[1]
 pols = ['xx','yy']
