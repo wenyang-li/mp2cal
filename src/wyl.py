@@ -475,7 +475,7 @@ def degen_project_simple(g_input,g_target,antpos):
     amppar = ampproj(g_input,g_target)
     for p in g_output.keys():
         a_input = g_input[p].keys()
-        a_target = a_target[p].keys()
+        a_target = g_target[p].keys()
         a_pool = [i for i in a_input if i in a_target]
         ratio = {p:{}}
         for a in a_pool:
