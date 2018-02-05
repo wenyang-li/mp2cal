@@ -168,7 +168,7 @@ def omnirun(data_wrap):
     if opts.ftype == 'fhd':
         print '     setting g0 as units'
         g0 = {p:{}}
-        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+        for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
     else:
         fcfile = opts.omnipath + obsid + '.' + pp + '.fc.npz'
         if os.path.exists(fcfile):

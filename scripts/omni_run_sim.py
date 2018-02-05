@@ -124,7 +124,7 @@ def omnirun(data_wrap):
     #*********************** generate g0 ***************************************
     g0 = {p: {}}
     if opts.tave:
-        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+        for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
     else:
         for a in info.subsetant: g0[p][a] = np.ones(SH,dtype=np.complex64)
 
