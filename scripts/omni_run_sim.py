@@ -118,11 +118,15 @@ def omnirun(data_wrap):
             m = np.ma.masked_array(data[bl][pp],mask=flag[bl][pp])
             m = np.mean(m,axis=0)
             dat[bl] = {pp: np.complex64(m.data.reshape(1,-1))}
-        else: dat[bl] = {pp: np.copy(data[bl][pp])}
+        else:
+            dat[bl] = {pp: np.copy(data[bl][pp])}
 
     #*********************** generate g0 ***************************************
     g0 = {p: {}}
-    for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+    if opts.tave:
+        for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
+    else:
+        for a in info.subsetant: g0[p][a] = np.ones(SH,dtype=np.complex64)
 
     #*********************** Calibrate ******************************************
     wgts[pp] = {} #weights dictionary by pol
@@ -163,7 +167,6 @@ def omnirun(data_wrap):
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
         if opts.tave:
-            g2[p][a] = np.resize(g2[p][a],(SH[1]))
             stack_mask = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
             g2[p[0]][a] *= stack_mask
         else:
