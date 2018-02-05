@@ -127,42 +127,6 @@ def polyfunc(x,z):
         sum += z[ii]
     return sum
 
-def mwa_bandpass_fit(gains0, auto, tile_info, amp_order=2, phs_order=1, fit_reflection=True):
-    gains = copy.deepcopy(gains0)
-    fqs = np.linspace(167.075,197.715,384)
-    freq = np.arange(384)
-    for p in gains.keys():
-        for ant in gains[p].keys():
-            x = np.where(gains[p][ant]!=0)[0]
-            if x.size == 0: continue
-            A = np.zeros((384),dtype=np.float)
-            for n in range(0,24):
-                chunk = np.arange(16*n+1,16*n+15)
-                induse = np.where(gains[p][ant][chunk]!=0)
-                z1 = np.polyfit(freq[chunk[induse]],np.abs(gains[p][ant][chunk[induse]])/auto[ant][chunk[induse]],amp_order)
-                A[chunk[induse]] = auto[ant][chunk[induse]]*polyfunc(freq[chunk[induse]],z1)
-            y2 = np.angle(gains[p][ant][x])
-            y2 = np.unwrap(y2)
-            z2 = np.polyfit(x,y2,phs_order)
-            rp = np.zeros((384))
-            cable = tile_info[ant]['cable']
-            if fit_reflection and cable==150:
-                vf = tile_info[ant]['vf']
-                t0 = 2*cable/299792458.0/vf*1e6
-                rp[x] = y2 - polyfunc(x,z2)
-                tau = np.fft.fftfreq(384,(fqs[-1]-fqs[0])/383)
-                fftrp = np.fft.fft(rp,n=384)
-                inds = np.where(abs(np.abs(tau)-t0)<0.05)
-                imax = np.argmax(np.abs(fftrp[inds]))
-                ind = np.where(np.abs(tau)==np.abs(tau[inds][imax]))
-                mask =np.zeros((384))
-                mask[ind] = 1.
-                fftrp *= mask
-                rp = np.fft.ifft(fftrp)
-            gains[p][ant][x] = A[x]*np.exp(1j*polyfunc(x,z2))
-            gains[p][ant][x] *= np.exp(1j*rp[x])
-    return gains
-
 
 def poly_bandpass_fit(gains0,fit_order=4):
     gains = copy.deepcopy(gains0)
@@ -284,69 +248,51 @@ def phsproj(g_input,g_target,EastHex,SouthHex): #only returns slopes
     return phspar
 
 
-def plane_fitting(gains,antpos,conv=1e-6,maxiter=50):
-    fuse = []
-    for ii in range(384):
-        if not ii%16 in [0,15]: fuse.append(ii)
-    mask = np.zeros((4,384))
-    mask[:,fuse] = 1
-    phspar = {}
+def plane_fitting(gains,antpos,mwa_mask=True):
+    gc = {}
     for p in gains.keys():
+        gc[p] = {}
+        for a in gains[p].keys():
+            SH = gains[p][a].shape
+            gc[p][a] = gains[p][a].flatten()
+    Nsample = np.product(SH)
+    mask = np.ones((4,Nsample))
+    if mwa_mask:
+        fnot = []
+        for ii in range(Nsample):
+            if ii%16 in [0,15]: fnot.append(ii)
+    mask[:,fnot] = 0
+    phspar = {}
+    for p in gc.keys():
         phspar[p] = {}
         A0 = np.zeros((4,4))
-        p0 = np.zeros((4,384))
-        Ants = gains[p].keys()
+        p0 = np.zeros((4,Nsample))
+        Ants = gc[p].keys()
         Ants.sort()
-        na = len(gains[p].keys())
-        M0 = np.zeros((na,4))
-        p1 = np.zeros((na,384))
-        for a in gains[p].keys():
+        na = len(gc[p].keys())
+        for a in gc[p].keys():
             x = antpos[a]['top_x']
             y = antpos[a]['top_y']
-            if gains[p][a].ndim == 2: z = np.angle(np.mean(gains[p][a],axis=0))
-            else: z = np.angle(gains[p][a])
+            z = np.angle(gc[p][a])
             ai = Ants.index(a)
-            M0[ai][0] = x
-            M0[ai][1] = y
             if 56 < a < 93:
                 A0 += np.array([[x*x, x*y, x , 0 ],
                                 [x*y, y*y, y , 0 ],
                                 [ x ,  y , 1 , 0 ],
                                 [ 0 ,  0 , 0 , 0 ]])
                 p0 += np.array([z*x,z*y,z,np.zeros(z.shape)])
-                M0[ai][2] = 1
             if 92 < a < 128:
                 A0 += np.array([[x*x, x*y, 0 , x ],
                                 [x*y, y*y, 0 , y ],
                                 [ 0 ,  0 , 0 , 0 ],
                                 [ x ,  y , 0 , 1 ]])
                 p0 += np.array([z*x,z*y,np.zeros(z.shape),z])
-                M0[ai][3] = 1
         C = (np.linalg.inv(A0).dot(p0))*mask
-        MTMiMT = np.linalg.pinv(M0.transpose().dot(M0)).dot(M0.transpose())
-        for iter in range(maxiter):
-            for a in gains[p].keys():
-                ai = Ants.index(a)
-                x = antpos[a]['top_x']
-                y = antpos[a]['top_y']
-                if gains[p][a].ndim == 2:
-                    z = np.angle(np.mean(gains[p][a],axis=0))
-                else:
-                    z = np.angle(gains[p][a])
-                z -= (C[0]*x+C[1]*y)
-                if 56 < a < 93: z -= C[2]
-                if 92 < a < 128: z -= C[3]
-                p1[ai] = z
-            Ci = MTMiMT.dot(p1)
-            C += Ci*mask
-            Cmax = np.max(np.abs(Ci[:,fuse]))
-            if Cmax < conv: break
-        #print 'iter:', iter, ' proj component change: Cmax', Cmax
             #Attention: append negative results here
-        phspar[p]['phix'] = -C[0]
-        phspar[p]['phiy'] = -C[1]
-        phspar[p]['offset_east'] = -C[2]
-        phspar[p]['offset_south'] = -C[3]
+        phspar[p]['phix'] = -C[0].reshape(SH)
+        phspar[p]['phiy'] = -C[1].reshape(SH)
+        phspar[p]['offset_east'] = -C[2].reshape(SH)
+        phspar[p]['offset_south'] = -C[3].reshape(SH)
     return phspar
 
 
@@ -408,9 +354,9 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
     return gains
 
 
-def degen_project_FO(gomni,antpos,v2={}):
+def degen_project_FO(gomni,antpos,v2={},mwa_mask=True):
     gains = scale_gains(gomni)
-    phspar = plane_fitting(gains,antpos)
+    phspar = plane_fitting(gains,antpos,mwa_mask=mwa_mask)
     for p in gains.keys():
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
@@ -441,33 +387,6 @@ def gainamp_cal_FO(gomni,gfhd):
             g2[p][a] *= gfhd[p][a]
     amppar = ampproj(g2,gfhd)
     return amppar
-
-
-def degen_project_FO2(gomni,gfhd,antpos,v2={}):
-    gains = copy.deepcopy(gomni)
-    amppar = gainamp_cal_FO(gains,gfhd)
-    phspar = plane_fitting(gains,antpos)
-    for p in gains.keys():
-        for a in gains[p].keys():
-            dx = antpos[a]['top_x']
-            dy = antpos[a]['top_y']
-            proj = amppar[p]*np.exp(1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-            if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
-            else: proj *= np.exp(1j*phspar[p]['offset_east'])
-            gains[p][a] *= proj
-        if not v2 == {}:
-            pp = p+p
-            for bl in v2[pp].keys():
-                i,j = bl
-                if i < 93: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
-                else: v2[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
-                if j < 93: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
-                else: v2[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
-                dx = antpos[i]['top_x']-antpos[j]['top_x']
-                dy = antpos[i]['top_y']-antpos[j]['top_y']
-                proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                v2[pp][bl] *= proj
-    return gains
 
 
 def degen_project_simple(g_input,g_target,antpos):
