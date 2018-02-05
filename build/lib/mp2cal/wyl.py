@@ -261,7 +261,7 @@ def plane_fitting(gains,antpos,mwa_mask=True):
         fnot = []
         for ii in range(Nsample):
             if ii%16 in [0,15]: fnot.append(ii)
-    mask[:,fnot] = 0
+        mask[:,fnot] = 0
     phspar = {}
     for p in gc.keys():
         phspar[p] = {}
@@ -737,7 +737,7 @@ def unpack_linsolve(s):
             v[pp][(i,j)] = s[key]
     return m, g, v
 
-def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
+def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500,mwa_mask=True):
     for p in g2.keys():
         pp = p+p
         bl2d = []
@@ -761,7 +761,8 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500):
             vs[ubli] = v2[pp][bl].flatten()
             ubl_map[bl] = ubli
         for ii in range(SH[0]*SH[1]):
-            if ii%16 in [0,15]: continue #specific for mwa
+            if mwa_mask:
+                if ii%16 in [0,15]: continue #specific for mwa
             dt = ii/SH[1]
             df = ii%SH[1]
             nbls = len(bl2d)

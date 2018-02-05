@@ -139,7 +139,7 @@ def omnirun(data_wrap):
     m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
-        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
+        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500,mwa_mask=False)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
