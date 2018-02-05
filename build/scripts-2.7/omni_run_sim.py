@@ -121,6 +121,7 @@ def omnirun(data_wrap):
         else: dat[bl] = {pp: np.copy(data[bl][pp])}
 
     #*********************** generate g0 ***************************************
+    g0 = {p: {}}
     for a in info.subsetant: g0[p][a] = np.ones((freqs.size),dtype=np.complex64)
 
     #*********************** Calibrate ******************************************
