@@ -26,7 +26,9 @@ o.add_option('--outpath', dest='outpath', default='/users/wl42/scratch/uvfits/',
 o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
 o.add_option('--ave',dest='ave',default=False,action='store_true',
-             help='Toggle: apply averaged calibration solution. Default=False')
+             help='Toggle: apply calibration solution on averaged data. Default=False')
+o.add_option('--tave',dest='ave',default=False,action='store_true',
+             help='Toggle: apply time averaged calibration solution. Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 
 delays = {
@@ -57,6 +59,7 @@ if opts.outtype == 'uvfits':
     if opts.intype == 'fhd': suffix = 'FO'
     else: suffix = 'O'
     if opts.ave: suffix = suffix + 'A'
+    if opts.tave: suffix = suffix + 'T'
     newfile = opts.outpath + obsid.split('/')[-1] + '_' + suffix + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
@@ -82,6 +85,8 @@ for ip,p in enumerate(pols):
     print '  Reading and applying:', omnifile
     gains = mp2cal.wyl.quick_load_gains(omnifile)
     ex_ants = []
+    if opts.tave:
+        for a in gains[p[0]].keys(): gains[p[0]][a] = np.mean(gains[p[0]][a],axis=0)
 #*********************************************************************************************
     if opts.appfhd:
         gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
