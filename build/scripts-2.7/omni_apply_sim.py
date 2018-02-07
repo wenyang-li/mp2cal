@@ -27,7 +27,7 @@ o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
 o.add_option('--ave',dest='ave',default=False,action='store_true',
              help='Toggle: apply calibration solution on averaged data. Default=False')
-o.add_option('--tave',dest='ave',default=False,action='store_true',
+o.add_option('--tave',dest='tave',default=False,action='store_true',
              help='Toggle: apply time averaged calibration solution. Default=False')
 opts,args = o.parse_args(sys.argv[1:])
 
