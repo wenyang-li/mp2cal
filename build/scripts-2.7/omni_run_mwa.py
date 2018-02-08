@@ -201,15 +201,18 @@ def omnirun(data_wrap):
     #************************ Average cal solutions ************************************
     if not opts.tave:
         print '   compute chi-square'
+        def cal_noise(maskdata,epsilon=1e-7):
+            diff = maskdata[0::2]-maskdata[1::2]
+            return (np.var(diff,axis=0)/2).data + epsilon
         chisq = 0
         for r in reds:
             for bl in r:
                 if v2[pp].has_key(bl): yij = v2[pp][bl]
             for bl in r:
-                try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr)
+                try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
                 except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr)
                 i,j = bl
-                chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(np.var(md,axis=0).data+1e-7)
+                chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(cal_noise(md))
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         m2['chisq2'] = chisq / float(DOF)
         chi = m2['chisq2']
@@ -219,8 +222,6 @@ def omnirun(data_wrap):
         chi_mask[ind] = True
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
-#        ind = np.where(np.isnan(g2[p][a]))
-#        g2[p][a][ind] = 0
         if opts.tave:
             g2[p][a] = np.resize(g2[p][a],(SH[1]))
             stack_mask = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
@@ -229,8 +230,6 @@ def omnirun(data_wrap):
             g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
             g_temp = np.mean(g_temp,axis=0)
             g2[p[0]][a] = g_temp.data
-#            for ii in range(384):
-#                if ii%16 == 8: g2[p[0]][a][ii] = (g2[p[0]][a][ii+1]+g2[p[0]][a][ii-1])/2
 
     #*********************** project degeneracy *********************************
     if opts.projdegen:
