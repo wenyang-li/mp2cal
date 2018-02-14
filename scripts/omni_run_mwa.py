@@ -202,7 +202,7 @@ def omnirun(data_wrap):
     if not opts.tave:
         print '   compute chi-square'
         def cal_noise(maskdata,epsilon=1e-7):
-            diff = maskdata[0::2]-maskdata[1::2]
+            diff = np.concatenate((maskdata[0::2]-maskdata[1::2],maskdata[2::2]-maskdata[:-1][1::2]),axis=0)
             return (np.var(diff,axis=0)/2).data + epsilon
         chisq = 0
         for r in reds:
