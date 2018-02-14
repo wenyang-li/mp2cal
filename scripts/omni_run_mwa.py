@@ -105,29 +105,6 @@ if opts.ex_dipole:
     else: print '    Warning: Metafits not found. Cannot get the information of dead dipoles'
 print '     ex_ants: ', ex_ants
 
-#************************************ ex_bls ****************************************************
-#fuse = []
-#for ii in range(384):
-#    if not ii%16 in [0,15]: fuse.append(ii)
-#non_red_bls = {'xx': [], 'yy': []}
-#uv2 = uvd.UVData()
-#uv2.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
-#all_red = mp2cal.wyl.cal_reds_from_pos(antpos)
-#testdata = mp2cal.wyl.orgdata(uv2,all_red)
-#for pp in pols:
-#    for r in all_red:
-#        red_data = []
-#        for bl in r: red_data.append(testdata[pp][r[0]][bl][fuse])
-#        red_data = np.array(red_data)
-#        sig = np.std(red_data,axis=0)
-#        ave = np.mean(red_data,axis=0)
-#        for bl in r:
-#            ratio=np.abs(testdata[pp][r[0]][bl][fuse]-ave)/sig
-#            if np.where(ratio>2.5)[0].size > 8: non_red_bls[pp].append(bl)
-#print 'outlier baselines: ', non_red_bls
-#del uv2, testdata, red_data
-#################################################################################################
-
 data_list = []
 for pp in pols: data_list.append(data_wrap[pp])
 
@@ -163,6 +140,7 @@ def omnirun(data_wrap):
             dat[bl] = {pp: np.complex64(m.data.reshape(1,-1))}
         else: dat[bl] = {pp: np.copy(data[bl][pp])}
         if opts.wgt_cal: dat[bl][pp] /= (auto[i]*auto[j])
+    del data
 
     #*********************** generate g0 ***************************************
     if opts.ftype == 'fhd':
@@ -209,9 +187,10 @@ def omnirun(data_wrap):
             for bl in r:
                 if v2[pp].has_key(bl): yij = v2[pp][bl]
             for bl in r:
-                try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
-                except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr)
+                try: md = np.ma.masked_array(dat[bl][pp],mask=mask_arr,filled_value=0.0)
+                except(KeyError): md = np.ma.masked_array(dat[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
                 i,j = bl
+                if opts.wgt_cal: md *= (auto[i]*auto[j])
                 chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(cal_noise(md))
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         m2['chisq2'] = chisq / float(DOF)
