@@ -132,6 +132,7 @@ def omnirun(data_wrap):
     wgts,xtalk = {}, {}
     if opts.wgt_cal:
         for bl in data.keys():
+            i,j = bl
             data[bl][pp] /= (auto[i]*auto[j])
 
     #*********************** generate g0 ***************************************
