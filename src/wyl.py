@@ -82,12 +82,12 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
     return wrap_list
 
 
-def uv_wrap_omni(uv,pols=['xx','yy']):
+def uv_wrap_omni(uv,pols=['xx','yy'],tave=0,antpos=None):
     data_wrap = {}
     a1 = uv.ant_1_array[:uv.Nbls]
     a2 = uv.ant_2_array[:uv.Nbls]
-    data = uv.data_array
-    flag = uv.flag_array
+    if antpos is None: antpool = uv.antenna_numbers
+    else: antpool = antpos.keys()
     for jj in range(uv.Npols):
         pp = aipy.miriad.pol2str[uv.polarization_array[jj]]
         if not pp in pols: continue
@@ -96,19 +96,38 @@ def uv_wrap_omni(uv,pols=['xx','yy']):
         wrap['data'] = {}
         wrap['flag'] = {}
         wrap['auto'] = {}
-        wrap['mask'] = output_mask_array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs))
+        wrap['noise'] = {}
         auto_scale = 0
+        data = uv.data_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+        flag = uv.flag_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
+        wrap['mask'] = output_mask_array(flag)
         for ii in range(uv.Nbls):
+            if not (a1[ii] in antpool and a2[ii] in antpool): continue
             if a1[ii] == a2[ii]:
-                auto_m = np.ma.masked_array(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii].real,mask=wrap['mask'])
+                auto_m = np.ma.masked_array(data[:,ii].real,mask=wrap['mask'])
                 wrap['auto'][a1[ii]] = np.sqrt(np.mean(auto_m,axis=0).data) + 1e-10
                 auto_scale += np.nanmean(wrap['auto'][a1[ii]])
             else:
                 bl = (a1[ii],a2[ii])
-                wrap['data'][bl] = {pp: np.complex64(data[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
-                wrap['flag'][bl] = {pp: np.array(flag[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)[:,ii])}
+                md = np.ma.masked_array(data[:,ii],flag[:,ii])
+                diff = np.concatenate((md[0::2]-md[1::2],md[2::2]-md[:-1][1::2]),axis=0)
+                wrap['noise'][bl] = np.var(diff,axis=0).data/2 + 1e-10
+                if tave > 0:
+                    if tave >= uv.Ntimes:
+                        md = np.mean(md,axis=0,keepdims=True)
+                        wrap['noise'][bl] /= uv.Ntimes
+                    else:
+                        assert uv.Ntimes%tave == 0
+                        md = md.reshape(uv.Ntimes/tave,tave,uv.Nfreqs)
+                        md = np.mean(md,axis=1)
+                        wrap['noise'][bl] /= tave
+                wrap['data'][bl] = {pp: np.complex64(md.data)}
+                wrap['flag'][bl] = {pp: md.mask}
         auto_scale /= len(wrap['auto'].keys())
         for a in wrap['auto'].keys(): wrap['auto'][a] /= auto_scale
+        if tave > 0:
+            mask_arr = wrap['mask'].reshape(uv.Ntimes/tave,tave,uv.Nfreqs)
+            wrap['mask'] = np.product(mask_arr,axis=1).astype(bool)
         data_wrap[pp] = wrap
     return data_wrap
 
@@ -664,33 +683,6 @@ def run_omnical(data, info, gains0=None, xtalk=None, maxiter=500, conv=1e-3,
                                     trust_period=trust_period)
 
     return m2,g2,v2
-
-
-def remove_degen_hex(gomni, antpos):
-    g2 = copy.deepcopy(gomni)
-    for p in g2.keys():
-        ref_exp1 = np.exp(-1j*np.angle(g2[p][57]))
-        ref_exp2 = np.exp(-1j*np.angle(g2[p][93]))
-        for a in g2[p].keys():
-            if a < 93: g2[p][a] *= ref_exp1
-            else: g2[p][a] *= ref_exp2
-        phi58 = g2[p][58]
-        phi61 = g2[p][61]
-        phi1 = np.angle(phi58)
-        phi2 = np.angle(phi61)
-        for a in g2[p].keys():
-            if a < 93:
-                dx = antpos[a]['top_x'] - antpos[57]['top_x']
-                dy = antpos[a]['top_y'] - antpos[57]['top_y']
-            else:
-                dx = antpos[a]['top_x'] - antpos[93]['top_x']
-                dy = antpos[a]['top_y'] - antpos[93]['top_y']
-            nx = np.round(dx/0.14-dy/np.sqrt(3)/0.14)
-            ny = np.round(-2*dy/np.sqrt(3)/0.14)
-            g2[p][a] *= np.exp(-1j*(phi1*nx+phi2*ny))
-    g2 = scale_gains(g2)
-    return g2
-
 
 def orgdata(uv,reds):
     a1 = uv.ant_1_array[:uv.Nbls]

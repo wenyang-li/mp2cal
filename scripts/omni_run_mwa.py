@@ -23,7 +23,7 @@ o.add_option('--ftype', dest='ftype', default='', type='string', help='Type of t
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_MWA_PhaseII_EoR0/', type='string', help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
-o.add_option('--tave', dest='tave', default=False, action='store_true', help='choose to average data over time before calibration or not')
+o.add_option('--tave', dest='tave', default=0, type='int', help='number of time sample to average. Note Nt%tave has to be 0')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
@@ -73,11 +73,10 @@ if opts.ftype == 'uvfits':
 elif opts.ftype == 'fhd':
     uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
 else: IOError('invalid filetype, it should be uvfits or fhd')
-data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols)
+data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos)
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]
-SH = (uv.Ntimes, uv.Nfreqs)
 
 #********************************** load fhd ***************************************************
 if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav'):
@@ -115,6 +114,7 @@ def omnirun(data_wrap):
     flag = data_wrap['flag']
     auto = data_wrap['auto']
     mask_arr = data_wrap['mask']
+    noise = data_wrap['noise']
     flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
     flag_bls = []
     for bl in flag.keys():
@@ -129,18 +129,10 @@ def omnirun(data_wrap):
     redbls = [bl for red in reds for bl in red]
 
     #*********************** organize data *************************************
-    dat,wgts,xtalk = {}, {}, {}
-    for bl in data.keys():
-        i,j = bl
-        if not (i in info.subsetant and j in info.subsetant): continue
-        if bl in ex_bls+flag_bls: continue
-        if opts.tave:
-            m = np.ma.masked_array(data[bl][pp],mask=flag[bl][pp])
-            m = np.mean(m,axis=0)
-            dat[bl] = {pp: np.complex64(m.data.reshape(1,-1))}
-        else: dat[bl] = {pp: np.copy(data[bl][pp])}
-        if opts.wgt_cal: dat[bl][pp] /= (auto[i]*auto[j])
-    del data
+    wgts,xtalk = {}, {}
+    if opts.wgt_cal:
+        for bl in data.keys():
+            data[bl][pp] /= (auto[i]*auto[j])
 
     #*********************** generate g0 ***************************************
     if opts.ftype == 'fhd':
@@ -155,7 +147,7 @@ def omnirun(data_wrap):
         else:
             print '     firstcal not found, start rough cal'
             info_rough = mp2cal.wyl.pos_to_info(antpos,pols=[p],ubls=[(57,61),(57,62)],ex_ants=ex_ants)
-            g0 = mp2cal.wyl.rough_cal(dat,info_rough,pol=pp)
+            g0 = mp2cal.wyl.rough_cal(data,info_rough,pol=pp)
 
     #*********************** Calibrate ******************************************
     wgts[pp] = {} #weights dictionary by pol
@@ -164,11 +156,10 @@ def omnirun(data_wrap):
         wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     start_time = time.time()
     print '   Run omnical'
-#    m2,g2,v2 = mp2cal.wyl.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-9)
-    m2,g2,v2 = hera_cal.omni.run_omnical(dat,info,gains0=g0, maxiter=500, conv=1e-12)
+    m2,g2,v2 = hera_cal.omni.run_omnical(data,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
-        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,dat,info,conv=1e-6,maxiter=500)
+        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,data,info,conv=1e-6,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
@@ -177,38 +168,30 @@ def omnirun(data_wrap):
     xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
-    if not opts.tave:
-        print '   compute chi-square'
-        def cal_noise(maskdata,epsilon=1e-7):
-            diff = np.concatenate((maskdata[0::2]-maskdata[1::2],maskdata[2::2]-maskdata[:-1][1::2]),axis=0)
-            return (np.var(diff,axis=0)/2).data + epsilon
-        chisq = 0
-        for r in reds:
-            for bl in r:
-                if v2[pp].has_key(bl): yij = v2[pp][bl]
-            for bl in r:
-                try: md = np.ma.masked_array(dat[bl][pp],mask=mask_arr,filled_value=0.0)
-                except(KeyError): md = np.ma.masked_array(dat[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
-                i,j = bl
-                if opts.wgt_cal: md *= (auto[i]*auto[j])
-                chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/(cal_noise(md))
+    print '   compute chi-square'
+    chisq = 0
+    for r in reds:
+        for bl in r:
+            if v2[pp].has_key(bl): yij = v2[pp][bl]
+        for bl in r:
+            try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
+            except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
+            i,j = bl
+            if opts.wgt_cal: md *= (auto[i]*auto[j])
+            try: chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
+            except(KeyError): chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         m2['chisq2'] = chisq / float(DOF)
         chi = m2['chisq2']
         m2['flags'] = mask_arr
         chi_mask = np.zeros(chi.shape,dtype=bool)
-        ind = np.where(chi>1.2)
+        ind = np.where(chi>1.25)
         chi_mask[ind] = True
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
-        if opts.tave:
-            g2[p][a] = np.resize(g2[p][a],(SH[1]))
-            stack_mask = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
-            g2[p[0]][a] *= stack_mask
-        else:
-            g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
-            g_temp = np.mean(g_temp,axis=0)
-            g2[p[0]][a] = g_temp.data
+        g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
+        g_temp = np.mean(g_temp,axis=0)
+        g2[p[0]][a] = g_temp.data
 
     #*********************** project degeneracy *********************************
     if opts.projdegen:
@@ -217,7 +200,7 @@ def omnirun(data_wrap):
             g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
         elif opts.ftype == 'uvfits':
             g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
-    else: g2 = mp2cal.wyl.remove_degen_hex(g2, antpos)
+    else: g2 = mp2cal.wyl.scale_gains(g2)
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
