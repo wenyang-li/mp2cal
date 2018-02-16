@@ -23,7 +23,7 @@ o.add_option('--ftype', dest='ftype', default='', type='string', help='Type of t
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_MWA_PhaseII_EoR0/', type='string', help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
-o.add_option('--tave', dest='tave', default=0, type='int', help='number of time sample to average. Note Nt%tave has to be 0')
+o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
@@ -185,9 +185,7 @@ def omnirun(data_wrap):
         m2['chisq2'] = chisq / float(DOF)
         chi = m2['chisq2']
         m2['flags'] = mask_arr
-        chi_mask = np.zeros(chi.shape,dtype=bool)
-        ind = np.where(chi>1.25)
-        chi_mask[ind] = True
+        chi_mask = np.logical_and(chi>1.25,chi<0.8)
         or_mask = np.logical_or(chi_mask,mask_arr)
     for a in g2[p].keys():
         g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
