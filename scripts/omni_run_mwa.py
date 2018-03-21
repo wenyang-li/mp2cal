@@ -170,8 +170,9 @@ def omnirun(data_wrap):
 
     #************************ Average cal solutions ************************************
     print '   compute chi-square'
-    chisq = 0
+    chisq = 0.
     for r in reds:
+        chisqr = 0.
         for bl in r:
             if v2[pp].has_key(bl): yij = v2[pp][bl]
         for bl in r:
@@ -179,18 +180,21 @@ def omnirun(data_wrap):
             except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
             i,j = bl
             if opts.wgt_cal: md *= (auto[i]*auto[j])
-            try: chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
-            except(KeyError): chisq += (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
-        DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
-        m2['chisq2'] = chisq / float(DOF)
-        chi = m2['chisq2']
-        m2['flags'] = mask_arr
-        chi_mask = np.logical_and(chi>1.25,chi<0.8)
-        or_mask = np.logical_or(chi_mask,mask_arr)
-    for a in g2[p].keys():
-        g_temp = np.ma.masked_array(g2[p][a],or_mask,fill_value=0.0)
-        g_temp = np.mean(g_temp,axis=0)
-        g2[p[0]][a] = g_temp.data
+            try: chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
+            except(KeyError): chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
+            chisq += chisqterm
+            chisqr += chisqterm
+        m2['chisq'+str(r[0])] = chisqr / (len(r) - 1)
+    DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
+    m2['chisq2'] = chisq / float(DOF)
+#    chi = m2['chisq2']
+    m2['flags'] = mask_arr
+#    chi_mask = np.logical_and(chi>1.25,chi<0.8)
+#    or_mask = np.logical_or(chi_mask,mask_arr)
+#    for a in g2[p].keys():
+#        g_temp = np.ma.masked_array(g2[p][a],mask_arr,fill_value=0.0)
+#        g_temp = np.mean(g_temp,axis=0)
+#        g2[p[0]][a] = g_temp.data
 
     #*********************** project degeneracy *********************************
     if opts.projdegen:
