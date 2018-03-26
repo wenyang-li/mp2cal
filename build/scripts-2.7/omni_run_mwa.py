@@ -203,7 +203,9 @@ def omnirun(data_wrap):
             g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
         elif opts.ftype == 'uvfits':
             g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
-    else: g2 = mp2cal.wyl.scale_gains(g2)
+    else:
+        if os.path.exists(fcfile): g2 = mp2cal.wyl.degen_project_OF(g2,g0,antpos,EastHex,SouthHex,v2)
+        else: g2 = mp2cal.wyl.scale_gains(g2)
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
