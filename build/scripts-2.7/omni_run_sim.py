@@ -148,7 +148,6 @@ def omnirun(data_wrap):
             try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
             except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
             i,j = bl
-            if opts.wgt_cal: md *= (auto[i]*auto[j])
             try: chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
             except(KeyError): chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
             chisq += chisqterm
