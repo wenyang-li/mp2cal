@@ -159,7 +159,8 @@ def omnirun(data_wrap):
 
     #*********************** project degeneracy *********************************
     #g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2,mwa_mask=False)
-    g2 = mp2cal.wyl.degen_project_simple(g2,gfhd,antpos,mwa_mask=False)
+    if opts.ftype == 'uvfits': g2 = mp2cal.wyl.degen_project_simple(g2,gfhd,antpos,mwa_mask=False)
+    elif opts.ftype == 'fhd': g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2,mwa_mask=False)
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
