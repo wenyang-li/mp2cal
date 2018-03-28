@@ -112,7 +112,7 @@ def omnirun(data_wrap):
     redbls = [bl for red in reds for bl in red]
 
     #*********************** organize data *************************************
-    wgts,xtalk = {}, {}, {}
+    wgts,xtalk = {}, {}
 
     #*********************** generate g0 ***************************************
     g0 = {p: {}}
