@@ -402,7 +402,7 @@ def gainamp_cal_FO(gomni,gfhd):
     return amppar
 
 
-def degen_project_simple(g_input,g_target,antpos):
+def degen_project_simple(g_input,g_target,antpos,mwa_mask=True):
     g_output = copy.deepcopy(g_input)
     amppar = ampproj(g_input,g_target)
     for p in g_output.keys():
@@ -414,7 +414,7 @@ def degen_project_simple(g_input,g_target,antpos):
             r = g_input[p][a]*g_target[p][a].conj()
             if np.isnan(np.mean(r)): continue
             ratio[p][a] = r
-        phspar = plane_fitting(ratio,antpos)
+        phspar = plane_fitting(ratio,antpos,mwa_mask=mwa_mask)
         for a in g_input[p].keys():
             dx = antpos[a]['top_x']
             dy = antpos[a]['top_y']
