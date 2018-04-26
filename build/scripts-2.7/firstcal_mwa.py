@@ -1,5 +1,7 @@
 # edited version of firstcal in hera_cal
 #! /usr/bin/env python
+from matplotlib import use
+use('Agg')
 import hera_cal, mp2cal
 import pylab as p, aipy as a
 import sys,optparse,glob,os
