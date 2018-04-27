@@ -215,13 +215,10 @@ def phsproj(g_input0,g_target0,EastHex,SouthHex): #only returns slopes
             for a in g_input[p].keys(): g_input[p][a] = np.mean(g_input[p][a],axis=0)
         if g_target[p][a0].ndim == 2:
             for a in g_target[p].keys(): g_target[p][a] = np.mean(g_target[p][a],axis=0)
+        nf = g_target[p][a0].size
         slp1 = []
         slp2 = []
-        for ff in range(0,384):
-            if ff%16 in [0,15]:
-                slp1.append(0)
-                slp2.append(0)
-                continue
+        for ff in range(0,nf):
             #***** East-West direction fit *****#
             slope = []
             for inds in ax1:
@@ -236,10 +233,16 @@ def phsproj(g_input0,g_target0,EastHex,SouthHex): #only returns slopes
                 if len(tau) < 3: continue
                 if np.round(x[-1])-np.round(x[0])+1 != len(x): continue
                 tau = unwrap(tau)
-                z = np.polyfit(x,tau,1)
-                slope.append(z[0])
-            slope = np.unwrap(slope)
-            slp1.append(np.median(slope))
+                try:
+                    z = np.polyfit(x,tau,1)
+                    slope.append(z[0])
+                except: pass
+            if len(slope) == 0:
+                print "invalid value of gain in channel " + str(ff)
+                slp1.append(0)
+            else:
+                slope = np.unwrap(slope)
+                slp1.append(np.median(slope))
             #***** 60 deg East-South direction fit *****#
             slope = []
             for inds in ax2:
@@ -254,16 +257,22 @@ def phsproj(g_input0,g_target0,EastHex,SouthHex): #only returns slopes
                 if len(tau) < 3: continue
                 if np.round(x[-1])-np.round(x[0])+1 != len(x): continue
                 tau = unwrap(tau)
-                z = np.polyfit(x,tau,1)
-                slope.append(z[0])
-            slope = np.unwrap(slope)
-            slp2.append(np.median(slope))
+                try:
+                    z = np.polyfit(x,tau,1)
+                    slope.append(z[0])
+                except: pass
+            if len(slope) == 0:
+                print "invalid value of gain in channel " + str(ff)
+                slp2.append(0)
+            else:
+                slope = np.unwrap(slope)
+                slp2.append(np.median(slope))
         phspar[p]['phi1'] = np.array(slp1)
         phspar[p]['phi2'] = np.array(slp2)
     return phspar
 
 
-def plane_fitting(gains,antpos,mwa_mask=True):
+def plane_fitting(gains,antpos):
     gc = {}
     for p in gains.keys():
         gc[p] = {}
@@ -271,12 +280,6 @@ def plane_fitting(gains,antpos,mwa_mask=True):
             SH = gains[p][a].shape
             gc[p][a] = gains[p][a].flatten()
     Nsample = np.product(SH)
-    mask = np.ones((4,Nsample))
-    if mwa_mask:
-        fnot = []
-        for ii in range(Nsample):
-            if ii%16 in [0,15]: fnot.append(ii)
-        mask[:,fnot] = 0
     phspar = {}
     for p in gc.keys():
         phspar[p] = {}
@@ -302,7 +305,7 @@ def plane_fitting(gains,antpos,mwa_mask=True):
                                 [ 0 ,  0 , 0 , 0 ],
                                 [ x ,  y , 0 , 1 ]])
                 p0 += np.array([z*x,z*y,np.zeros(z.shape),z])
-        C = (np.linalg.inv(A0).dot(p0))*mask
+        C = (np.linalg.inv(A0).dot(p0))
             #Attention: append negative results here
         phspar[p]['phix'] = -C[0].reshape(SH)
         phspar[p]['phiy'] = -C[1].reshape(SH)
@@ -369,9 +372,9 @@ def degen_project_OF(gomni,gfhd,antpos,EastHex,SouthHex,v2={}):
     return gains
 
 
-def degen_project_FO(gomni,antpos,v2={},mwa_mask=True):
+def degen_project_FO(gomni,antpos,v2={}):
     gains = scale_gains(gomni)
-    phspar = plane_fitting(gains,antpos,mwa_mask=mwa_mask)
+    phspar = plane_fitting(gains,antpos)
     for p in gains.keys():
         for a in gains[p].keys():
             dx = antpos[a]['top_x']
@@ -404,7 +407,7 @@ def gainamp_cal_FO(gomni,gfhd):
     return amppar
 
 
-def degen_project_simple(g_input,g_target,antpos,mwa_mask=True):
+def degen_project_simple(g_input,g_target,antpos):
     g_output = copy.deepcopy(g_input)
     amppar = ampproj(g_input,g_target)
     for p in g_output.keys():
@@ -416,7 +419,7 @@ def degen_project_simple(g_input,g_target,antpos,mwa_mask=True):
             r = g_input[p][a]*g_target[p][a].conj()
             if np.isnan(np.mean(r)): continue
             ratio[p][a] = r
-        phspar = plane_fitting(ratio,antpos,mwa_mask=mwa_mask)
+        phspar = plane_fitting(ratio,antpos)
         for a in g_input[p].keys():
             dx = antpos[a]['top_x']
             dy = antpos[a]['top_y']
