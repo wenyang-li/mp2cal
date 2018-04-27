@@ -191,8 +191,9 @@ def ampproj(g_input,g_target):
     return amppar
 
 
-def phsproj(g_input0,g_target,EastHex,SouthHex): #only returns slopes
+def phsproj(g_input0,g_target0,EastHex,SouthHex): #only returns slopes
     g_input = copy.deepcopy(g_input0)
+    g_target = copy.deepcopy(g_target0)
     phspar = {}
     ax1,ax2 = [],[]
     for ii in range(EastHex.shape[0]):
@@ -210,9 +211,10 @@ def phsproj(g_input0,g_target,EastHex,SouthHex): #only returns slopes
     for p in g_input.keys():
         phspar[p] = {}
         a0 = g_input[p].keys()[0]
-        SH = g_input[p][a0].shape
-        if len(SH) == 2:
+        if g_input[p][a0].ndim == 2:
             for a in g_input[p].keys(): g_input[p][a] = np.mean(g_input[p][a],axis=0)
+        if g_target[p][a0].ndim == 2:
+            for a in g_target[p].keys(): g_target[p][a] = np.mean(g_target[p][a],axis=0)
         slp1 = []
         slp2 = []
         for ff in range(0,384):
