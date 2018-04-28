@@ -100,7 +100,8 @@ def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None):
         auto_scale = 0
         data = uv.data_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
         flag = uv.flag_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
-        wrap['mask'] = output_mask_array(flag)
+        ind = np.where(a1!=a2)[0]
+        wrap['mask'] = output_mask_array(flag[:,ind])
         for ii in range(uv.Nbls):
             if not (a1[ii] in antpool and a2[ii] in antpool): continue
             if a1[ii] == a2[ii]:
