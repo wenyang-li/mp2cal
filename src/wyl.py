@@ -112,7 +112,7 @@ def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None):
             else:
                 bl = (a1[ii],a2[ii])
                 md = np.ma.masked_array(data[:,ii],flag[:,ii])
-                diff = np.concatenate((md[0::2]-md[1::2],md[2::2]-md[:-1][1::2]),axis=0)
+                diff = md[1:] - md[:-1]
                 wrap['noise'][bl] = np.var(diff,axis=0).data/2 + 1e-10
                 if tave:
                     md = np.mean(md,axis=0,keepdims=True)
