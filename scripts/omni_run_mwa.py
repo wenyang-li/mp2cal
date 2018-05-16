@@ -200,7 +200,7 @@ def omnirun(data_wrap):
     if opts.ftype == 'fhd':
         g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
     elif opts.ftype == 'uvfits':
-        if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav')::
+        if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav'):
             g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
         elif os.path.exists(fcfile):
             g2 = mp2cal.wyl.degen_project_OF(g2,g0,antpos,EastHex,SouthHex,v2)
