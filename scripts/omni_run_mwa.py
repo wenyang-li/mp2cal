@@ -25,7 +25,6 @@ o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out
 o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
-o.add_option('--projdegen', dest='projdegen', default=False, action='store_true', help='Toggle: Project degen to FHD solutions')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
 o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
 opts,args = o.parse_args(sys.argv[1:])
@@ -197,14 +196,14 @@ def omnirun(data_wrap):
 #        g2[p[0]][a] = g_temp.data
 
     #*********************** project degeneracy *********************************
-    if opts.projdegen:
-        print '   Projecting degeneracy'
-        if opts.ftype == 'fhd':
-            g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
-        elif opts.ftype == 'uvfits':
+    print '   Projecting degeneracy'
+    if opts.ftype == 'fhd':
+        g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
+    elif opts.ftype == 'uvfits':
+        if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav')::
             g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
-    else:
-        if os.path.exists(fcfile): g2 = mp2cal.wyl.degen_project_OF(g2,g0,antpos,EastHex,SouthHex,v2)
+        elif os.path.exists(fcfile):
+            g2 = mp2cal.wyl.degen_project_OF(g2,g0,antpos,EastHex,SouthHex,v2)
         else: g2 = mp2cal.wyl.scale_gains(g2)
 
     #************************* metadata parameters ***************************************
