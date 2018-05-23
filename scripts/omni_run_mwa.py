@@ -170,23 +170,36 @@ def omnirun(data_wrap):
     #************************ Average cal solutions ************************************
     print '   compute chi-square'
     chisq = 0.
+    chisqant = {}
+    countant = {}
     for r in reds:
-        chisqr = 0.
+#        chisqr = 0.
         for bl in r:
             if v2[pp].has_key(bl): yij = v2[pp][bl]
         for bl in r:
             try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
             except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
             i,j = bl
+            if not chisqant.has_key(i):
+                chisqant[i] = 0.
+                countant[i] = 0
+            if not chisqant.has_key(j):
+                chisqant[j] = 0.
+                countant[j] = 0
             if opts.wgt_cal: md *= (auto[i]*auto[j])
             try: chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
             except(KeyError): chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
             chisq += chisqterm
-            chisqr += chisqterm
-        m2['chisq'+str(r[0])] = chisqr / (len(r) - 1)
+            chisqant[i] += chisqterm
+            chisqant[j] += chisqterm
+            countant[i] += 1
+            countant[j] += 1
+#m2['chisq'+str(r[0])] = chisqr / (len(r) - 1)
+    for a in chisqant.keys():
+        chisqant[a] /= countant[a]
+        m2['chisq'+str(a)+p] = chisqant[a]
     DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
-    m2['chisq2'] = chisq / float(DOF)
-#    chi = m2['chisq2']
+    m2['chisq'] = chisq / float(DOF)
     m2['flags'] = mask_arr
 #    chi_mask = np.logical_and(chi>1.25,chi<0.8)
 #    or_mask = np.logical_or(chi_mask,mask_arr)
