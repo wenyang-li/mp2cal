@@ -120,8 +120,8 @@ def omnirun(data_wrap):
     flag_bls = []
     for bl in flag.keys():
         wgt_data = np.logical_not(flag[bl][pp])
-        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)*Ntimes
-        ind = np.where(wgt_data<10)
+        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
+        ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
