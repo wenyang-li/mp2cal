@@ -189,11 +189,11 @@ def omnirun(data_wrap):
                 chisqant[j] = 0.
                 countant[j] = 0
             if opts.wgt_cal: md *= (auto[i]*auto[j])
-            try: chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
-            except(KeyError): chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
-            chisq += chisqterm
-            chisqant[i] += chisqterm
-            chisqant[j] += chisqterm
+            try: chisqterm = (np.abs(md-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
+            except(KeyError): chisqterm = (np.abs(md-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
+            chisq += chisqterm.data
+            chisqant[i] += chisqterm.data
+            chisqant[j] += chisqterm.data
             countant[i] += 1
             countant[j] += 1
 #m2['chisq'+str(r[0])] = chisqr / (len(r) - 1)
