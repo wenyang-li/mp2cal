@@ -66,6 +66,7 @@ if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
 #********************************** load and wrap data ******************************************
 if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
+print "OBSID: " + obsid
 uv = uvd.UVData()
 if opts.ftype == 'uvfits':
     uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
