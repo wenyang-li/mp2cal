@@ -85,6 +85,7 @@ else:
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
+Ntimes = uv.Ntimes
 del uv
 for a in ex_ants_find:
     if not a in ex_ants: ex_ants.append(a)
@@ -118,8 +119,8 @@ def omnirun(data_wrap):
     flag_bls = []
     for bl in flag.keys():
         wgt_data = np.logical_not(flag[bl][pp])
-        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
-        ind = np.where(wgt_data==0)
+        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)*Ntimes
+        ind = np.where(wgt_data<10)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
@@ -175,7 +176,7 @@ def omnirun(data_wrap):
     for r in reds:
 #        chisqr = 0.
         for bl in r:
-            if v2[pp].has_key(bl): yij = v2[pp][bl]
+            if v2[pp].has_key(bl): yij = np.ma.masked_array(v2[pp][bl],mask=mask_arr,filled_value=0.0)
         for bl in r:
             try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
             except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)

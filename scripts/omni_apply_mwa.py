@@ -152,11 +152,13 @@ for ip,p in enumerate(pols):
 #*********************************************************************************************
     if opts.appfhd:
         for a in gfhd[p[0]].keys():
-            if np.isnan(np.mean(gfhd[p[0]][a])):
+            if np.any(np.isnan(gfhd[p[0]][a])):
                 ex_ants.append(a)
                 continue
             if a > 56: continue
             gains[p[0]][a] = gfhd[p[0]][a]
+    for a in gains[p[0]].keys():
+        if gains[p[0]][a].ndim == 2: gains[p[0]][a] = np.mean(gains[p[0]][a], axis=0)
     for ii in range(0,Nblts):
         a1 = uvi.ant_1_array[ii]
         a2 = uvi.ant_2_array[ii]
@@ -167,16 +169,18 @@ for ip,p in enumerate(pols):
                 try: uvi.data_array[:,0][:,:,pid][ii] -= xtalk[p][(a2,a1)].conj()
                 except(KeyError): pass
         try:
-            fuse = np.where(gains[p1][a1]!=0)
-            fnot = np.where(gains[p1][a1]==0)
-            uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p1][a1][fuse]
-            uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
+            fuse = np.where(gains[p1][a1]!=0)[0]
+            fnot = np.where(gains[p1][a1]==0)[0]
+            uvi.data_array[ii,0,fuse,pid] /= gains[p1][a1][fuse]
+            uvi.data_array[ii,0,fnot,pid] *= 0
+            uvi.flag_array[ii,0,fnot,pid] = True
         except(KeyError): pass
         try:
-            fuse = np.where(gains[p2][a2]!=0)
-            fnot = np.where(gains[p2][a2]==0)
-            uvi.data_array[:,0][:,:,pid][ii][fuse] /= gains[p2][a2][fuse].conj()
-            uvi.data_array[:,0][:,:,pid][ii][fnot] *= 0
+            fuse = np.where(gains[p2][a2]!=0)[0]
+            fnot = np.where(gains[p2][a2]==0)[0]
+            uvi.data_array[ii,0,fuse,pid] /= gains[p2][a2][fuse].conj()
+            uvi.data_array[ii,0,fnot,pid] *= 0
+            uvi.flag_array[ii,0,fnot,pid] = True
         except(KeyError): pass
 
     #write file
