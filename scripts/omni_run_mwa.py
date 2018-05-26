@@ -167,7 +167,7 @@ def omnirun(data_wrap):
     print '   time expense: ', caltime
     if opts.wgt_cal:
         for a in g2[p].keys(): g2[p][a] *= auto[a]
-    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
+#    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
     print '   compute chi-square'
