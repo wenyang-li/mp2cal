@@ -19,12 +19,9 @@ def unwrap(arr):
 
 
 def output_mask_array(flag_array):
-    invf = 1 - flag_array
-    sf = np.sum((np.sum(invf,axis=0)),axis=0).astype(bool)
-    st = np.sum((np.sum(invf,axis=1)),axis=1).astype(bool)
-    mask_array = 1 - np.outer(st,sf)
-    mask_array = mask_array.astype(bool)
-    return mask_array
+    wgts = np.logical_not(flag_array)
+    wgts = np.sum(wgts, axis=1)
+    return wgts == 0
 
 
 def find_ex_ant(uvdata):
