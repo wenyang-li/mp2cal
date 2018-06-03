@@ -71,7 +71,7 @@ if opts.outtype == 'uvfits':
         suffix = suffix + 'B'
     if opts.polyfit:
         suffix = suffix + 'P'
-    newfile = opts.outpath + obsid.split('/')[-1] + '_' + suffix + '.uvfits'
+    newfile = opts.outpath + 'data' + '_' + suffix + '/' +obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
     #read in the file
@@ -133,23 +133,8 @@ for ip,p in enumerate(pols):
             gains = mp2cal.wyl.degen_project_FO(gains,antpos)
         elif opts.intype == 'uvfits':
             gains = mp2cal.wyl.degen_project_OF(gains,gfhd,antpos,EastHex,SouthHex)
-#********************** if choose to make sols smooth ***************************
-    if opts.bpfit:
-        print '   bandpass fitting'
-        exec('from %s import tile_info'% opts.cal)
-        auto = {}
-        bi = 128*uvi.ant_1_array+uvi.ant_2_array
-        for a in gains[p[0]].keys():
-            auto_inds = np.where(bi==128*a+a)
-            auto_corr = uvi.data_array[auto_inds][:,0][:,:,pid].real
-            auto[a] = np.mean(np.sqrt(auto_corr)[1:-2],axis=0)
-            auto[a] /= np.mean(auto[a])
-        gains = mp2cal.wyl.mwa_bandpass_fit(gains,auto,tile_info)
-    if opts.polyfit:
-        print '   polyfitting'
-        gains = mp2cal.wyl.poly_bandpass_fit(gains)
-    ex_ants = []
 #*********************************************************************************************
+    ex_ants = []
     if opts.appfhd:
         for a in gfhd[p[0]].keys():
             if np.any(np.isnan(gfhd[p[0]][a])):
