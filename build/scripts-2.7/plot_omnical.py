@@ -28,6 +28,8 @@ freq = dx['freqs']/1e6
 sol={}
 ampmax=1
 ampmin=1
+phsmax=0
+phsmin=0
 count=0
 cx = np.logical_not(np.product(dx['flags'],axis=0))
 cy = np.logical_not(np.product(dy['flags'],axis=0))
@@ -49,19 +51,29 @@ for ii in range(57,129):
     ddx=x
     ddy=y
     if exist:
-        dxmax=np.nanmax((np.abs(ddx)))
-        dymax=np.nanmax((np.abs(ddy)))
-        dxmin=np.nanmin((np.abs(ddx)))
-        dymin=np.nanmin((np.abs(ddy)))
+        dxmax=np.nanmax(np.abs(ddx))
+        dymax=np.nanmax(np.abs(ddy))
+        dxmin=np.nanmin(np.abs(ddx))
+        dymin=np.nanmin(np.abs(ddy))
+        pxmax=np.nanmax(np.angle(ddx))
+        pymax=np.nanmax(np.angle(ddy))
+        pxmin=np.nanmin(np.angle(ddx))
+        pymin=np.nanmin(np.angle(ddy))
 #        print dxmax,dymax,dxmin,dymin
         if count==0:
             ampmax=dxmax
             ampmin=dxmin
+            phsmax=pxmax
+            phsmin=pxmin
             count+=1
         if dxmax>ampmax: ampmax=dxmax
         if dymax>ampmax: ampmax=dymax
         if dxmin<ampmin: ampmin=dxmin
         if dymin<ampmin: ampmin=dymin
+        if pxmax>phsmax: phsmax=pxmax
+        if pymax>phsmax: phsmax=pymax
+        if pxmin<phsmin: phsmin=pxmin
+        if pymin<phsmin: phsmin=pymin
     sol[int(name[ii])]['x']=ddx
     sol[int(name[ii])]['y']=ddy
 
@@ -91,8 +103,8 @@ plt.subplots_adjust(top=0.93,bottom=0.05,left=0.06,right=0.98)
 fig.savefig(obs+'_amp_omnical.png')
 
 #plot and save phase
-ly=[-np.pi,0,np.pi]
-lay=['-3.14','0','3.14']
+ly=[phsmin,(phsmax+phsmin)/2,phsmax]
+lay=['%.2f'%(phsmin),'%.2f'%((phsmax+phsmin)/2),'%.2f'%(phsmax)]
 fig=plt.figure()
 plt.suptitle(obs.split('/')[-1],y=0.99,size=15.0)
 for ii in range(0,6):
@@ -101,7 +113,7 @@ for ii in range(0,6):
         p=fig.add_subplot(6,12,ind+1)
         p.scatter(freq[cx],np.angle(sol[ind+1001]['x'][cx]),color='blue',s=0.01)
         p.scatter(freq[cy],np.angle(sol[ind+1001]['y'][cy]),color='red',s=0.01)
-        plt.ylim((-np.pi,np.pi))
+        plt.ylim((phsmin,phsmax))
         plt.xlim((freq[0],freq[-1]))
         p.set_xticks(lx)
         p.set_yticks(ly)
