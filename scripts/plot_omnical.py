@@ -1,3 +1,5 @@
+from matplotlib import use
+use('Agg')
 import numpy as np
 import sys, matplotlib.pyplot as plt
 
