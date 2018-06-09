@@ -28,9 +28,9 @@ o.add_option('--intype', dest='intype', default=None, type='string',
 o.add_option('--metafits', dest='metafits', default='', type='string',
              help='path to metafits files')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string',
-             help='path to fhd dir for fhd output visibilities if ftype is fhd.')
+             help='path to fhd dir if ftype is fhd.')
 o.add_option('--outpath', dest='outpath', default='', type='string',
-             help='path to fhd dir for fhd output visibilities if ftype is fhd.')
+             help='path to output calibrated data.')
 o.add_option('--appfhd',dest='appfhd',default=False,action='store_true',
              help='Toggle: apply FHD solutions to non-hex tiles. Default=False')
 o.add_option('--ave',dest='ave',default=False,action='store_true',

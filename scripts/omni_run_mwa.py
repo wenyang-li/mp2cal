@@ -79,9 +79,12 @@ t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]
 
 #********************************** load fhd ***************************************************
-if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav'):
+fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
+if os.path.exists(fhd_sol_path):
+    print "fhd solutions exist: " + fhd_sol_path
     gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
 else:
+    print "No target fhd solutions."
     gfhd = {'x':{}, 'y':{}}
 
 #*********************************** ex_ants *****************************************************
