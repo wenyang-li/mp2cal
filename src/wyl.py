@@ -729,7 +729,7 @@ def unpack_linsolve(s):
             v[pp][(i,j)] = s[key]
     return m, g, v
 
-def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500,mwa_mask=True):
+def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
     for p in g2.keys():
         pp = p+p
         bl2d = []
@@ -737,6 +737,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500,mwa_mask=True):
             bl2d.append(tuple(info.bl2d[ii]))
         a0 = g2[p].keys()[0]
         SH = g2[p][a0].shape
+        mask_arr = mask.flatten()
         gs = {}
         vs = {}
         ant_map = {}
@@ -753,8 +754,7 @@ def fine_iter(g2,v2,data,info,conv=1e-7,maxiter=500,mwa_mask=True):
             vs[ubli] = v2[pp][bl].flatten()
             ubl_map[bl] = ubli
         for ii in range(SH[0]*SH[1]):
-            if mwa_mask:
-                if ii%16 in [0,15]: continue #specific for mwa
+            if mask_arr[ii]: continue #specific for mwa
             dt = ii/SH[1]
             df = ii%SH[1]
             nbls = len(bl2d)
