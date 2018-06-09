@@ -44,7 +44,7 @@ newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
 # Load data
-print "Loading: " obsid + ".uvfits"
+print "Loading: " + obsid + ".uvfits"
 uv = uvd.UVData()
 uv.read_uvfits(obsid+'.uvfits')
 
