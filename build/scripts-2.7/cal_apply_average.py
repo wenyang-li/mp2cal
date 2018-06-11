@@ -69,7 +69,9 @@ for pp in range(uv.Npols):
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
 
+# Subtracting the model
 if opts.subtract:
+    print "Subtracting model ..."
     modelxx = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_XX.sav')
     uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
     del modelxx
