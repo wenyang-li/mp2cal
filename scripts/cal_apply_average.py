@@ -1,5 +1,6 @@
 import numpy as np, pyuvdata.uvdata as uvd
-import aipy, mp2cal, sys, os, optparse, gc
+import aipy, mp2cal, sys, os, optparse
+from scipy.io.idl import readsav
 
 ### Options ###
 o = optparse.OptionParser()
@@ -10,6 +11,8 @@ o.add_option('--fhdpath', dest='fhdpath', default='', type='string',
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load omnical solution files. Include final / in path.')
 o.add_option('--omniapp',dest='omniapp',default=False,action='store_true',
              help='Toggle: apply omnical solutions to hex tiles. Default=False')
+o.add_option('--subtract',dest='subtract',default=False,action='store_true',
+             help='Toggle: subtract model vis. Default=False')
 o.add_option('--outpath', dest='outpath', default='', type='string',
              help='path to output calibrated data. Include final / in path.')
 opts,args = o.parse_args(sys.argv[1:])
@@ -38,6 +41,7 @@ if opts.omniapp:
     for a in gy['y'].keys():
         if gy['y'][a].ndim == 2: gains['y'][a] = np.mean(gy['y'][a], axis=0)
         else: gains['y'][a] = gy['y'][a]
+if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
 newfile = writepath + obsid.split('/')[-1] + '.uvfits'
@@ -65,6 +69,14 @@ for pp in range(uv.Npols):
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
 
+if opts.subtract:
+    modelxx = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_XX.sav')
+    uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
+    del modelxx
+    modelyy = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_YY.sav')
+    uv.data_array[:,0,:,1] -= modelyy['vis_model_ptr']
+    del modelyy
+
 # Average data in frequency
 print "Averaging in frequency channel ..."
 data1 = np.ma.masked_array(uv.data_array[:,:,0::2,:], uv.flag_array[:,:,0::2,:])
@@ -72,18 +84,15 @@ data2 = np.ma.masked_array(uv.data_array[:,:,1::2,:], uv.flag_array[:,:,1::2,:])
 data = np.ma.masked_array([data1,data2])
 uv.data_array = None
 del data1, data2
-gc.collect()
 data = np.mean(data,axis=0)
 sample = np.ma.masked_array(uv.nsample_array[:,:,0::2,:], uv.flag_array[:,:,0::2,:]) + \
         np.ma.masked_array(uv.nsample_array[:,:,1::2,:], uv.flag_array[:,:,1::2,:])
 uv.nsample_array = None
-gc.collect()
 uv.data_array = data.data
 uv.flag_array = data.mask
 del data
 uv.nsample_array = sample.data
 del sample
-gc.collect()
 uv.freq_array = (uv.freq_array[:,0::2]+uv.freq_array[:,1::2])/2
 uv.Nfreqs /= 2
 uv.channel_width *= 2
