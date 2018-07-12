@@ -26,21 +26,45 @@ fhdsav = opts.fhdpath + 'calibration/' + obsid + '_cal.sav'
 if not os.path.exists(fhdsav): raise IOError('%s not found' %fhdsav)
 print "Get FHD solutions ..."
 gains = mp2cal.wyl.load_gains_fhd(fhdsav)
+exec('from PhaseII_cal import *')
 if opts.omniapp:
     suffix = 'AOF'
     print "Get omnical solutions ..."
     omnixx = opts.omnipath + obsid + '.xx.omni.npz'
     omniyy = opts.omnipath + obsid + '.yy.omni.npz'
+    omniave = opts.omnipath + 'omniave.npz'
     if not os.path.exists(omnixx): raise IOError('%s not found' %omnixx)
     if not os.path.exists(omniyy): raise IOError('%s not found' %omniyy)
+    if not os.path.exists(omniave): raise IOError('%s not found' %omniave)
     gx = mp2cal.wyl.quick_load_gains(omnixx)
     gy = mp2cal.wyl.quick_load_gains(omniyy)
+    gave = mp2cal.wyl.quick_load_gains(omniave)
     for a in gx['x'].keys():
-        if gx['x'][a].ndim == 2: gains['x'][a] = np.mean(gx['x'][a], axis=0)
-        else: gains['x'][a] = gx['x'][a]
+        if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
+        ind = np.where(gains['x'][a]!=0)[0]
+        gres = np.zeros_like(gx['x'][a])
+        gres[ind] = gx['x'][a][ind]/gains['x'][a][ind] - gave['x'][a][ind]
+        gr = np.fft.rfft(gres.real)
+        gi = np.fft.rfft(gres.imag)
+        gr[5:] *= 0
+        gi[5:] *= 0
+        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
+        gx['x'][a] = (gave['x'][a]+gfit)
+    gx = mp2cal.wyl.degen_project_FO(gx,antpos)
     for a in gy['y'].keys():
-        if gy['y'][a].ndim == 2: gains['y'][a] = np.mean(gy['y'][a], axis=0)
-        else: gains['y'][a] = gy['y'][a]
+        if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
+        ind = np.where(gains['y'][a]!=0)[0]
+        gres = np.zeros_like(gy['y'][a])
+        gres[ind] = gy['y'][a][ind]/gains['y'][a][ind] - gave['y'][a][ind]
+        gr = np.fft.rfft(gres.real)
+        gi = np.fft.rfft(gres.imag)
+        gr[5:] *= 0
+        gi[5:] *= 0
+        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
+        gy['y'][a] = (gave['y'][a]+gfit)
+    gy = mp2cal.wyl.degen_project_FO(gy,antpos)
+    for a in gx['x'].keys(): gains['x'][a] *= gx['x'][a]
+    for a in gy['y'].keys(): gains['y'][a] *= gy['y'][a]
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
