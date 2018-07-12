@@ -586,11 +586,11 @@ def load_gains_fhd(fhdsav,raw=False):
     fhd_cal = readsav(fhdsav,python_dict=True)
     gfhd = {'x':{},'y':{}}
     for a in range(fhd_cal['cal']['N_TILE'][0]):
-        gfhd['x'][a] = fhd_cal['cal']['GAIN'][0][0][a]
-        gfhd['y'][a] = fhd_cal['cal']['GAIN'][0][1][a]
+        gfhd['x'][a] = np.copy(fhd_cal['cal']['GAIN'][0][0][a])
+        gfhd['y'][a] = np.copy(fhd_cal['cal']['GAIN'][0][1][a])
         if raw:
-            gfhd['x'][a] += fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a]
-            gfhd['y'][a] += fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a]
+            gfhd['x'][a] += np.copy(fhd_cal['cal']['GAIN_RESIDUAL'][0][0][a])
+            gfhd['y'][a] += np.copy(fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a])
     return gfhd
 
 
