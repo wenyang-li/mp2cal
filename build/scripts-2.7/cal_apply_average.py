@@ -39,6 +39,7 @@ if opts.omniapp:
     gx = mp2cal.wyl.quick_load_gains(omnixx)
     gy = mp2cal.wyl.quick_load_gains(omniyy)
     gave = mp2cal.wyl.quick_load_gains(omniave)
+    omnisol = {'x':{}, 'y':{}}
     for a in gx['x'].keys():
         if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
         ind = np.where(gains['x'][a]!=0)[0]
@@ -49,8 +50,7 @@ if opts.omniapp:
         gr[5:] *= 0
         gi[5:] *= 0
         gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        gx['x'][a] = (gave['x'][a]+gfit)
-    gx = mp2cal.wyl.degen_project_FO(gx,antpos)
+        omnisol['x'][a] = (gave['x'][a]+gfit)
     for a in gy['y'].keys():
         if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
         ind = np.where(gains['y'][a]!=0)[0]
@@ -61,10 +61,8 @@ if opts.omniapp:
         gr[5:] *= 0
         gi[5:] *= 0
         gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        gy['y'][a] = (gave['y'][a]+gfit)
-    gy = mp2cal.wyl.degen_project_FO(gy,antpos)
-    for a in gx['x'].keys(): gains['x'][a] *= gx['x'][a]
-    for a in gy['y'].keys(): gains['y'][a] *= gy['y'][a]
+        omnisol['y'][a] = (gave['y'][a]+gfit)
+    omnisol = mp2cal.wyl.degen_project_FO(omnisol,antpos)
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
@@ -92,7 +90,9 @@ for pp in range(uv.Npols):
         fj = np.where(gains[p2][a2]!=0)[0]
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
-
+        if opts.omniapp and a1 in omnisol[p1].keys() and a2 in omnisol[p2].keys():
+            uv.data_array[ii::uv.Nbls,0,fi,pp] /= omnisol[p1][a1][fi]
+            uv.data_array[ii::uv.Nbls,0,fj,pp] /= omnisol[p2][a2][fj].conj()
 # Subtracting the model
 if opts.subtract:
     print "Subtracting model ..."
