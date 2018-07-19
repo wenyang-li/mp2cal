@@ -90,9 +90,11 @@ for pp in range(uv.Npols):
         fj = np.where(gains[p2][a2]!=0)[0]
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
-        if opts.omniapp and a1 in omnisol[p1].keys() and a2 in omnisol[p2].keys():
-            uv.data_array[ii::uv.Nbls,0,fi,pp] /= omnisol[p1][a1][fi]
-            uv.data_array[ii::uv.Nbls,0,fj,pp] /= omnisol[p2][a2][fj].conj()
+        if opts.omniapp:
+            if a1 in omnisol[p1].keys():
+                uv.data_array[ii::uv.Nbls,0,fi,pp] /= omnisol[p1][a1][fi]
+            if a2 in omnisol[p2].keys():
+                uv.data_array[ii::uv.Nbls,0,fj,pp] /= omnisol[p2][a2][fj].conj()
 # Subtracting the model
 if opts.subtract:
     print "Subtracting model ..."
