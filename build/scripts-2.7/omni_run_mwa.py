@@ -63,6 +63,15 @@ if not opts.ants == '':
     print '   ants: ', ants
 if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
 
+#********************************** load fhd ***************************************************
+fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
+if os.path.exists(fhd_sol_path):
+    print "fhd solutions exist: " + fhd_sol_path
+    gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
+else:
+    print "No target fhd solutions."
+    gfhd = None
+
 #********************************** load and wrap data ******************************************
 if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
@@ -73,19 +82,10 @@ if opts.ftype == 'uvfits':
 elif opts.ftype == 'fhd':
     uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
 else: IOError('invalid filetype, it should be uvfits or fhd')
-data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos)
+data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos,gfhd=gfhd)
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]
-
-#********************************** load fhd ***************************************************
-fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
-if os.path.exists(fhd_sol_path):
-    print "fhd solutions exist: " + fhd_sol_path
-    gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
-else:
-    print "No target fhd solutions."
-    gfhd = {'x':{}, 'y':{}}
 
 #*********************************** ex_ants *****************************************************
 ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
@@ -144,7 +144,7 @@ def omnirun(data_wrap):
                 except: data[(j,i)][pp] *= blw
 
     #*********************** generate g0 ***************************************
-    if opts.ftype == 'fhd':
+    if opts.ftype == 'fhd' or os.path.exists(fhd_sol_path):
         print '     setting g0 as units'
         g0 = {p:{}}
         for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
@@ -224,12 +224,10 @@ def omnirun(data_wrap):
 
     #*********************** project degeneracy *********************************
     print '   Projecting degeneracy'
-    if opts.ftype == 'fhd':
+    if opts.ftype == 'fhd' or os.path.exists(fhd_sol_path):
         g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2)
-    elif opts.ftype == 'uvfits':
-        if os.path.exists(opts.fhdpath+'calibration/'+obsid+'_cal.sav'):
-            g2 = mp2cal.wyl.degen_project_OF(g2,gfhd,antpos,EastHex,SouthHex,v2)
-        elif os.path.exists(fcfile):
+    else:
+        if os.path.exists(fcfile):
             g2 = mp2cal.wyl.degen_project_OF(g2,g0,antpos,EastHex,SouthHex,v2)
         else: g2 = mp2cal.wyl.scale_gains(g2)
 

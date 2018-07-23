@@ -44,7 +44,7 @@ if opts.omniapp:
         if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
         ind = np.where(gains['x'][a]!=0)[0]
         gres = np.zeros_like(gx['x'][a])
-        gres[ind] = gx['x'][a][ind]/gains['x'][a][ind] - gave['x'][a][ind]
+        gres[ind] = gx['x'][a][ind] - gave['x'][a][ind]
         gr = np.fft.rfft(gres.real)
         gi = np.fft.rfft(gres.imag)
         gr[5:] *= 0
@@ -55,7 +55,7 @@ if opts.omniapp:
         if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
         ind = np.where(gains['y'][a]!=0)[0]
         gres = np.zeros_like(gy['y'][a])
-        gres[ind] = gy['y'][a][ind]/gains['y'][a][ind] - gave['y'][a][ind]
+        gres[ind] = gy['y'][a][ind] - gave['y'][a][ind]
         gr = np.fft.rfft(gres.real)
         gi = np.fft.rfft(gres.imag)
         gr[5:] *= 0

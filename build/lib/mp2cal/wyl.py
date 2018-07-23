@@ -80,7 +80,7 @@ def uv_wrap_fc(uv,redbls,pols=['xx','yy']):
     return wrap_list
 
 
-def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None):
+def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None,gfhd=None):
     data_wrap = {}
     a1 = uv.ant_1_array[:uv.Nbls]
     a2 = uv.ant_2_array[:uv.Nbls]
@@ -109,6 +109,9 @@ def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None):
             else:
                 bl = (a1[ii],a2[ii])
                 md = np.ma.masked_array(data[:,ii],flag[:,ii])
+                if not gfhd is None:
+                    p1, p2 = pp
+                    md /= (gfhd[p1][a1[ii]]*gfhd[p2][a2[ii]].conj())
                 diff = md[1:] - md[:-1]
                 wrap['noise'][bl] = np.var(diff,axis=0).data/2
                 zerofq = np.where(np.sum(np.logical_not(diff.mask),axis=0) < 3)[0]
