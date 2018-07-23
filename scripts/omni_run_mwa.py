@@ -79,10 +79,11 @@ print "OBSID: " + obsid
 uv = uvd.UVData()
 if opts.ftype == 'uvfits':
     uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
+    data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos,gfhd=gfhd)
 elif opts.ftype == 'fhd':
     uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
+    data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos)
 else: IOError('invalid filetype, it should be uvfits or fhd')
-data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos,gfhd=gfhd)
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]
