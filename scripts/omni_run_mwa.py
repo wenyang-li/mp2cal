@@ -26,7 +26,7 @@ o.add_option('--metafits', dest='metafits', default='', type='string', help='pat
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
-o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight each gain by auto corr before cal')
+o.add_option('--wgt_cal', dest='wgt_cal', default=False, action='store_true', help='Toggle: weight bls by 1-1/n, where n=len(red bls)')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -132,12 +132,16 @@ def omnirun(data_wrap):
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
 
-    #*********************** organize data *************************************
+    #*********************** weight data *************************************
     wgts,xtalk = {}, {}
     if opts.wgt_cal:
-        for bl in data.keys():
-            i,j = bl
-            data[bl][pp] /= (auto[i]*auto[j])
+        print "weight data ..."
+        for r in reds:
+            blw = np.sqrt(1.-1./len(r))
+            for bl in r:
+                i,j = bl
+                try: data[(i,j)][pp] *= blw
+                except: data[(j,i)][pp] *= blw
 
     #*********************** generate g0 ***************************************
     if opts.ftype == 'fhd':
@@ -169,7 +173,13 @@ def omnirun(data_wrap):
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
     if opts.wgt_cal:
-        for a in g2[p].keys(): g2[p][a] *= auto[a]
+        for r in reds:
+            blw = np.sqrt(1.-1./len(r))
+            for bl in r:
+                i,j = bl
+                if bl in v2[pp].keys(): v2[pp][bl] /= blw
+                try: data[(i,j)][pp] /= blw
+                except: data[(j,i)][pp] /= blw
 #    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
 
     #************************ Average cal solutions ************************************
@@ -191,7 +201,6 @@ def omnirun(data_wrap):
             if not chisqant.has_key(j):
                 chisqant[j] = 0.
                 countant[j] = 0
-            if opts.wgt_cal: md *= (auto[i]*auto[j])
             try: chisqterm = (np.abs(md-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
             except(KeyError): chisqterm = (np.abs(md-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
             chisq += chisqterm.data
