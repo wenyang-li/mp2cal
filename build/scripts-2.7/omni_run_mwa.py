@@ -63,6 +63,10 @@ if not opts.ants == '':
     print '   ants: ', ants
 if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
 
+if not len(args) == 1: raise IOError('Do not support multiple files.')
+obsid = args[0]
+print "OBSID: " + obsid
+
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
 if os.path.exists(fhd_sol_path):
@@ -73,9 +77,6 @@ else:
     gfhd = None
 
 #********************************** load and wrap data ******************************************
-if not len(args) == 1: raise IOError('Do not support multiple files.')
-obsid = args[0]
-print "OBSID: " + obsid
 uv = uvd.UVData()
 if opts.ftype == 'uvfits':
     uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
