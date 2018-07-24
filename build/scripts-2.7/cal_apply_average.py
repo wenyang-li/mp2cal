@@ -50,7 +50,7 @@ if opts.omniapp:
 #        gr[5:] *= 0
 #        gi[5:] *= 0
 #        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['x'][a] = gx['x'][a]#(gave['x'][a]+gfit)
+        omnisol['x'][a] = np.mean(gx['x'][a],axis=0)#(gave['x'][a]+gfit)
     for a in gy['y'].keys():
 #        if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
 #        ind = np.where(gains['y'][a]!=0)[0]
@@ -61,7 +61,7 @@ if opts.omniapp:
 #        gr[5:] *= 0
 #        gi[5:] *= 0
 #        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['y'][a] = gy['y'][a]#(gave['y'][a]+gfit)
+        omnisol['y'][a] = np.mean(gy['y'][a],axis=0)#(gave['y'][a]+gfit)
 #    omnisol = mp2cal.wyl.degen_project_FO(omnisol,antpos)
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
