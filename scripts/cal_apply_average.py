@@ -32,37 +32,37 @@ if opts.omniapp:
     print "Get omnical solutions ..."
     omnixx = opts.omnipath + obsid + '.xx.omni.npz'
     omniyy = opts.omnipath + obsid + '.yy.omni.npz'
-    omniave = opts.omnipath + 'omniave.npz'
+#    omniave = opts.omnipath + 'omniave.npz'
     if not os.path.exists(omnixx): raise IOError('%s not found' %omnixx)
     if not os.path.exists(omniyy): raise IOError('%s not found' %omniyy)
-    if not os.path.exists(omniave): raise IOError('%s not found' %omniave)
+#    if not os.path.exists(omniave): raise IOError('%s not found' %omniave)
     gx = mp2cal.wyl.quick_load_gains(omnixx)
     gy = mp2cal.wyl.quick_load_gains(omniyy)
-    gave = mp2cal.wyl.quick_load_gains(omniave)
+#    gave = mp2cal.wyl.quick_load_gains(omniave)
     omnisol = {'x':{}, 'y':{}}
     for a in gx['x'].keys():
-        if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
-        ind = np.where(gains['x'][a]!=0)[0]
-        gres = np.zeros_like(gx['x'][a])
-        gres[ind] = gx['x'][a][ind] - gave['x'][a][ind]
-        gr = np.fft.rfft(gres.real)
-        gi = np.fft.rfft(gres.imag)
-        gr[5:] *= 0
-        gi[5:] *= 0
-        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['x'][a] = (gave['x'][a]+gfit)
+#        if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
+#        ind = np.where(gains['x'][a]!=0)[0]
+#        gres = np.zeros_like(gx['x'][a])
+#        gres[ind] = gx['x'][a][ind] - gave['x'][a][ind]
+#        gr = np.fft.rfft(gres.real)
+#        gi = np.fft.rfft(gres.imag)
+#        gr[5:] *= 0
+#        gi[5:] *= 0
+#        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
+        omnisol['x'][a] = gx['x'][a]#(gave['x'][a]+gfit)
     for a in gy['y'].keys():
-        if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
-        ind = np.where(gains['y'][a]!=0)[0]
-        gres = np.zeros_like(gy['y'][a])
-        gres[ind] = gy['y'][a][ind] - gave['y'][a][ind]
-        gr = np.fft.rfft(gres.real)
-        gi = np.fft.rfft(gres.imag)
-        gr[5:] *= 0
-        gi[5:] *= 0
-        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['y'][a] = (gave['y'][a]+gfit)
-    omnisol = mp2cal.wyl.degen_project_FO(omnisol,antpos)
+#        if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
+#        ind = np.where(gains['y'][a]!=0)[0]
+#        gres = np.zeros_like(gy['y'][a])
+#        gres[ind] = gy['y'][a][ind] - gave['y'][a][ind]
+#        gr = np.fft.rfft(gres.real)
+#        gi = np.fft.rfft(gres.imag)
+#        gr[5:] *= 0
+#        gi[5:] *= 0
+#        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
+        omnisol['y'][a] = gy['y'][a]#(gave['y'][a]+gfit)
+#    omnisol = mp2cal.wyl.degen_project_FO(omnisol,antpos)
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
