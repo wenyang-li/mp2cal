@@ -98,17 +98,18 @@ for a in ex_ants_find:
 for a in gfhd['x'].keys():
     if np.isnan(np.mean(gfhd['x'][a])) or np.isnan(np.mean(gfhd['y'][a])):
         if not a in ex_ants: ex_ants.append(a)
+print '     ex_ants: ', ex_ants
 if opts.ex_dipole:
     metafits_path = opts.metafits + filename + '.metafits'
     if os.path.exists(metafits_path):
         print '    Finding dead dipoles in metafits'
         hdu = fits.open(metafits_path)
         inds = np.where(hdu[1].data['Delays']==32)[0]
-        dead_dipole = np.unique(hdu[1].data['Antenna'][inds])
-        for dip in dead_dipole:
-            if not dip in ex_ants: ex_ants.append(dip)
+        for ind in inds:
+            data_wrap[hdu[1].data['Pol'][ind].lower()*2]['dead'].append(hdu[1].data['Antenna'][ind])
+        for pp in pols:
+            print '     Dead dipole in '+pp+': ', data_wrap[pp]['dead']
     else: print '    Warning: Metafits not found. Cannot get the information of dead dipoles'
-print '     ex_ants: ', ex_ants
 
 data_list = []
 for pp in pols: data_list.append(data_wrap[pp])
@@ -121,6 +122,7 @@ def omnirun(data_wrap):
     auto = data_wrap['auto']
     mask_arr = data_wrap['mask']
     noise = data_wrap['noise']
+    ddp = data_wrap['dead']
     flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
     flag_bls = []
     for bl in flag.keys():
@@ -130,7 +132,7 @@ def omnirun(data_wrap):
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
     omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
-    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
+    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants+ddp)
     reds = info.get_reds()
     redbls = [bl for red in reds for bl in red]
 

@@ -95,6 +95,7 @@ def uv_wrap_omni(uv,pols=['xx','yy'],tave=False,antpos=None,gfhd=None):
         wrap['flag'] = {}
         wrap['auto'] = {}
         wrap['noise'] = {}
+        wrap['dead'] = []
         auto_scale = 0
         data = uv.data_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
         flag = uv.flag_array[:,0][:,:,jj].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
