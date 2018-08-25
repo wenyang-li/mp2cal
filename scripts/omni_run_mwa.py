@@ -100,7 +100,7 @@ for a in gfhd['x'].keys():
         if not a in ex_ants: ex_ants.append(a)
 print '     ex_ants: ', ex_ants
 if opts.ex_dipole:
-    metafits_path = opts.metafits + filename + '.metafits'
+    metafits_path = opts.metafits + obsid + '.metafits'
     if os.path.exists(metafits_path):
         print '    Finding dead dipoles in metafits'
         hdu = fits.open(metafits_path)
