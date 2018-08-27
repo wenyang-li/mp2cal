@@ -47,10 +47,10 @@ for ii in range(57,129):
         ddy = np.mean(y,axis=0)
     except(KeyError):
         ddy=np.ma.masked_array(np.ones(SH), np.ones(SH))
-    ampmax = np.nanmax([ampmax, np.nanmax([np.nanmax(np.abs(ddx)), np.nanmax(np.abs(ddy))])])
-    ampmin = np.nanmin([ampmin, np.nanmin([np.nanmin(np.abs(ddx)), np.nanmin(np.abs(ddy))])])
-    phsmax = np.nanmax([ampmax, np.nanmax([np.nanmax(np.angle(ddx)), np.nanmax(np.angle(ddy))])])
-    phsmin = np.nanmin([ampmin, np.nanmin([np.nanmin(np.angle(ddx)), np.nanmin(np.angle(ddy))])])
+    ampmax = np.nanmax([ampmax, np.nanmax(np.abs(ddx)), np.nanmax(np.abs(ddy))])
+    ampmin = np.nanmin([ampmin, np.nanmin(np.abs(ddx)), np.nanmin(np.abs(ddy))])
+    phsmax = np.nanmax([ampmax, np.nanmax(np.angle(ddx)), np.nanmax(np.angle(ddy))])
+    phsmin = np.nanmin([ampmin, np.nanmin(np.angle(ddx)), np.nanmin(np.angle(ddy))])
     sol[int(name[ii])]['x'] = ddx
     sol[int(name[ii])]['y'] = ddy
 
