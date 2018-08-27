@@ -21,18 +21,17 @@ name = { 0: '11', 1: '12', 2: '13', 3: '14', 4: '15', 5: '16', 6: '17', 7: '18',
 124: '1069', 125: '1070', 126: '1071', 127: '1072', 128: '1037'}
 
 try:
-    dx=np.load(obs+'.xx.omni.npz')
-    dy=np.load(obs+'.yy.omni.npz')
+    dx = np.load(obs+'.xx.omni.npz')
+    dy = np.load(obs+'.yy.omni.npz')
 except:
-    dx=np.load(obs+'.xx.npz')
-    dy=np.load(obs+'.yy.npz')
+    dx = np.load(obs+'.xx.npz')
+    dy = np.load(obs+'.yy.npz')
 freq = dx['freqs']/1e6
-sol={}
-ampmax=1
-ampmin=1
-phsmax=0
-phsmin=0
-count=0
+sol = {}
+ampmax = 0
+ampmin = 1e10
+phsmax = -np.pi
+phsmin = np.pi
 cx = np.logical_not(np.product(dx['flags'],axis=0))
 cy = np.logical_not(np.product(dy['flags'],axis=0))
 SH = freq.shape
@@ -40,44 +39,20 @@ for ii in range(57,129):
     sol[int(name[ii])]={}
     try: 
         x = np.ma.masked_array(dx[str(ii)+'x'],dx['flags'])
-        y = np.ma.masked_array(dy[str(ii)+'y'],dy['flags'])
-        x = np.mean(x,axis=0)
-        y = np.mean(y,axis=0)
-        exist=True
+        ddx = np.mean(x,axis=0)
     except(KeyError):
-        x=np.ones(SH)
-        y=np.ones(SH)
-        x*=np.nan
-        y*=np.nan
-        exist=False
-    ddx=x
-    ddy=y
-    if exist:
-        dxmax=np.nanmax(np.abs(ddx))
-        dymax=np.nanmax(np.abs(ddy))
-        dxmin=np.nanmin(np.abs(ddx))
-        dymin=np.nanmin(np.abs(ddy))
-        pxmax=np.nanmax(np.angle(ddx))
-        pymax=np.nanmax(np.angle(ddy))
-        pxmin=np.nanmin(np.angle(ddx))
-        pymin=np.nanmin(np.angle(ddy))
-#        print dxmax,dymax,dxmin,dymin
-        if count==0:
-            ampmax=dxmax
-            ampmin=dxmin
-            phsmax=pxmax
-            phsmin=pxmin
-            count+=1
-        if dxmax>ampmax: ampmax=dxmax
-        if dymax>ampmax: ampmax=dymax
-        if dxmin<ampmin: ampmin=dxmin
-        if dymin<ampmin: ampmin=dymin
-        if pxmax>phsmax: phsmax=pxmax
-        if pymax>phsmax: phsmax=pymax
-        if pxmin<phsmin: phsmin=pxmin
-        if pymin<phsmin: phsmin=pymin
-    sol[int(name[ii])]['x']=ddx
-    sol[int(name[ii])]['y']=ddy
+        ddx=np.ma.masked_array(np.ones(SH), np.ones(SH))
+    try:
+        y = np.ma.masked_array(dy[str(ii)+'y'],dy['flags'])
+        ddy = np.mean(y,axis=0)
+    except(KeyError):
+        ddy=np.ma.masked_array(np.ones(SH), np.ones(SH))
+    ampmax = np.nanmax([ampmax, np.nanmax([np.nanmax(np.abs(ddx)), np.nanmax(np.abs(ddy))])])
+    ampmin = np.nanmin([ampmin, np.nanmin([np.nanmin(np.abs(ddx)), np.nanmin(np.abs(ddy))])])
+    phsmax = np.nanmax([ampmax, np.nanmax([np.nanmax(np.angle(ddx)), np.nanmax(np.angle(ddy))])])
+    phsmin = np.nanmin([ampmin, np.nanmin([np.nanmin(np.angle(ddx)), np.nanmin(np.angle(ddy))])])
+    sol[int(name[ii])]['x'] = ddx
+    sol[int(name[ii])]['y'] = ddy
 
 #plot and save amplitude
 ly=[ampmin,(ampmax+ampmin)/2,ampmax]
