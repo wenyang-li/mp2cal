@@ -141,7 +141,7 @@ def omnirun(RD):
     print '   time expense: ', caltime
 
     #*********************** project degeneracy *********************************
-    RD.get_gains(g2, gfhd, v2)
+    RD.get_gains(g2, v2, gfhd)
     if os.path.exists(fhd_sol_path):
         RD.gains.degen_project_FO()
     else:

@@ -14,21 +14,36 @@ def unwrap(arr):
 
 
 class RedGain(Object):
+    """
+    gain object, supporting degeneracy parameters manipulatioin.
+    """
     def __init__(self):
         self.red = None # Gain from redundant cal
         self.sky = None # Gain from sky cal
         self.mdl = None # Model vis from redundant cal
 
     def get_red(self, g_red):
+        """
+        Load redundant cal gains.
+        """
         self.red = g_red
 
     def get_sky(self, g_sky):
+        """
+        Load sky cal gains
+        """
         self.sky = g_sky
 
     def get_mdl(self, v_mdl):
+        """
+        Load redundant cal model visibilities
+        """
         self.mdl = v_mdl
 
     def scale_gains(self, amp_ave=1.):
+        """
+        scale the gain amplitudes so that they have an average of amp_ave
+        """
         for p in self.red.keys():
             amp = 0
             n = 0
@@ -43,6 +58,9 @@ class RedGain(Object):
             for a in self.red[p].keys(): self.red[p][a] /= np.exp(q)
 
     def amp_proj(self):
+        """
+        Calculate the amplitude degeneracy correction according to sky based solutions
+        """
         amppar = {}
         for p in self.red.keys():
             SH = self.red[p][self.red[p].keys()[0]].shape
@@ -68,6 +86,9 @@ class RedGain(Object):
         return amppar
 
     def phs_proj(self):
+        """
+        Calculate the phase degeneracy corrections according to sky based solutions
+        """
         g_input = copy.deepcopy(self.red)
         g_target = copy.deepcopy(self.sky)
         phspar = {}
@@ -148,6 +169,10 @@ class RedGain(Object):
         return phspar
 
     def plane_fitting(self, ratio = None):
+        """
+        If the solutions are supposed to be centered at 1.0, remove any phase gradients or
+        phase offsets by fitting a plane in (phase, rx, ry) space.
+        """
         gc = {}
         if ratio: gc = ratio
         else:
@@ -191,6 +216,9 @@ class RedGain(Object):
         return phspar
 
     def degen_project_OF(self):
+        """
+        Project degeneracy of redundant cal from raw data to sky cal
+        """
         for p in self.red.keys():
             a_red = self.red[p].keys()
             a_sky = self.sky[p].keys()
@@ -245,6 +273,9 @@ class RedGain(Object):
                 self.mdl[pp][bl][ind] /= proj[ind]
 
     def degen_project_FO(self):
+        """
+        Project degeneracy parameters to 1.0
+        """
         self.scale_gains()
         phspar = self.plane_fitting()
         for p in self.red.keys():

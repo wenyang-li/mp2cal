@@ -88,7 +88,7 @@ class RedData(Object):
             ind = np.where(G != 0)[0]
             self.data[bl][pol][:,ind] /= G[ind]
 
-    def get_gains(self, g_red, g_sky = None, v_mdl):
+    def get_gains(self, g_red,  v_mdl, g_sky = None):
         """
         Read gain solutions and add to this object
         """
