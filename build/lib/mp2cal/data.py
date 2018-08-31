@@ -9,7 +9,7 @@ def output_mask_array(flag_array):
     wgts = np.sum(wgts, axis=1)
     return wgts == 0
 
-class RedData(Object):
+class RedData(object):
     """
     A container that includes all information of the data, as well as the gain object
     containing calibration gains.

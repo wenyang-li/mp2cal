@@ -13,7 +13,7 @@ def unwrap(arr):
     return drr
 
 
-class RedGain(Object):
+class RedGain(object):
     """
     gain object, supporting degeneracy parameters manipulatioin.
     """
