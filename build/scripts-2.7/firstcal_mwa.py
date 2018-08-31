@@ -4,7 +4,7 @@ from matplotlib import use
 use('Agg')
 import hera_cal, mp2cal
 import pylab as p, aipy as a
-import sys,optparse,glob,os
+import sys, optparse, os
 import numpy as np
 from multiprocessing import Pool
 import pyuvdata.uvdata as uvd
@@ -20,8 +20,6 @@ o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
 o.add_option('--outpath', default='/users/wl42/data/wl42/Nov2016EoR0/omni_sol/',help='Output path of solutions.')
 o.add_option('--verbose', action='store_true', default=False, help='Turn on verbose.')
-o.add_option('--ftype', dest='ftype', default='', type='string',
-             help='Type of the input file, uvfits or fhd')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -38,7 +36,6 @@ def ant_parse(ant_args):
     return ant_list
 
 #************************************************************************************************
-exec('from %s import *'% opts.cal) # Including antpos, realpos, EastHex, SouthHex
 pols = opts.pol.split(',')
 ubls, ex_ubls, bls, ex_bls, ants, ex_ants = None, [], None, [], None, []
 if not opts.ubls == '':
@@ -62,32 +59,21 @@ if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
 if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
 uv = uvd.UVData()
-if opts.ftype == 'uvfits':
-    uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
-elif opts.ftype == 'fhd':
-    uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
-else: IOError('invalid filetype, it should be uvfits or fhd')
-ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
-for a in ex_ants_find:
-    if not a in ex_ants: ex_ants.append(a)
-print '     ex_ants: ', ex_ants
-reds = mp2cal.wyl.cal_reds_from_pos(antpos)
-redbls = [bl for red in reds for bl in red]
-print 'Number of redundant baselines:',len(redbls)
-wrap_list = mp2cal.wyl.uv_wrap_fc(uv,redbls,pols=pols)
+uv.read_uvfits(obsid+'.uvfits', run_check=False, run_check_acceptability=False)
+data_list = []
+for pol in pols:
+    RD = mp2cal.data.RedData(pol)
+    RD.get_ex_ants(ex_ants)
+    RD.read_data(uv, tave = True)
+    if gfhd: RD.apply_fhd(gfhd)
+    print "ex_ants for "+pol+":", RD.dead
+    data_list.append(RD)
 fqs = uv.freq_array[0]/1e9
 del uv
 
-#************************************************************************************************
-def firstcal(data_wrap):
-    pp = data_wrap['pol']
-    p = pp[0]
-    outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
-    #if os.path.exists(outname): raise IOError("File {0} already exists".format(outname))
-    datpack = data_wrap['data']
-    wgtpack = data_wrap['flag']
-    mask_arr = data_wrap['mask']
-    flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
+#************************************ run firstcal ************************************************
+def firstcal(RD):
+    flagged_fqs = np.sum(np.logical_not(RD.mask),axis=0).astype(bool)
     flag_bls = []
     for bl in wgtpack.keys():
         wgt_data = np.logical_not(wgtpack[bl][pp])
@@ -95,15 +81,18 @@ def firstcal(data_wrap):
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
-    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
-    wgtpack = {k : { qp : np.logical_not(wgtpack[k][qp]) for qp in wgtpack[k]} for k in wgtpack}
-    fc = hera_cal.firstcal.FirstCal(datpack,wgtpack,fqs,info)
+    outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
+    #******************************** red info ***************************************************
+    info = mp2cal.wyl.pos_to_info(pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
+                                  ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
+    wgtpack = {k : { qp : np.logical_not(RD.flag[k][qp]) for qp in RD.flag[k]} for k in RD.flag}
+    fc = hera_cal.firstcal.FirstCal(RD.data,wgtpack,fqs,info)
     print "     running firstcal"
     sols = fc.run(finetune=True,verbose=False,average=True,window='none')
     print('     Saving {0}'.format(outname))
-    mp2cal.wyl.save_gains_fc(sols,fqs*1e9,outname)
+    mp2cal.io.save_gains_fc(sols,fqs*1e9,outname)
 
 #*****************************************************************************
 par = Pool(2)
-npzlist = par.map(firstcal, wrap_list)
+npzlist = par.map(firstcal, data_list)
 par.close()
