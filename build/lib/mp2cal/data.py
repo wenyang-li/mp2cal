@@ -37,7 +37,7 @@ class RedData(object):
         """
         if os.path.exists(metafits):
             print '    Finding dead dipoles in metafits'
-            hdu = fits.open(metafits_path)
+            hdu = fits.open(metafits)
             inds = np.where(hdu[1].data['Delays']==32)[0]
             for ind in inds:
                 a = hdu[1].data['Antenna'][ind]
@@ -86,7 +86,7 @@ class RedData(object):
             p1,p2 = self.pol
             G = gfhd[p1][i]*gfhd[p2][j].conj()
             ind = np.where(G != 0)[0]
-            self.data[bl][pol][:,ind] /= G[ind]
+            self.data[bl][self.pol][:,ind] /= G[ind]
 
     def get_gains(self, g_red,  v_mdl, g_sky = None):
         """
@@ -104,13 +104,14 @@ class RedData(object):
         chisq = 0.
         chisqbls = {}
         g = self.gains.red
+        mdl = self.gains.mdl
         p1, p2 = self.pol
         for r in reds:
             bl0 = None
             yij = None
             for bl in r:
-                if self.mdl.has_key(bl):
-                    yij = np.ma.masked_array(self.mdl[self.pol][bl], mask=self.mask)
+                if mdl[self.pol].has_key(bl):
+                    yij = np.ma.masked_array(mdl[self.pol][bl], mask=self.mask)
                     bl0 = bl
                     chisqbls[bl0] = 0.
                     break

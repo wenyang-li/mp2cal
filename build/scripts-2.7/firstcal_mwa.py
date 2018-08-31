@@ -65,7 +65,6 @@ for pol in pols:
     RD = mp2cal.data.RedData(pol)
     RD.get_ex_ants(ex_ants)
     RD.read_data(uv, tave = True)
-    if gfhd: RD.apply_fhd(gfhd)
     print "ex_ants for "+pol+":", RD.dead
     data_list.append(RD)
 fqs = uv.freq_array[0]/1e9
@@ -75,15 +74,15 @@ del uv
 def firstcal(RD):
     flagged_fqs = np.sum(np.logical_not(RD.mask),axis=0).astype(bool)
     flag_bls = []
-    for bl in wgtpack.keys():
-        wgt_data = np.logical_not(wgtpack[bl][pp])
+    for bl in RD.flag.keys():
+        wgt_data = np.logical_not(RD.flag[bl][RD.pol])
         wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
-    outname = opts.outpath + obsid + '.' + pp + '.fc.npz'
+    outname = opts.outpath + obsid + '.' + RD.pol + '.fc.npz'
     #******************************** red info ***************************************************
-    info = mp2cal.wyl.pos_to_info(pols=[p],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
+    info = mp2cal.wyl.pos_to_info(pols=[RD.pol[0]],fcal=True,ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
     wgtpack = {k : { qp : np.logical_not(RD.flag[k][qp]) for qp in RD.flag[k]} for k in RD.flag}
     fc = hera_cal.firstcal.FirstCal(RD.data,wgtpack,fqs,info)

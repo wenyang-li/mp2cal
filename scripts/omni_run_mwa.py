@@ -101,10 +101,11 @@ del uv
 
 #******************************** omni run *******************************************************
 def omnirun(RD):
+    p = RD.pol[0]
     flagged_fqs = np.sum(np.logical_not(RD.mask),axis=0).astype(bool)
     flag_bls = []
-    for bl in flag.keys():
-        wgt_data = np.logical_not(flag[bl][RD.pol])
+    for bl in RD.flag.keys():
+        wgt_data = np.logical_not(RD.flag[bl][RD.pol])
         wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
@@ -145,7 +146,7 @@ def omnirun(RD):
     if os.path.exists(fhd_sol_path):
         RD.gains.degen_project_FO()
     else:
-        RD.scale_gains()
+        RD.gains.scale_gains()
 
     #************************* metadata parameters ***************************************
     RD.cal_chi_square(info, m2)
