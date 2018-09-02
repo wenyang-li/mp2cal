@@ -88,13 +88,13 @@ class RedData(object):
             ind = np.where(G != 0)[0]
             self.data[bl][self.pol][:,ind] /= G[ind]
 
-    def get_gains(self, g_red,  v_mdl, g_sky = None):
+    def get_gains(self, g_red,  v_mdl = None, g_sky = None):
         """
         Read gain solutions and add to this object
         """
         self.gains.get_red(g_red)
-        if g_sky: self.gains.get_sky = g_sky
-        self.gains.get_mdl(v_mdl)
+        if g_sky: self.gains.get_sky(g_sky)
+        if v_mdl: self.gains.get_mdl(v_mdl)
 
     def cal_chi_square(self, info, meta):
         """

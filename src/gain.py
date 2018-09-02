@@ -44,6 +44,7 @@ class RedGain(object):
         """
         scale the gain amplitudes so that they have an average of amp_ave
         """
+        assert self.red, "Redundant calibration gains do not exit."
         for p in self.red.keys():
             amp = 0
             n = 0
@@ -61,6 +62,8 @@ class RedGain(object):
         """
         Calculate the amplitude degeneracy correction according to sky based solutions
         """
+        assert self.red, "Redundant calibration gains do not exit."
+        assert self.sky, "Sky calibration gains do not exit."
         amppar = {}
         for p in self.red.keys():
             SH = self.red[p][self.red[p].keys()[0]].shape
@@ -89,6 +92,8 @@ class RedGain(object):
         """
         Calculate the phase degeneracy corrections according to sky based solutions
         """
+        assert self.red, "Redundant calibration gains do not exit."
+        assert self.sky, "Sky calibration gains do not exit."
         g_input = copy.deepcopy(self.red)
         g_target = copy.deepcopy(self.sky)
         phspar = {}
@@ -173,6 +178,7 @@ class RedGain(object):
         If the solutions are supposed to be centered at 1.0, remove any phase gradients or
         phase offsets by fitting a plane in (phase, rx, ry) space.
         """
+        assert self.red, "Redundant calibration gains do not exit."
         gc = {}
         if ratio: gc = ratio
         else:
@@ -219,6 +225,8 @@ class RedGain(object):
         """
         Project degeneracy of redundant cal from raw data to sky cal
         """
+        assert self.red, "Redundant calibration gains do not exit."
+        assert self.sky, "Sky calibration gains do not exit."
         for p in self.red.keys():
             a_red = self.red[p].keys()
             a_sky = self.sky[p].keys()
@@ -256,26 +264,28 @@ class RedGain(object):
                 if a > 92: proj *= np.exp(1j*phspar2[p]['offset_south'])
                 else: proj *= np.exp(1j*phspar2[p]['offset_east'])
                 self.red[p][a] *= proj
-            pp = p + p
-            for bl in self.mdl[pp].keys():
-                i,j = bl
-                if i < 93: self.mdl[pp][bl] *= (ref_exp1*np.exp(-1j*phspar2[p]['offset_east']))
-                else: self.mdl[pp][bl] *= (ref_exp2*np.exp(-1j*phspar2[p]['offset_south']))
-                if i < 93: self.mdl[pp][bl] *= (ref_exp1.conj()*np.exp(1j*phspar2[p]['offset_east']))
-                else: self.mdl[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
-                dx = antpos[i]['top_x']-antpos[j]['top_x']
-                dy = antpos[i]['top_y']-antpos[j]['top_y']
-                nx = np.round(dx/0.14-dy/np.sqrt(3)/0.14)
-                ny = np.round(-2*dy/np.sqrt(3)/0.14)
-                proj = amppar[p]*amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
-                proj = np.resize(proj, self.mdl[pp][bl].shape)
-                ind = np.where(proj!=0)
-                self.mdl[pp][bl][ind] /= proj[ind]
+            if self.mdl:
+                pp = p + p
+                for bl in self.mdl[pp].keys():
+                    i,j = bl
+                    if i < 93: self.mdl[pp][bl] *= (ref_exp1*np.exp(-1j*phspar2[p]['offset_east']))
+                    else: self.mdl[pp][bl] *= (ref_exp2*np.exp(-1j*phspar2[p]['offset_south']))
+                    if i < 93: self.mdl[pp][bl] *= (ref_exp1.conj()*np.exp(1j*phspar2[p]['offset_east']))
+                    else: self.mdl[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
+                    dx = antpos[i]['top_x']-antpos[j]['top_x']
+                    dy = antpos[i]['top_y']-antpos[j]['top_y']
+                    nx = np.round(dx/0.14-dy/np.sqrt(3)/0.14)
+                    ny = np.round(-2*dy/np.sqrt(3)/0.14)
+                    proj = amppar[p]*amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
+                    proj = np.resize(proj, self.mdl[pp][bl].shape)
+                    ind = np.where(proj!=0)
+                    self.mdl[pp][bl][ind] /= proj[ind]
 
     def degen_project_FO(self):
         """
         Project degeneracy parameters to 1.0
         """
+        assert self.red, "Redundant calibration gains does not exit."
         self.scale_gains()
         phspar = self.plane_fitting()
         for p in self.red.keys():
@@ -286,14 +296,15 @@ class RedGain(object):
                 if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
                 else: proj *= np.exp(1j*phspar[p]['offset_east'])
                 self.red[p][a] *= proj
-            pp = p + p
-            for bl in self.mdl[pp].keys():
-                i,j = bl
-                if i < 93: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
-                else: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
-                if i < 93: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
-                else: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
-                dx = antpos[i]['top_x']-antpos[j]['top_x']
-                dy = antpos[i]['top_y']-antpos[j]['top_y']
-                proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
-                self.mdl[pp][bl] *= proj
+            if self.mdl:
+                pp = p + p
+                for bl in self.mdl[pp].keys():
+                    i,j = bl
+                    if i < 93: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
+                    else: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
+                    if i < 93: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
+                    else: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
+                    dx = antpos[i]['top_x']-antpos[j]['top_x']
+                    dy = antpos[i]['top_y']-antpos[j]['top_y']
+                    proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
+                    self.mdl[pp][bl] *= proj
