@@ -25,7 +25,7 @@ suffix = 'AF'
 fhdsav = opts.fhdpath + 'calibration/' + obsid + '_cal.sav'
 if not os.path.exists(fhdsav): raise IOError('%s not found' %fhdsav)
 print "Get FHD solutions ..."
-gains = mp2cal.wyl.load_gains_fhd(fhdsav)
+gains = mp2cal.io.load_gains_fhd(fhdsav)
 exec('from PhaseII_cal import *')
 if opts.omniapp:
     suffix = 'AOF'
@@ -36,8 +36,8 @@ if opts.omniapp:
     if not os.path.exists(omnixx): raise IOError('%s not found' %omnixx)
     if not os.path.exists(omniyy): raise IOError('%s not found' %omniyy)
 #    if not os.path.exists(omniave): raise IOError('%s not found' %omniave)
-    gx = mp2cal.wyl.quick_load_gains(omnixx)
-    gy = mp2cal.wyl.quick_load_gains(omniyy)
+    gx = mp2cal.io.quick_load_gains(omnixx)
+    gy = mp2cal.io.quick_load_gains(omniyy)
 #    gave = mp2cal.wyl.quick_load_gains(omniave)
     omnisol = {'x':{}, 'y':{}}
     for a in gx['x'].keys():
