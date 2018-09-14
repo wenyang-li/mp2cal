@@ -25,7 +25,13 @@ suffix = 'AF'
 fhdsav = opts.fhdpath + 'calibration/' + obsid + '_cal.sav'
 if not os.path.exists(fhdsav): raise IOError('%s not found' %fhdsav)
 print "Get FHD solutions ..."
-gains = mp2cal.io.load_gains_fhd(fhdsav)
+gains = mp2cal.io.load_gains_fhd(fhdsav, raw=True)
+gbp = mp2cal.io.load_fhd_global_bandpass(opts.fhdpath, obsid)
+for p in gains.keys():
+    for a in gains[p].keys():
+        ind = np.where(gains[p][a]!=0)
+        amp = np.mean(np.abs(gfhd[p][a][ind])/gbp[p][ind])
+        gains[p][a] = amp*gbp[p]*np.exp(1j*np.angle(gains[p][a]))
 exec('from PhaseII_cal import *')
 if opts.omniapp:
     suffix = 'AOF'
