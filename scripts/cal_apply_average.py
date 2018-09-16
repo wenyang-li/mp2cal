@@ -30,7 +30,7 @@ gbp = mp2cal.io.load_fhd_global_bandpass(opts.fhdpath, obsid)
 for p in gains.keys():
     for a in gains[p].keys():
         ind = np.where(gains[p][a]!=0)
-        amp = np.mean(np.abs(gfhd[p][a][ind]))/np.mean(gbp[p][ind])
+        amp = np.mean(np.abs(gains[p][a][ind]))/np.mean(gbp[p][ind])
         gains[p][a] = amp*gbp[p]*np.exp(1j*np.angle(gains[p][a]))
 exec('from PhaseII_cal import *')
 if opts.omniapp:
