@@ -73,7 +73,7 @@ if os.path.exists(fhd_sol_path):
                 if not a in ex_ants: ex_ants.append(a)
             else:
                 ind = np.where(gfhd[p][a]!=0)
-                amp = np.mean(np.abs(gfhd[p][a][ind])/gbp[p][ind])
+                amp = np.mean(np.abs(gfhd[p][a][ind]))/np.mean(gbp[p][ind])
                 gfhd[p][a] = amp*gbp[p]*np.exp(1j*np.angle(gfhd[p][a]))
 else:
     print "No target fhd solutions."
