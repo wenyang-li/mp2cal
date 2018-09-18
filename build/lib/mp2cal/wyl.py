@@ -195,3 +195,77 @@ def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
         for bl in v2[pp].keys():
             v2[pp][bl] = np.resize(vs[ubl_map[bl]],SH)
     return g2,v2
+
+def cal_amp_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
+    for p in g2.keys():
+        pp = p+p
+        bl2d = []
+        for ii in range(info.bl2d.shape[0]):
+            bl2d.append(tuple(info.bl2d[ii]))
+        a0 = g2[p].keys()[0]
+        SH = g2[p][a0].shape
+        mask_arr = mask.flatten()
+        gs = {}
+        vs = {}
+        ant_map = {}
+        ubl_map = {}
+        for a in g2[p].keys():
+            ai = info.ant_index(a)
+            ant_map[ai] = a
+            gs[ai] = g2[p][a].flatten()
+        for bl in v2[pp].keys():
+            i0 = info.ant_index(bl[0])
+            j0 = info.ant_index(bl[1])
+            bli = bl2d.index((i0,j0))
+            ubli = info.bltoubl[bli]
+            vs[ubli] = v2[pp][bl].flatten()
+            ubl_map[bl] = ubli
+        for ii in range(SH[0]*SH[1]):
+            if mask_arr[ii]: continue #specific for mwa
+            dt = ii/SH[1]
+            df = ii%SH[1]
+            nbls = len(bl2d)
+            na = info.nAntenna
+            nubl = len(info.ublcount)
+            A = np.zeros((2*nbls,na+2*nubl),dtype=np.float32)
+            M = np.zeros((2*nbls),dtype=np.float32)
+            S = np.zeros((na+2*nubl),dtype=np.float32)
+            componentchange = 100
+            def buildM(b):
+                a1,a2 = bl2d[b]
+                u = info.bltoubl[b]
+                gjyij = gs[a2][ii]*vs[u][ii]
+                giyij = gs[a1][ii]*vs[u][ii]
+                gigj = gs[a1][ii]*gs[a2][ii]
+                try: dvij = data[(ant_map[a1],ant_map[a2])][pp][dt][df] - gigj*vs[u][ii]
+                except(KeyError): dvij = data[(ant_map[a2],ant_map[a1])][pp][dt][df].conj() - gigj*vs[u][ii]
+                A[2*b,a1] = gjyij.real
+                A[2*b+1,a1] = gjyij.imag
+                A[2*b,a2] = giyij.real
+                A[2*b+1,a2] = giyij.imag
+                A[2*b,na+2*u] = gigj.real
+                A[2*b+1,na+2*u+1] = gigj.real
+                M[2*b] = dvij.real
+                M[2*b+1] = dvij.imag
+                return True
+            def updata_sol(n):
+                if n < na:
+                    ds = S[n]
+                    gs[n][ii] += ds
+                    fchange = np.abs(ds/gs[n][ii])
+                else:
+                    ds = S[na + 2*(n-na)] + 1j*S[na + 2*(n-na) + 1]
+                    vs[n-na][ii] += ds
+                    fchange = np.abs(ds/vs[n-na][ii])
+                return fchange
+            for iter3 in range(maxiter):
+                map(buildM,np.arange(nbls))
+                S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
+                componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
+                if componentchange < conv: break
+            print (dt,df),"  fine iter: ", iter3, "  conv: ", componentchange
+        for a in g2[p].keys():
+            g2[p][a] = np.resize(gs[info.ant_index(a)],SH)
+        for bl in v2[pp].keys():
+            v2[pp][bl] = np.resize(vs[ubl_map[bl]],SH)
+    return g2,v2
