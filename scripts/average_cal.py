@@ -53,7 +53,7 @@ for day in data.keys():
     gbp = np.mean(gbp, axis=0)
     for a in data[day].keys():
         ant = int(a[:-1])
-        amp = np.mean(data[day][a]) / np.mean(gbp)
+        amp = np.mean(np.abs(data[day][a])) / np.mean(gbp)
         phs = 1.
         if(mp2cal.pos.tile_info[ant]['cable']==150):
             reftime = 300. / (c_light * mp2cal.pos.tile_info[ant]['vf'])
