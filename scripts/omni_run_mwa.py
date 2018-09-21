@@ -129,7 +129,7 @@ def omnirun(RD):
         else:
             print '     firstcal not found, start rough cal'
             info_rough = mp2cal.wyl.pos_to_info(pols=[p],ubls=[(57,61),(57,62)],ex_ants=RD.dead)
-            g0 = mp2cal.wyl.rough_cal(RD.data,info_rough,pol=RD.pol)
+            g0 = mp2cal.wyl.rough_cal(RD.data,RD.flag,info_rough,pol=RD.pol)
 
     #*********************** Calibrate ******************************************
     start_time = time.time()

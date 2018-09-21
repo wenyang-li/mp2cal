@@ -53,7 +53,31 @@ def cal_reds_from_pos(**kwargs):
     reds = omnical.arrayinfo.filter_reds(reds,**kwargs)
     return reds
 
-def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time axis
+def GaussianKernel(x,y,xp,cl=16):
+    xres = x[1] - x[0]
+    col = cl*xres
+    kk = np.resize(x,(x.size,x.size))
+    pp = np.resize(xp,(xp.size,xp.size))
+    kp = np.resize(x,(xp.size,x.size))
+    pk = np.resize(xp,(x.size,xp.size))
+    Kxx = np.exp(-((kk-kk.T)/col)**2)
+    Kxp = np.exp(-((kp-pk.T)/col)**2)
+    Kpx = Kxp.T
+    Kpp = np.exp(-((pp-pp.T)/col)**2)
+    return Kxp.dot(np.linalg.pinv(Kxx)).dot(y), Kpp - Kxp.dot(np.linalg.pinv(Kxx)).dot(Kpx)
+
+def fit_data(data,flag,fit_order=2):
+    md = np.ma.masked_array(data, flag)
+    if data.ndim == 2:
+        d = np.mean(md,axis=0)
+    else: d = data
+    x = np.arange(d.size)
+    ind = np.where(d.mask==False)
+    fr, sr = GaussianKernel(x[ind], d.data.real[ind], x)
+    fi, si = GaussianKernel(x[ind], d.data.imag[ind], x)
+    return fr + 1j*fi
+
+def rough_cal(data,flag,info,pol='xx'): #The data has to be the averaged over time axis
     p = pol[0]
     g0 = {p: {}}
     phi = {}
@@ -63,8 +87,8 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
     redbls = reds[0] + reds[1]
     redbls.sort()
     SH = data[reds[0][0]][pol].shape
-    gamma0 = fit_data(data[reds[0][0]][pol])
-    gamma1 = fit_data(data[reds[1][0]][pol])
+    gamma0 = fit_data(data[reds[0][0]][pol], flag[reds[0][0]][pol])
+    gamma1 = fit_data(data[reds[1][0]][pol], flag[reds[1][0]][pol])
     subsetant = info.subsetant
     fixants = (min(subsetant), min(subsetant[np.where(subsetant>92)]))
     for a in fixants: phi[a] = np.zeros(SH)
@@ -75,14 +99,14 @@ def rough_cal(data,info,pol='xx'): #The data has to be the averaged over time ax
         if phi.has_key(i) and phi.has_key(j): continue
         elif phi.has_key(i) and not phi.has_key(j):
             if r in reds[0]:
-                phi[j] = np.angle(fit_data(data[r][pol])*np.exp(1j*phi[i])*gamma0.conj())
+                phi[j] = np.angle(fit_data(data[r][pol],flag[reds[0][0]][pol])*np.exp(1j*phi[i])*gamma0.conj())
             elif r in reds[1]:
-                phi[j] = np.angle(fit_data(data[r][pol])*np.exp(1j*phi[i])*gamma1.conj())
+                phi[j] = np.angle(fit_data(data[r][pol],flag[reds[0][0]][pol])*np.exp(1j*phi[i])*gamma1.conj())
         elif phi.has_key(j) and not phi.has_key(i):
             if r in reds[0]:
-                phi[i] = np.angle(fit_data(data[r][pol]).conj()*np.exp(1j*phi[j])*gamma0)
+                phi[i] = np.angle(fit_data(data[r][pol],flag[reds[0][0]][pol]).conj()*np.exp(1j*phi[j])*gamma0)
             elif r in reds[1]:
-                phi[i] = np.angle(fit_data(data[r][pol]).conj()*np.exp(1j*phi[j])*gamma1)
+                phi[i] = np.angle(fit_data(data[r][pol],flag[reds[0][0]][pol]).conj()*np.exp(1j*phi[j])*gamma1)
         else: redbls.append(r)
     if len(phi.keys()) != subsetant.size: raise IOError('Missing antennas')
     for a in phi.keys():

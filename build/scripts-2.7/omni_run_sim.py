@@ -1,13 +1,9 @@
 #!//anaconda/bin/python
 import numpy as np, time
 import hera_cal, aipy, mp2cal
-import optparse, os, sys, glob
-from astropy.io import fits
-import pickle, copy
+import optparse, os, sys
 from multiprocessing import Pool
-from scipy.io.idl import readsav
 import pyuvdata.uvdata as uvd
-#from IPython import embed
 
 o = optparse.OptionParser()
 o.set_usage('omni_run_multi.py [options] obsid') #only takes 1 obsid
@@ -19,11 +15,8 @@ o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated 
 o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
-o.add_option('--ftype', dest='ftype', default='', type='string', help='Type of the input file, uvfits or fhd save files')
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
-o.add_option('--fhdpath', dest='fhdpath', default='/users/wl42/data/wl42/FHD_out/fhd_SIM_Incal/', type='string', help='path to fhd dir for projecting degen parameters, or fhd output visibilities if ftype is fhd.')
-o.add_option('--metafits', dest='metafits', default='/users/wl42/data/wl42/Nov2016EoR0/', type='string', help='path to metafits files')
-o.add_option('--tave', dest='tave', default=False, action='store_true', help='choose to average data over time before calibration or not')
+o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 opts,args = o.parse_args(sys.argv[1:])
 
@@ -41,7 +34,6 @@ def ant_parse(ant_args):
     return ant_list
 
 #************************************************************************************************
-exec('from %s import *'% opts.cal) # Including antpos, realpos, EastHex, SouthHex
 pols = opts.pol.split(',')
 ubls, ex_ubls, bls, ex_bls, ants, ex_ants = None, [], None, [], None, []
 if not opts.ubls == '':
@@ -59,108 +51,56 @@ if not opts.ex_bls == '':
 if not opts.ants == '':
     ants = ant_parse(opts.ants)
     print '   ants: ', ants
-if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
+if not opts.ex_ants == '':
+    ex_ants = ant_parse(opts.ex_ants)
 
-#********************************** load and wrap data ******************************************
 if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
+print "OBSID: " + obsid
+
+#********************************** load and wrap data ******************************************
 uv = uvd.UVData()
-if opts.ftype == 'uvfits':
-    uv.read_uvfits(obsid+'.uvfits',run_check=False,run_check_acceptability=False)
-elif opts.ftype == 'fhd':
-    uv.read_fhd(glob.glob(opts.fhdpath+'/vis_data/'+obsid+'*')+glob.glob(opts.fhdpath+'/metadata/'+obsid+'*'),use_model=False,run_check=False,run_check_acceptability=False)
-else: IOError('invalid filetype, it should be uvfits or fhd')
-data_wrap = mp2cal.wyl.uv_wrap_omni(uv,pols=pols,tave=opts.tave,antpos=antpos)
+uv.read_uvfits(obsid+'.uvfits', run_check=False, run_check_acceptability=False)
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]
-SH = (uv.Ntimes, uv.Nfreqs)
-
-
-#*********************************** ex_ants *****************************************************
-ex_ants_find = mp2cal.wyl.find_ex_ant(uv)
-del uv
-for a in ex_ants_find:
-    if not a in ex_ants: ex_ants.append(a)
-print '     ex_ants: ', ex_ants
-
-
+Ntimes = uv.Ntimes
 data_list = []
-for pp in pols: data_list.append(data_wrap[pp])
+for pol in pols:
+    RD = mp2cal.data.RedData(pol)
+    RD.get_ex_ants(ex_ants)
+    RD.read_data(uv, tave = opts.tave)
+    print "ex_ants for "+pol+":", RD.dead
+    data_list.append(RD)
+del uv
 
-gfhd = mp2cal.wyl.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav')
-
-def omnirun(data_wrap):
-    pp = data_wrap['pol']
-    p = pp[0]
-    data = data_wrap['data']
-    flag = data_wrap['flag']
-    auto = data_wrap['auto']
-    mask_arr = data_wrap['mask']
-    noise = data_wrap['noise']
-    flagged_fqs = np.sum(np.logical_not(mask_arr),axis=0).astype(bool)
-    flag_bls = []
-    for bl in flag.keys():
-        wgt_data = np.logical_not(flag[bl][pp])
-        wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
-        ind = np.where(wgt_data==0)
-        if ind[0].size > 0: flag_bls.append(bl)
-    print 'flagged baselines: ', flag_bls
-    omnisol = opts.omnipath + obsid + '.' + pp + '.omni.npz'
-    info = mp2cal.wyl.pos_to_info(antpos,pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls,ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=ex_ants)
-    reds = info.get_reds()
-    redbls = [bl for red in reds for bl in red]
-
-    #*********************** organize data *************************************
-    wgts,xtalk = {}, {}
+#******************************** omni run *******************************************************
+def omnirun(RD):
+    p = RD.pol[0]
+    omnisol = opts.omnipath + obsid + '.' + RD.pol + '.omni.npz'
+    #*********************** red info ******************************************
+    info = mp2cal.wyl.pos_to_info(pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
+                                  ex_bls=ex_bls,ants=ants,ex_ants=RD.dead)
 
     #*********************** generate g0 ***************************************
-    g0 = {p: {}}
-    if opts.tave:
-        for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
-    else:
-        for a in info.subsetant: g0[p][a] = np.ones(SH,dtype=np.complex64)
+    print '     setting g0 as units'
+    g0 = {p:{}}
+    for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
 
     #*********************** Calibrate ******************************************
-    wgts[pp] = {} #weights dictionary by pol
-    for bl in flag:
-        i,j = bl
-        wgts[pp][(j,i)] = wgts[pp][(i,j)] = np.logical_not(flag[bl][pp]).astype(np.int)
     start_time = time.time()
     print '   Run omnical'
-    m2,g2,v2 = hera_cal.omni.run_omnical(data,info,gains0=g0, maxiter=500, conv=1e-12)
+    m2,g2,v2 = hera_cal.omni.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
-        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,data,info,conv=1e-6,maxiter=500,mwa_mask=False)
+        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-6,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
-    xtalk = hera_cal.omni.compute_xtalk(m2['res'], wgts) #xtalk is time-average of residual
-
-    #************************ Average cal solutions ************************************
-    print '   compute chi-square'
-    chisq = 0.
-    for r in reds:
-        chisqr = 0.
-        for bl in r:
-            if v2[pp].has_key(bl): yij = v2[pp][bl]
-        for bl in r:
-            try: md = np.ma.masked_array(data[bl][pp],mask=mask_arr,filled_value=0.0)
-            except(KeyError): md = np.ma.masked_array(data[bl[::-1]][pp].conj(),mask=mask_arr,filled_value=0.0)
-            i,j = bl
-            try: chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl]
-            except(KeyError): chisqterm = (np.abs(md.data-g2[p][i]*g2[p][j].conj()*yij))**2/noise[bl[::-1]]
-            chisq += chisqterm
-            chisqr += chisqterm
-        m2['chisq'+str(r[0])] = chisqr / (len(r) - 1)
-    DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
-    m2['chisq2'] = chisq / float(DOF)
-    m2['flags'] = mask_arr
-
+    
     #*********************** project degeneracy *********************************
-    #g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2,mwa_mask=False)
-    if opts.ftype == 'uvfits': g2 = mp2cal.wyl.degen_project_simple(g2,gfhd,antpos,mwa_mask=False)
-    elif opts.ftype == 'fhd': g2 = mp2cal.wyl.degen_project_FO(g2,antpos,v2,mwa_mask=False)
+    RD.get_gains(g2, v2)
+    RD.gains.degen_project_FO()
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
@@ -170,8 +110,9 @@ def omnirun(data_wrap):
 
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
-    mp2cal.wyl.save_gains_omni(omnisol,m2,g2,v2,xtalk)
+    mp2cal.io.save_gains_omni(omnisol, m2, RD.gains.red, RD.gains.mdl)
 
 par = Pool(2)
-npzlist = par.map(omnirun,data_list)
+npzlist = par.map(omnirun, data_list)
 par.close()
+
