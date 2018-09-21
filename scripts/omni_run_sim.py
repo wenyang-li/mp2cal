@@ -107,7 +107,7 @@ def omnirun(RD):
     m2['jds'] = t_jd
     m2['lsts'] = t_lst
     m2['freqs'] = freqs
-    meta['flags'] = RD.mask
+    m2['flags'] = RD.mask
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
     mp2cal.io.save_gains_omni(omnisol, m2, RD.gains.red, RD.gains.mdl)
