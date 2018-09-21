@@ -55,7 +55,7 @@ for day in data.keys():
         amp = np.mean(data[day][a]) / np.mean(gbp)
         phs = 1.
         if(mp2cal.pos.tile_info[ant]['cable']==150):
-            reftime = 300. / (c_light * tile_info[ant]['vf'])
+            reftime = 300. / (c_light * mp2cal.pos.tile_info[ant]['vf'])
             res = np.angle(data[day][a] / fit[day][a])
             res = res.data * np.logical_not(res.mask)
             nu = np.sum(np.logical_not(res.mask))
