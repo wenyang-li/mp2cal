@@ -21,54 +21,25 @@ opts,args = o.parse_args(sys.argv[1:])
 obsid = args[0]
 
 # Getting cal solutions
-suffix = 'AF'
+suffix = 'AF'+'O'*opts.omniapp
+day = int(obsid) / 86164
 fhdsav = opts.fhdpath + 'calibration/' + obsid + '_cal.sav'
 if not os.path.exists(fhdsav): raise IOError('%s not found' %fhdsav)
 print "Get FHD solutions ..."
-gains = mp2cal.io.load_gains_fhd(fhdsav, raw=True)
-gbp = mp2cal.io.load_fhd_global_bandpass(opts.fhdpath, obsid)
-for p in gains.keys():
-    for a in gains[p].keys():
-        ind = np.where(gains[p][a]!=0)
-        amp = np.mean(np.abs(gains[p][a][ind]))/np.mean(gbp[p][ind])
-        gains[p][a] = amp*gbp[p]*np.exp(1j*np.angle(gains[p][a]))
-exec('from PhaseII_cal import *')
-if opts.omniapp:
-    suffix = 'AOF'
-    print "Get omnical solutions ..."
-    omnixx = opts.omnipath + obsid + '.xx.omni.npz'
-    omniyy = opts.omnipath + obsid + '.yy.omni.npz'
-#    omniave = opts.omnipath + 'omniave.npz'
-    if not os.path.exists(omnixx): raise IOError('%s not found' %omnixx)
-    if not os.path.exists(omniyy): raise IOError('%s not found' %omniyy)
-#    if not os.path.exists(omniave): raise IOError('%s not found' %omniave)
-    gx = mp2cal.io.quick_load_gains(omnixx)
-    gy = mp2cal.io.quick_load_gains(omniyy)
-#    gave = mp2cal.wyl.quick_load_gains(omniave)
-    omnisol = {'x':{}, 'y':{}}
-    for a in gx['x'].keys():
-#        if gx['x'][a].ndim == 2: gx['x'][a] = np.mean(gx['x'][a], axis=0)
-#        ind = np.where(gains['x'][a]!=0)[0]
-#        gres = np.zeros_like(gx['x'][a])
-#        gres[ind] = gx['x'][a][ind] - gave['x'][a][ind]
-#        gr = np.fft.rfft(gres.real)
-#        gi = np.fft.rfft(gres.imag)
-#        gr[5:] *= 0
-#        gi[5:] *= 0
-#        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['x'][a] = np.mean(gx['x'][a],axis=0)#(gave['x'][a]+gfit)
-    for a in gy['y'].keys():
-#        if gy['y'][a].ndim == 2: gy['y'][a] = np.mean(gy['y'][a], axis=0)
-#        ind = np.where(gains['y'][a]!=0)[0]
-#        gres = np.zeros_like(gy['y'][a])
-#        gres[ind] = gy['y'][a][ind] - gave['y'][a][ind]
-#        gr = np.fft.rfft(gres.real)
-#        gi = np.fft.rfft(gres.imag)
-#        gr[5:] *= 0
-#        gi[5:] *= 0
-#        gfit = np.complex64(np.fft.irfft(gr) + 1j*np.fft.irfft(gi))
-        omnisol['y'][a] = np.mean(gy['y'][a],axis=0)#(gave['y'][a]+gfit)
-#    omnisol = mp2cal.wyl.degen_project_FO(omnisol,antpos)
+gfhd = mp2cal.io.load_gains_fhd(fhdsav, raw=False)
+gains = {'x':{}, 'y':{}}
+try:
+    gx = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_xx.npz')
+    gains['x'] = gx['x']
+except:
+    print "Warning: No averaged solution found for pol xx. Use fhd solutions"
+    gains['x'] = gfhd['x']
+try:
+    gy = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_yy.npz')
+    gains['y'] = gy['y']
+except:
+    print "Warning: No averaged solution found for pol yy. Use fhd solutions"
+    gains['y'] = gfhd['y']
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
@@ -87,20 +58,19 @@ for pp in range(uv.Npols):
     for ii in range(uv.Nbls):
         a1 = uv.ant_1_array[ii]
         a2 = uv.ant_2_array[ii]
-        gi = gains[p1][a1]
-        gj = gains[p2][a2]
-        if np.any(np.isnan(gi)) or np.any(np.isnan(gj)):
+        try:
+            gi = gains[p1][a1]
+            gj = gains[p2][a2]
+        except:
+            uv.flag_array[ii::uv.Nbls,:,:,:] = True
+            continue
+        if np.any(np.isnan(gfhd[p1][a1])) or np.any(np.isnan(gfhd[p2][a2])):
             uv.flag_array[ii::uv.Nbls,:,:,:] = True
             continue
         fi = np.where(gains[p1][a1]!=0)[0]
         fj = np.where(gains[p2][a2]!=0)[0]
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
-        if opts.omniapp:
-            if a1 in omnisol[p1].keys():
-                uv.data_array[ii::uv.Nbls,0,fi,pp] /= omnisol[p1][a1][fi]
-            if a2 in omnisol[p2].keys():
-                uv.data_array[ii::uv.Nbls,0,fj,pp] /= omnisol[p2][a2][fj].conj()
 # Subtracting the model
 if opts.subtract:
     print "Subtracting model ..."

@@ -143,8 +143,8 @@ def load_gains_fhd(fhdsav,raw=False):
             ry = np.copy(fhd_cal['cal']['GAIN_RESIDUAL'][0][1][a])
             rx[np.where(gfhd['x'][a]==0)] = 0
             ry[np.where(gfhd['y'][a]==0)] = 0
-            gfhd['x'][a] = np.abs(gfhd['x'][a]+rx)*np.exp(1j*np.angle(gfhd['x'][a]))
-            gfhd['y'][a] = np.abs(gfhd['y'][a]+ry)*np.exp(1j*np.angle(gfhd['y'][a]))
+            gfhd['x'][a] += rx
+            gfhd['y'][a] += ry
     return gfhd
 
 def load_fhd_global_bandpass(fhdpath, obsid):

@@ -15,7 +15,7 @@ o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated 
 o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
-o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
+o.add_option('--omnipath',dest='omnipath',default='calibration/red/',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string', help='path to fhd dir')
 o.add_option('--metafits', dest='metafits', default='', type='string', help='path to metafits files')
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
@@ -67,15 +67,10 @@ fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
 if os.path.exists(fhd_sol_path):
     print "fhd solutions exist: " + fhd_sol_path
     gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
-    gbp = mp2cal.io.load_fhd_global_bandpass(opts.fhdpath, obsid)
     for p in gfhd.keys():
         for a in gfhd[p].keys():
             if np.any(np.isnan(gfhd[p][a])):
                 if not a in ex_ants: ex_ants.append(a)
-            else:
-                ind = np.where(gfhd[p][a]!=0)
-                amp = np.mean(np.abs(gfhd[p][a][ind]))/np.mean(gbp[p][ind])
-                gfhd[p][a] = amp*gbp[p]*np.exp(1j*np.angle(gfhd[p][a]))
 else:
     print "No target fhd solutions."
     gfhd = None
