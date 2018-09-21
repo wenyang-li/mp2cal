@@ -57,8 +57,8 @@ for day in data.keys():
         if(mp2cal.pos.tile_info[ant]['cable']==150):
             reftime = 300. / (c_light * mp2cal.pos.tile_info[ant]['vf'])
             res = data[day][a] / fit[day][a]
-            res = res.data * np.logical_not(res.mask)
             nu = np.sum(np.logical_not(res.mask))
+            res = res.data * np.logical_not(res.mask)
             dmode = 0.05
             nmode = 50
             modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
