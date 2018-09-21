@@ -56,7 +56,7 @@ for day in data.keys():
         phs = 1.
         if(mp2cal.pos.tile_info[ant]['cable']==150):
             reftime = 300. / (c_light * mp2cal.pos.tile_info[ant]['vf'])
-            res = np.angle(data[day][a] / fit[day][a])
+            res = data[day][a] / fit[day][a]
             res = res.data * np.logical_not(res.mask)
             nu = np.sum(np.logical_not(res.mask))
             dmode = 0.05
@@ -64,8 +64,8 @@ for day in data.keys():
             modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
             res = np.resize(res, (2*nmode+1, nf))
             freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
-            t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*res, axis=1)
-            t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*res, axis=1)
+            t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
+            t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
             i = np.argmax(t1**2+t2**2)
             mi = modes[i]
             phase_ripple = 2*t1[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
