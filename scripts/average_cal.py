@@ -21,6 +21,7 @@ for o in obs:
     day = o / 86164
     if not data.has_key(day): data[day] = {}
     for a in d.keys():
+        if not a[0].isdigit(): continue
         g = d[a]
         if(np.any(np.isnan(g))): continue
         if opts.o and a>56:
