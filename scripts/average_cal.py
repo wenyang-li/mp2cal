@@ -31,12 +31,20 @@ for o in obs:
         data[day][a].append(g)
 fit = {}
 nf = freqs.size
+flgc = []
+if nf==384:
+    for ii in range(nf):
+        if ii%16 in [0, 15]: flgc.append(ii)
+if nf==768:
+    for ii in range(nf):
+        if ii%32 in [0,1,16,30,31]: flgc.append(ii)
 band = (freqs[-1]-freqs[0]) * nf / (nf - 1)
 for day in data.keys():
     fit[day] = {}
     gbp = []
     for a in data[day].keys():
         x = np.copy(data[day][a])
+        x[:,flgc] = 0
         md = np.ma.masked_array(x, np.zeros(x.shape, dtype=bool))
         ind = np.where(x==0)
         md.mask[ind] = True
