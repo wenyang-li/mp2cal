@@ -62,6 +62,15 @@ uv.read_uvfits(fname)
 auto, aref = get_auto(uv)
 save_auto(auto, aref, obs)
 subprocess.call(['mv',fname,obs+'_copy.uvfits'])
+nf = uv.Nfreqs
+flgc = []
+if nf==384:
+    for ii in range(nf):
+        if ii%16 in [0, 15]: flgc.append(ii)
+if nf==768:
+    for ii in range(nf):
+        if ii%32 in [0,1,16,30,31]: flgc.append(ii)
+uv.flag_array[:,:,flgc,:] = True
 if uv.Npols == 4:
     uv.Npols = 2
     uv.flag_array = uv.flag_array[:,:,:,:2]
