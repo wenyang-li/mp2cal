@@ -24,10 +24,10 @@ obsid = args[0]
 suffix = 'AF'+'O'*opts.omniapp
 day = int(obsid) / 86164
 print "Get FHD solutions ..."
-xsky = mp2cal.io.quick_load_gains('calibration/sky/'+obs+'.xx.fhd.npz')
-ysky = mp2cal.io.quick_load_gains('calibration/sky/'+obs+'.yy.fhd.npz')
-xred = mp2cal.io.quick_load_gains('calibration/red/'+obs+'.xx.omni.npz')
-yred = mp2cal.io.quick_load_gains('calibration/red/'+obs+'.yy.omni.npz')
+xsky = mp2cal.io.quick_load_gains('calibration/sky/'+obsid+'.xx.fhd.npz')
+ysky = mp2cal.io.quick_load_gains('calibration/sky/'+obsid+'.yy.fhd.npz')
+xred = mp2cal.io.quick_load_gains('calibration/red/'+obsid+'.xx.omni.npz')
+yred = mp2cal.io.quick_load_gains('calibration/red/'+obsid+'.yy.omni.npz')
 gains = {'x':{}, 'y':{}}
 for a in xsky['x'].keys():
     gains['x'][a] = xsky['x'][a]
