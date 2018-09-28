@@ -23,23 +23,34 @@ obsid = args[0]
 # Getting cal solutions
 suffix = 'AF'+'O'*opts.omniapp
 day = int(obsid) / 86164
-fhdsav = opts.fhdpath + 'calibration/' + obsid + '_cal.sav'
-if not os.path.exists(fhdsav): raise IOError('%s not found' %fhdsav)
 print "Get FHD solutions ..."
-gfhd = mp2cal.io.load_gains_fhd(fhdsav, raw=False)
+xsky = mp2cal.io.quick_load_gains('calibration/sky/'+obs+'.xx.fhd.npz')
+ysky = mp2cal.io.quick_load_gains('calibration/sky/'+obs+'.yy.fhd.npz')
+xred = mp2cal.io.quick_load_gains('calibration/red/'+obs+'.xx.omni.npz')
+yred = mp2cal.io.quick_load_gains('calibration/red/'+obs+'.yy.omni.npz')
 gains = {'x':{}, 'y':{}}
+for a in xsky['x'].keys():
+    gains['x'][a] = xsky['x'][a]
+    if opts.omniapp: gains['x'][a] *= xred['x'][a][0]
+for a in ysky['y'].keys():
+    gains['y'][a] = ysky['y'][a]
+    if opts.omniapp: gains['y'][a] *= yred['y'][a][0]
 try:
     gx = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_xx.npz')
-    gains['x'] = gx['x']
+    for a in gains['x'].keys():
+        ind = np.where(gains['x'][a]*gx['x'][a]!=0)
+        amp = np.mean(np.abs(gains['x'][a][ind])) / np.mean(np.abs(gx['x'][a][ind]))
+        gains['x'][a] = amp * gx['x'][a]
 except:
-    print "Warning: No averaged solution found for pol xx. Use fhd solutions"
-    gains['x'] = gfhd['x']
+    print "Warning: No averaged solution found for pol xx. Use raw solutions"
 try:
     gy = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_yy.npz')
-    gains['y'] = gy['y']
+    for a in gains['y'].keys():
+        ind = np.where(gains['y'][a]*gy['y'][a]!=0)
+        amp = np.mean(np.abs(gains['y'][a][ind])) / np.mean(np.abs(gy['y'][a][ind]))
+        gains['y'][a] = amp * gy['y'][a]
 except:
-    print "Warning: No averaged solution found for pol yy. Use fhd solutions"
-    gains['y'] = gfhd['y']
+    print "Warning: No averaged solution found for pol yy. Use raw solutions"
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
@@ -62,9 +73,6 @@ for pp in range(uv.Npols):
             gi = gains[p1][a1]
             gj = gains[p2][a2]
         except:
-            uv.flag_array[ii::uv.Nbls,:,:,:] = True
-            continue
-        if np.any(np.isnan(gfhd[p1][a1])) or np.any(np.isnan(gfhd[p2][a2])):
             uv.flag_array[ii::uv.Nbls,:,:,:] = True
             continue
         fi = np.where(gains[p1][a1]!=0)[0]
