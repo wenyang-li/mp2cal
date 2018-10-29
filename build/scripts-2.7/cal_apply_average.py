@@ -39,7 +39,7 @@ try:
     gx = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_xx.npz')
     for a in gains['x'].keys():
         ind = np.where(gains['x'][a]*gx['x'][a]!=0)
-        amp = np.mean(np.abs(gains['x'][a][ind])) / np.mean(np.abs(gx['x'][a][ind]))
+        amp = np.mean(gains['x'][a][ind]/gx['x'][a][ind])
         gains['x'][a] = amp * gx['x'][a]
 except:
     print "Warning: No averaged solution found for pol xx. Use raw solutions"
@@ -47,7 +47,7 @@ try:
     gy = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_yy.npz')
     for a in gains['y'].keys():
         ind = np.where(gains['y'][a]*gy['y'][a]!=0)
-        amp = np.mean(np.abs(gains['y'][a][ind])) / np.mean(np.abs(gy['y'][a][ind]))
+        amp = np.mean(gains['y'][a][ind]/gx['y'][a][ind])
         gains['y'][a] = amp * gy['y'][a]
 except:
     print "Warning: No averaged solution found for pol yy. Use raw solutions"
