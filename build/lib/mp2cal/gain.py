@@ -358,13 +358,16 @@ class RedGain(object):
                     reftime = 300. / (c_light * tile_info[a]['vf'])
                     nu = np.sum(np.logical_not(md.mask))
                     res *= np.logical_not(md.mask)
+                    res0 = np.zeros(res.shape)
+                    indp = np.where(md.mask==False)[0]
+                    res0[indp] = np.angle(res[indp])
                     dmode = 0.05
                     nmode = 50
                     modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
                     res = np.resize(res, (2*nmode+1, nf))
                     freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
-                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
-                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
+                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*res0, axis=1)
+                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*res0, axis=1)
                     i = np.argmax(t1**2+t2**2)
                     mi = modes[i]
                     phase_ripple = 2*t1[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
