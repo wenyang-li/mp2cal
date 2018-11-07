@@ -335,17 +335,18 @@ class RedGain(object):
         if nf == 768:
             for ii in range(nf):
                 if ii%32 in [0,1,16,30,31]: flgc.append(ii)
-        band = (self.freqs[-1]-freqs[0]) * nf / (nf - 1)
+        band = (self.freqs[-1]-self.freqs[0]) * nf / (nf - 1)
         self.gbp = {}
         for p in self.gfit:
             self.gbp[p] = []
             for a in self.gfit[p].keys():
                 x = np.copy(self.gfit[p][a])
                 x[flgc] = 0
+                self.gfit[p][a][flgc] = 0
                 md = np.ma.masked_array(x, np.zeros(x.shape, dtype=bool))
                 ind = np.where(x==0)
                 md.mask[ind] = True
-                gbp.append(np.abs(md)/np.mean(np.abs(md)))
+                self.gbp[p].append(np.abs(md)/np.mean(np.abs(md)))
                 fqc = np.arange(md.size)
                 ind = np.logical_not(md.mask)
                 x = fqc[ind]
@@ -369,10 +370,10 @@ class RedGain(object):
                     phase_ripple = 2*t1[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
                                    2*t2[i]*np.cos(2*np.pi*(mi*np.arange(nf)/nf))/nu
                     phs = np.exp(1j*phase_ripple)
-                self.fit[p][a] = np.abs(x).data * np.exp(1j*(z[0]*fqc+z[1])) * phs
+                self.fit[p][a] = np.abs(self.fit[p][a]) * np.exp(1j*(z[0]*fqc+z[1])) * phs
             self.gbp[p] = np.ma.masked_array(self.gbp[p])
             self.gbp[p] = np.mean(self.gbp[p], axis = 0)
             for a in self.gfit[p].keys():
                 ind = np.where(self.gbp[p].data * self.gfit[p][a] != 0)[0]
                 amp = np.mean(np.abs(self.gfit[p][a][ind])) / np.mean(self.gbp[p].data[ind])
-                self.gfit[p][a] = amp * gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
+                self.gfit[p][a] = amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
