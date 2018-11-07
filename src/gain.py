@@ -1,5 +1,6 @@
 import numpy as np, copy
 from pos import *
+c_light=299792458.
 
 def unwrap(arr):
     brr = np.unwrap(arr)
@@ -17,16 +18,23 @@ class RedGain(object):
     """
     gain object, supporting degeneracy parameters manipulatioin.
     """
-    def __init__(self):
+    def __init__(self, freqs = None):
         self.red = None # Gain from redundant cal
         self.sky = None # Gain from sky cal
         self.mdl = None # Model vis from redundant cal
+        self.gbp = None # Global bandpass, needs to be calculated from the input gains
+        self.gfit = None # Smoothed gains, needs to be calculated from the input gains
+        self.freqs = freqs # Frequency array
 
     def get_red(self, g_red):
         """
         Load redundant cal gains.
         """
         self.red = g_red
+        for p in self.red.keys():
+            for a in self.red[p].keys():
+                if self.red[p][a].ndim == 2:
+                    self.red[p][a] = np.mean(self.red[p][a], axis=0)
 
     def get_sky(self, g_sky):
         """
@@ -308,3 +316,63 @@ class RedGain(object):
                     dy = antpos[i]['top_y']-antpos[j]['top_y']
                     proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
                     self.mdl[pp][bl] *= proj
+
+    def bandpass_fitting(self, include_red = False):
+        """
+        Calculate the global bandpass as the amplitude, fit linear in the phase,
+        fit 150 m cable reflection
+        """
+        self.gfit = copy.deepcopy(self.sky)
+        if include_red:
+            for p in self.gfit.keys():
+                for a in self.gfit[p].keys():
+                    self.gfit[p][a] *= self.red[p][a]
+        nf = self.freqs.size
+        flgc = []
+        if nf == 384:
+            for ii in range(nf):
+                if ii%16 in [0, 15]: flgc.append(ii)
+        if nf == 768:
+            for ii in range(nf):
+                if ii%32 in [0,1,16,30,31]: flgc.append(ii)
+        band = (self.freqs[-1]-freqs[0]) * nf / (nf - 1)
+        self.gbp = {}
+        for p in self.gfit:
+            self.gbp[p] = []
+            for a in self.gfit[p].keys():
+                x = np.copy(self.gfit[p][a])
+                x[flgc] = 0
+                md = np.ma.masked_array(x, np.zeros(x.shape, dtype=bool))
+                ind = np.where(x==0)
+                md.mask[ind] = True
+                gbp.append(np.abs(md)/np.mean(np.abs(md)))
+                fqc = np.arange(md.size)
+                ind = np.logical_not(md.mask)
+                x = fqc[ind]
+                y = np.unwrap(np.angle(md.data[ind]))
+                z = np.polyfit(x,y,1)
+                res = self.gfit[p][a] * np.exp(-1j*(z[0]*fqc+z[1]))
+                phs = 1.
+                if tile_info[a]['cable']==150:
+                    reftime = 300. / (c_light * tile_info[a]['vf'])
+                    nu = np.sum(np.logical_not(md.mask))
+                    res *= np.logical_not(md.mask)
+                    dmode = 0.05
+                    nmode = 50
+                    modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
+                    res = np.resize(res, (2*nmode+1, nf))
+                    freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
+                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
+                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*np.angle(res), axis=1)
+                    i = np.argmax(t1**2+t2**2)
+                    mi = modes[i]
+                    phase_ripple = 2*t1[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
+                                   2*t2[i]*np.cos(2*np.pi*(mi*np.arange(nf)/nf))/nu
+                    phs = np.exp(1j*phase_ripple)
+                self.fit[p][a] = np.abs(x).data * np.exp(1j*(z[0]*fqc+z[1])) * phs
+            self.gbp[p] = np.ma.masked_array(self.gbp[p])
+            self.gbp[p] = np.mean(self.gbp[p], axis = 0)
+            for a in self.gfit[p].keys():
+                ind = np.where(self.gbp[p].data * self.gfit[p][a] != 0)[0]
+                amp = np.mean(np.abs(self.gfit[p][a][ind])) / np.mean(self.gbp[p].data[ind])
+                self.gfit[p][a] = amp * gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
