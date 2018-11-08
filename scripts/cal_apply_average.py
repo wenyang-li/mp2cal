@@ -22,35 +22,6 @@ obsid = args[0]
 
 # Getting cal solutions
 suffix = 'AF'+'O'*opts.omniapp
-day = int(obsid) / 86164
-print "Get FHD solutions ..."
-xsky = mp2cal.io.quick_load_gains('calibration/sky/'+obsid+'.xx.fhd.npz')
-ysky = mp2cal.io.quick_load_gains('calibration/sky/'+obsid+'.yy.fhd.npz')
-xred = mp2cal.io.quick_load_gains('calibration/red/'+obsid+'.xx.omni.npz')
-yred = mp2cal.io.quick_load_gains('calibration/red/'+obsid+'.yy.omni.npz')
-gains = {'x':{}, 'y':{}}
-for a in xsky['x'].keys():
-    gains['x'][a] = xsky['x'][a]
-    if opts.omniapp: gains['x'][a] *= xred['x'][a][0]
-for a in ysky['y'].keys():
-    gains['y'][a] = ysky['y'][a]
-    if opts.omniapp: gains['y'][a] *= yred['y'][a][0]
-try:
-    gx = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_xx.npz')
-    for a in gains['x'].keys():
-        ind = np.where(gains['x'][a]*gx['x'][a]!=0)
-        amp = np.mean(gains['x'][a][ind]/gx['x'][a][ind])
-        gains['x'][a] = amp * gx['x'][a]
-except:
-    print "Warning: No averaged solution found for pol xx. Use raw solutions"
-try:
-    gy = mp2cal.io.quick_load_gains('calibration/fit'+'F'+'O'*opts.omniapp+'_'+str(day)+'_yy.npz')
-    for a in gains['y'].keys():
-        ind = np.where(gains['y'][a]*gy['y'][a]!=0)
-        amp = np.mean(gains['y'][a][ind]/gx['y'][a][ind])
-        gains['y'][a] = amp * gy['y'][a]
-except:
-    print "Warning: No averaged solution found for pol yy. Use raw solutions"
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath): os.makedirs(writepath)
@@ -61,7 +32,19 @@ if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile
 print "Loading: " + obsid + ".uvfits"
 uv = uvd.UVData()
 uv.read_uvfits(obsid+'.uvfits')
-
+freqs = uv.freq_array[0]
+graw = mp2cal.gain.RedGain(freqs = freqs)
+gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
+graw.get_sky(gfhd)
+if opts.omniapp:
+    gomni = {'x': {}, 'y': {}}
+    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'xx.omni.npz')
+    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'yy.omni.npz')
+    gomni['x'] = gx['x']
+    gomni['y'] = gy['y']
+    graw.get_red(gomni)
+graw.bandpass_fitting(include_red = opts.omniapp)
+gains = graw.gfit
 # Apply cal
 print "Applying cal ..."
 for pp in range(uv.Npols):
@@ -69,11 +52,10 @@ for pp in range(uv.Npols):
     for ii in range(uv.Nbls):
         a1 = uv.ant_1_array[ii]
         a2 = uv.ant_2_array[ii]
-        try:
-            gi = gains[p1][a1]
-            gj = gains[p2][a2]
-        except:
-            uv.flag_array[ii::uv.Nbls,:,:,:] = True
+        gi = gains[p1][a1]
+        gj = gains[p2][a2]
+        if np.any(np.isnan(gi)) or np.any(np.isnan(gj)):
+            uv.flag_array[ii::uv.Nbls,:,:,:]s = True
             continue
         fi = np.where(gains[p1][a1]!=0)[0]
         fj = np.where(gains[p2][a2]!=0)[0]
