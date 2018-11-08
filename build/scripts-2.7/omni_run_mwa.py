@@ -132,11 +132,11 @@ def omnirun(RD):
     m2,g2,v2 = hera_cal.omni.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
-        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-6,maxiter=500)
+        g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)
     if opts.ao:
         g1 = {p:{}}
         for a in info.subsetant: g1[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
-        g2,v2 = mp2cal.wyl.cal_amp_iter(g1,v2,RD.data,RD.mask,info,conv=1e-6,maxiter=500)
+        g2,v2 = mp2cal.wyl.cal_amp_iter(g1,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
