@@ -324,8 +324,8 @@ class RedGain(object):
         """
         self.gfit = copy.deepcopy(self.sky)
         if include_red:
-            for p in self.gfit.keys():
-                for a in self.gfit[p].keys():
+            for p in self.red.keys():
+                for a in self.red[p].keys():
                     self.gfit[p][a] *= self.red[p][a]
         nf = self.freqs.size
         flgc = []
