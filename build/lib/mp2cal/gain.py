@@ -340,8 +340,8 @@ class RedGain(object):
         for p in self.gfit.keys():
             self.gbp[p] = []
             for a in self.gfit[p].keys():
+                if np.any(np.isnan(self.gfit[p][a])): continue
                 x = np.copy(self.gfit[p][a])
-                if np.any(np.isnan(x.data)): continue
                 x[flgc] = 0
                 self.gfit[p][a][flgc] = 0
                 md = np.ma.masked_array(x, np.zeros(x.shape, dtype=bool))
