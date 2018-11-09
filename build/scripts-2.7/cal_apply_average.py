@@ -55,7 +55,7 @@ for pp in range(uv.Npols):
         gi = gains[p1][a1]
         gj = gains[p2][a2]
         if np.any(np.isnan(gi)) or np.any(np.isnan(gj)):
-            uv.flag_array[ii::uv.Nbls,:,:,:]s = True
+            uv.flag_array[ii::uv.Nbls,:,:,:] = True
             continue
         fi = np.where(gains[p1][a1]!=0)[0]
         fj = np.where(gains[p2][a2]!=0)[0]
