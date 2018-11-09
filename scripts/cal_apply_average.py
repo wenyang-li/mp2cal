@@ -38,8 +38,8 @@ gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', ra
 graw.get_sky(gfhd)
 if opts.omniapp:
     gomni = {'x': {}, 'y': {}}
-    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'xx.omni.npz')
-    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'yy.omni.npz')
+    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.xx.omni.npz')
+    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.yy.omni.npz')
     gomni['x'] = gx['x']
     gomni['y'] = gy['y']
     graw.get_red(gomni)
