@@ -1,4 +1,4 @@
-import numpy as np, matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt, os
 
 class INS(object):
     """
@@ -51,7 +51,6 @@ class INS(object):
         """
         Flag bad time slices
         """
-        maxiter = self.ins.shape[0]
         frac_smt = self.smooth_over_freq(fc=1)
         frac_co = frac_smt[:,:,1:,:]*frac_smt[:,:,:-1,:]
         dt_slice = np.max(np.mean(frac_co,axis=(1,2)),axis=1)
@@ -108,3 +107,59 @@ class INS(object):
         mask_all = np.logical_and(mask1,mask2)
         for ii in range(self.uv.Nbls):
             self.uv.flag_array[ii::self.uv.Nbls] = np.logical_or(self.uv.flag_array[ii::self.uv.Nbls], mask_all)
+
+    def saveplots(self, outdir, obsname):
+        """
+        Save incoherence noise plots before and after the extra flagging
+        """
+        fq = self.uv.freq_array[0] / 1e6
+        nf = self.uv.Nfreqs
+        fi = np.array([0, nf/4-1, nf/2-1, nf/4*3-1, nf-1])
+        flabel = np.int32(fq[fi])
+        d0 = np.ma.masked_array(self.ins.data, self.mask)
+        d0 = d0 / np.ma.median(d0, axis=0) - 1
+        d1 = self.ins / np.ma.median(self.ins, axis=0) - 1
+        fig = plt.figure(figsize=(10,4))
+        p1 = fig.add_subplot(2,2,1)
+        i1 = p1.imshow(d0[:,0,:,0], aspect='auto', cmap='coolwarm')
+        p1.set_ylabel('Time steps')
+        p1.set_xticks(fi)
+        p1.xaxis.set_ticklabels(flabel)
+        p1.set_title('XX masked')
+        plt.colorbar(i1)
+        p2 = fig.add_subplot(2,2,2)
+        i2 = p2.imshow(d0[:,0,:,1], aspect='auto', cmap='coolwarm')
+        p2.set_xticks(fi)
+        p2.xaxis.set_ticklabels(flabel)
+        p2.set_title('YY masked')
+        plt.colorbar(i2)
+        p3 = fig.add_subplot(2,2,3)
+        i3 = p3.imshow(d1[:,0,:,0], aspect='auto', cmap='coolwarm')
+        p3.set_xlabel('Frequency (MHz)')
+        p3.set_ylabel('Time steps')
+        p3.set_xticks(fi)
+        p3.xaxis.set_ticklabels(flabel)
+        p3.set_title('XX post flagging')
+        plt.colorbar(i3)
+        p4 = fig.add_subplot(2,2,4)
+        i4 = p4.imshow(d1[:,0,:,1], aspect='auto', cmap='coolwarm')
+        p4.set_xlabel('Frequency (MHz)')
+        p4.set_xticks(fi)
+        p4.xaxis.set_ticklabels(flabel)
+        p4.set_title('YY post flagging')
+        plt.colorbar(i4)
+        plt.suptitle(obsname)
+        plt.subplots_adjust(hspace=0.5)
+        figpath = outdir + 'plots/'
+        if not os.path.exists(figpath): os.makedirs(figpath)
+        plt.savefig(figpath+obsname+'_INS.png')
+
+    def savearrs(self, outdir, obsname):
+        """
+        Save the original and flagged ins array
+        """
+        arrpath = outdir + 'arrs/'
+        if not os.path.exists(arrpath): os.makedirs(arrpath)
+        d0 = np.ma.masked_array(self.ins.data, self.mask)
+        d0.dump(arrpath + obsname + '_Original_INS.npym')
+        self.ins.dump(arrpath + obsname + '_Postflag_INS.npym')
