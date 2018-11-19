@@ -81,7 +81,7 @@ class INS(object):
         x = np.linspace(-cf,cf,2*cf+1)
         window = np.zeros((SH[0],SH[1],2*cf+1,SH[3]))
         for ii in range(2*cf+1): window[:,:,ii,:]=np.exp(-(x[ii]/float(cf))**2)
-        for niter in range(INS.size):
+        for niter in range(self.ins.size):
             frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
             for ff in range(SH[2]):
                 min_ind = max(0,ff-cf)
