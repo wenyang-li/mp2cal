@@ -51,8 +51,8 @@ class INS(object):
         Flag bad time slices
         """
         maxiter = self.ins.shape[0]
+        frac_smt = self.smooth_over_freq(fc=1)
         for niter in range(maxiter):
-            frac_smt = self.smooth_over_freq(fc=1)
             frac_co = frac_smt[:,:,1:,:]*frac_smt[:,:,:-1,:]
             dt_slice = np.max(np.mean(frac_co,axis=(1,2)),axis=1)
             dt_ind = np.argmax(np.abs(dt_slice))
@@ -74,21 +74,8 @@ class INS(object):
         """
         Flag samples based on smoothed (over frequency) ins. This is to find coherences in noise spectrum
         """
-        SH = self.ins.shape
-        nc = SH[2]/24
-        cf = int(fc*nc)
-        m2 = np.zeros(SH)
-        x = np.linspace(-cf,cf,2*cf+1)
-        window = np.zeros((SH[0],SH[1],2*cf+1,SH[3]))
-        for ii in range(2*cf+1): window[:,:,ii,:]=np.exp(-(x[ii]/float(cf))**2)
+        m2 = self.smooth_over_freq(fc=fc)
         for niter in range(self.ins.size):
-            frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
-            for ff in range(SH[2]):
-                min_ind = max(0,ff-cf)
-                max_ind = min(SH[2],ff+cf+1)
-                dm = np.sum(frac_diff[:,:,min_ind:max_ind,:]*window[:,:,cf-(ff-min_ind):cf+(max_ind-ff),:],axis=2)
-                dn = np.sum(np.logical_not(frac_diff.mask[:,:,min_ind:max_ind,:])*window[:,:,cf-(ff-min_ind):cf+(max_ind-ff),:],axis=2)+1e-10
-                m2[:,:,ff,:] = dm.data/dn
             sigma = np.std(m2)
             mean2 = np.mean(m2)
             indf = np.unravel_index(abs(m2-mean2).argmax(), self.ins.shape)
