@@ -19,7 +19,7 @@ class INS(object):
         from the mean by nsig sigmas.
         """
         for niter in range(self.ins.size):
-            frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
+            frac_diff = self.ins / np.ma.median(self.ins, axis=0) - 1
             m = np.mean(frac_diff)
             s = np.std(frac_diff)
             ind = np.where(abs(frac_diff-m).data*np.logical_not(self.ins.mask) > nsig*s)
@@ -31,7 +31,7 @@ class INS(object):
         Using Gaussian Kernel to smooth the frac ins over frequency for each time step.
         fc = frequency coherence length / coarse bandwidth
         """
-        frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
+        frac_diff = self.ins / np.ma.median(self.ins, axis=0) - 1
         SH = self.ins.shape
         nc = SH[2] / 24
         cf = int(fc*nc)
@@ -62,14 +62,14 @@ class INS(object):
         """
         Flag bad frequency channels
         """
-        frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
+        frac_diff = self.ins / np.ma.median(self.ins, axis=0) - 1
         df_slice = frac_diff[1:]*frac_diff[:-1]
         df_slice = np.mean(df_slice,axis=(0,1,3))
         df_slice -= np.mean(df_slice)
         df_ind = np.where(df_slice>nsig*np.std(df_slice))[0]
         self.ins.mask[:,:,df_ind,:] = True
 
-    def coherence_flagging(self, fc=0.25, nsig=6):
+    def coherence_flagging(self, fc=0.25, nsig=5):
         """
         Flag samples based on smoothed (over frequency) ins. This is to find coherences in noise spectrum
         """
