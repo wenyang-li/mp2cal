@@ -21,8 +21,8 @@ class INS(object):
             frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
             m = np.mean(frac_diff)
             s = np.std(frac_diff)
-            ind = np.where(abs(frac_diff-m) > nsig*s)
-            if ind[0].size == 0: break
+            ind = np.unravel_index(abs(frac_diff-m).argmax(), self.ins.shape)
+            if abs(frac_diff[ind]-m)<nsig*s: break
             else: self.ins.mask[ind] = True
 
     def smooth_over_freq(self, fc=1):
@@ -31,7 +31,7 @@ class INS(object):
         fc = frequency coherence length / coarse bandwidth
         """
         frac_diff = self.ins / np.mean(self.ins, axis=0) - 1
-        SH = self.frac_ins.shape
+        SH = self.ins.shape
         nc = SH[2] / 24
         cf = int(fc*nc)
         m2 = np.zeros(SH)
@@ -91,8 +91,8 @@ class INS(object):
                 m2[:,:,ff,:] = dm.data/dn
             sigma = np.std(m2)
             mean2 = np.mean(m2)
-            indf = np.where(np.abs(m2-mean2) > nsig*sigma)
-            if indf[0].size == 0: break
+            indf = np.unravel_index(abs(m2-mean2).argmax(), self.ins.shape)
+            if np.abs(m2[indf]-mean2) < nsig*sigma: break
             self.ins.mask[indf] = True
 
     def extend_flagging(self, f_thresh=0.5, t_thresh=0.5):
