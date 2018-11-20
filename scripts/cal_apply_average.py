@@ -91,5 +91,13 @@ uv.freq_array = (uv.freq_array[:,0::2]+uv.freq_array[:,1::2])/2
 uv.Nfreqs /= 2
 uv.channel_width *= 2
 
+# Noise spectrum flagging
+ins = mp2cal.qltm.INS(uv)
+ins.outliers_flagging()
+ins.time_flagging()
+ins.coherence_flagging()
+ins.apply_flagging()
+
+# Write out uvfits
 print "writing ..."
-uv.write_uvfits(newfile)
+ins.uv.write_uvfits(newfile)
