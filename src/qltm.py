@@ -119,7 +119,7 @@ class INS(object):
         d0 = np.ma.masked_array(self.ins.data, self.mask)
         d0 = d0 / np.ma.median(d0, axis=0) - 1
         d1 = self.ins / np.ma.median(self.ins, axis=0) - 1
-        fig = plt.figure(figsize=(10,4))
+        fig = plt.figure(figsize=(40,16))
         p1 = fig.add_subplot(2,2,1)
         i1 = p1.imshow(d0[:,0,:,0], aspect='auto', cmap='coolwarm')
         p1.set_ylabel('Time steps')
