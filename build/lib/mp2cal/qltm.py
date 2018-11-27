@@ -1,3 +1,5 @@
+from matplotlib import use
+use('Agg')
 import numpy as np, matplotlib.pyplot as plt, os
 
 class INS(object):
