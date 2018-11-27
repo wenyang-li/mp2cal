@@ -24,7 +24,9 @@ obsid = args[0]
 suffix = 'AF'+'O'*opts.omniapp
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
-if not os.path.exists(writepath): os.makedirs(writepath)
+if not os.path.exists(writepath):
+    try: os.makedirs(writepath)
+    except: pass
 newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
@@ -97,6 +99,8 @@ ins.outliers_flagging()
 ins.time_flagging()
 ins.coherence_flagging()
 ins.apply_flagging()
+ins.saveplots(writepath, obsid.split('/')[-1])
+ins.savearrs(writepath, obsid.split('/')[-1])
 
 # Write out uvfits
 print "writing ..."

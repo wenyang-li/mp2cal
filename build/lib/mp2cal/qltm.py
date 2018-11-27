@@ -151,7 +151,9 @@ class INS(object):
         plt.suptitle(obsname)
         plt.subplots_adjust(hspace=0.5)
         figpath = outdir + 'plots/'
-        if not os.path.exists(figpath): os.makedirs(figpath)
+        if not os.path.exists(figpath):
+            try: os.makedirs(figpath)
+            except: pass
         plt.savefig(figpath+obsname+'_INS.png')
 
     def savearrs(self, outdir, obsname):
@@ -159,7 +161,9 @@ class INS(object):
         Save the original and flagged ins array
         """
         arrpath = outdir + 'arrs/'
-        if not os.path.exists(arrpath): os.makedirs(arrpath)
+        if not os.path.exists(arrpath):
+            try: os.makedirs(arrpath)
+            except: pass
         d0 = np.ma.masked_array(self.ins.data, self.mask)
         d0.dump(arrpath + obsname + '_Original_INS.npym')
         self.ins.dump(arrpath + obsname + '_Postflag_INS.npym')

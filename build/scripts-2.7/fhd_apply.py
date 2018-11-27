@@ -25,7 +25,9 @@ print "Get FHD solutions ..."
 gains = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw = False)
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
-if not os.path.exists(writepath): os.makedirs(writepath)
+if not os.path.exists(writepath):
+    try: os.makedirs(writepath)
+    except: pass
 newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
@@ -84,5 +86,15 @@ uv.freq_array = (uv.freq_array[:,0::2]+uv.freq_array[:,1::2])/2
 uv.Nfreqs /= 2
 uv.channel_width *= 2
 
+# Noise spectrum flagging
+ins = mp2cal.qltm.INS(uv)
+ins.outliers_flagging()
+ins.time_flagging()
+ins.coherence_flagging()
+ins.apply_flagging()
+ins.saveplots(writepath, obsid.split('/')[-1])
+ins.savearrs(writepath, obsid.split('/')[-1])
+
+#write out uvfits
 print "writing ..."
-uv.write_uvfits(newfile)
+ins.uv.write_uvfits(newfile)
