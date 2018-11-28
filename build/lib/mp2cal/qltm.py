@@ -119,9 +119,10 @@ class INS(object):
         d0 = np.ma.masked_array(self.ins.data, self.mask)
         d0 = d0 / np.ma.median(d0, axis=0) - 1
         d1 = self.ins / np.ma.median(self.ins, axis=0) - 1
-        fig = plt.figure(figsize=(40,16))
+        fig = plt.figure(figsize=(20,8))
         p1 = fig.add_subplot(2,2,1)
         i1 = p1.imshow(d0[:,0,:,0], aspect='auto', cmap='coolwarm')
+        p1.set_xlabel('Frequency (MHz)')
         p1.set_ylabel('Time steps')
         p1.set_xticks(fi)
         p1.xaxis.set_ticklabels(flabel)
@@ -131,6 +132,8 @@ class INS(object):
         i2 = p2.imshow(d0[:,0,:,1], aspect='auto', cmap='coolwarm')
         p2.set_xticks(fi)
         p2.xaxis.set_ticklabels(flabel)
+        p2.set_xlabel('Frequency (MHz)')
+        p2.set_ylabel('Time steps')
         p2.set_title('YY masked')
         plt.colorbar(i2)
         p3 = fig.add_subplot(2,2,3)
@@ -144,6 +147,7 @@ class INS(object):
         p4 = fig.add_subplot(2,2,4)
         i4 = p4.imshow(d1[:,0,:,1], aspect='auto', cmap='coolwarm')
         p4.set_xlabel('Frequency (MHz)')
+        p4.set_ylabel('Time steps')
         p4.set_xticks(fi)
         p4.xaxis.set_ticklabels(flabel)
         p4.set_title('YY post flagging')
