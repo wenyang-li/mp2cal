@@ -21,7 +21,6 @@ o.add_option('--metafits', dest='metafits', default='', type='string', help='pat
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
-o.add_option('--amp_only', dest='ao', default=False, action='store_true', help='Toggle: only constrain amplitudes')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -133,10 +132,6 @@ def omnirun(RD):
     if opts.conv:
         print '   do fine conv'
         g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)
-    if opts.ao:
-        g1 = {p:{}}
-        for a in info.subsetant: g1[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
-        g2,v2 = mp2cal.wyl.cal_amp_iter(g1,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
     print '   time expense: ', caltime
