@@ -15,6 +15,7 @@ o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated 
 o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
+o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
 o.add_option('--omnipath',dest='omnipath',default='calibration/red/',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string', help='path to fhd dir')
 o.add_option('--metafits', dest='metafits', default='', type='string', help='path to metafits files')
@@ -76,7 +77,7 @@ else:
 
 #********************************** load and wrap data ******************************************
 uv = uvd.UVData()
-uv.read_uvfits(obsid+'.uvfits', run_check=False, run_check_acceptability=False)
+uv.read_uvfits(opts.filepath+obsid+'.uvfits', run_check=False, run_check_acceptability=False)
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]

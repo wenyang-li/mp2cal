@@ -8,8 +8,9 @@ from scipy.io.idl import readsav
 o = optparse.OptionParser()
 o.set_usage('cal_apply_average.py [options] obs')
 o.set_description(__doc__)
+o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string',
-             help='path to fhd dir for fhd output visibilities if ftype is fhd. Include final / in path.')
+             help='path to fhd dir for fhd output. Include final / in path.')
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load omnical solution files. Include final / in path.')
 o.add_option('--omniapp',dest='omniapp',default=False,action='store_true',
              help='Toggle: apply omnical solutions to hex tiles. Default=False')
@@ -33,9 +34,9 @@ newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
 # Load data
-print "Loading: " + obsid + ".uvfits"
+print "Loading: " + opts.filepath + obsid + ".uvfits"
 uv = uvd.UVData()
-uv.read_uvfits(obsid+'.uvfits')
+uv.read_uvfits(opts.filepath+obsid+'.uvfits')
 freqs = uv.freq_array[0]
 graw = mp2cal.gain.RedGain(freqs = freqs)
 gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
