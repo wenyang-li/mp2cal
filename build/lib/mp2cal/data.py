@@ -21,6 +21,7 @@ class RedData(object):
         self.noise = {}
         self.dead = []
         self.mask = None
+        self.mask_waterfall = None
         self.gains = RedGain()
         self.data_backup = {}
         self.flag_backup = {}
@@ -63,6 +64,7 @@ class RedData(object):
         flag = uv.flag_array[:,0,:,pid].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
         ind = np.where(a1!=a2)[0]
         self.mask = output_mask_array(flag[:,ind])
+        self.mask_waterfall = np.copy(self.mask)
         for ii in range(uv.Nbls):
             if a1[ii] < 57 or a2[ii] < 57 or a1[ii] == a2[ii]: continue # hard coded for MWA Phase II
             if a1[ii] in self.dead or a2[ii] in self.dead: continue
@@ -148,7 +150,7 @@ class RedData(object):
             yij = None
             for bl in r:
                 if mdl[self.pol].has_key(bl):
-                    yij = np.ma.masked_array(mdl[self.pol][bl], mask=self.mask)
+                    yij = np.ma.masked_array(mdl[self.pol][bl], mask=self.mask_waterfall)
                     bl0 = bl
                     chisqbls[bl0] = 0.
                     break
@@ -163,4 +165,4 @@ class RedData(object):
             meta['chisq('+str(bl0[0])+','+str(bl0[1])+')'] = chisqbls[bl0].data / (len(r)-1.)
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         meta['chisq'] = chisq.data / float(DOF)
-        meta['flags'] = self.mask
+        meta['flags'] = self.mask_waterfall
