@@ -24,7 +24,6 @@ class RedData(object):
         self.mask_waterfall = None
         self.gains = RedGain()
         self.data_backup = {}
-        self.flag_backup = {}
 
     def get_ex_ants(self, ex_ants):
         """
@@ -76,7 +75,6 @@ class RedData(object):
             md.mask[:,zerofq] = True
             if tave:
                 self.data_backup[bl] = {self.pol: np.complex64(md.data)}
-                self.flag_backup[bl] = {self.pol: md.mask}
                 md = np.mean(md,axis=0,keepdims=True)
                 self.noise[bl] /= (uv.Ntimes-np.count_nonzero(np.product(self.mask,axis=1)))
             self.data[bl] = {self.pol: np.complex64(md.data)}
@@ -120,8 +118,8 @@ class RedData(object):
             den = 0
             for bl in r:
                 i,j = bl
-                try: md = np.ma.masked_array(self.data_backup[bl][self.pol], self.flag_backup[bl][self.pol])
-                except: md = np.ma.masked_array(self.data_backup[bl[::-1]][self.pol].conj(), self.flag_backup[bl[::-1]][self.pol])
+                try: md = np.ma.masked_array(self.data_backup[bl][self.pol], self.mask_waterfall)
+                except: md = np.ma.masked_array(self.data_backup[bl[::-1]][self.pol].conj(), self.mask_waterfall)
                 num += md * g[p1][i].conj() * g[p2][j]
                 den += g[p1][i].conj() * g[p1][i] * g[p2][j].conj() * g[p2][j]
             v_mdl[self.pol][bl0] = (num / den).data
@@ -139,13 +137,10 @@ class RedData(object):
         mdl = self.gains.mdl
         p1, p2 = self.pol
         data_arr = None
-        flag_arr = None
         if self.data_backup:
             data_arr = self.data_backup
-            flag_arr = self.flag_backup
         else:
             data_arr = self.data
-            flag_arr = self.flag
         for r in reds:
             bl0 = None
             yij = None
@@ -156,8 +151,8 @@ class RedData(object):
                     chisqbls[bl0] = 0.
                     break
             for bl in r:
-                try: md = np.ma.masked_array(data_arr[bl][self.pol], mask=flag_arr[bl][self.pol])
-                except(KeyError): md = np.ma.masked_array(data_arr[bl[::-1]][self.pol].conj(), mask=flag_arr[bl[::-1]][self.pol])
+                try: md = np.ma.masked_array(data_arr[bl][self.pol], mask=self.mask_waterfall)
+                except(KeyError): md = np.ma.masked_array(data_arr[bl[::-1]][self.pol].conj(), mask=self.mask_waterfall)
                 i,j = bl
                 try: chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl]
                 except(KeyError): chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl[::-1]]
