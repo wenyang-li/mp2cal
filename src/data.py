@@ -76,7 +76,6 @@ class RedData(object):
             if tave:
                 self.data_backup[bl] = {self.pol: np.complex64(md.data)}
                 md = np.mean(md,axis=0,keepdims=True)
-                self.noise[bl] /= (uv.Ntimes-np.count_nonzero(np.product(self.mask,axis=1)))
             self.data[bl] = {self.pol: np.complex64(md.data)}
             self.flag[bl] = {self.pol: md.mask}
         if tave: self.mask= np.product(self.mask, axis=0, keepdims=True).astype(bool)
