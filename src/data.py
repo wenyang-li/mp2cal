@@ -91,6 +91,7 @@ class RedData(object):
             G = gfhd[p1][i]*gfhd[p2][j].conj()
             ind = np.where(G != 0)[0]
             self.data[bl][self.pol][:,ind] /= G[ind]
+            self.noise[bl][ind] /= np.abs(G[ind])**2
             if self.data_backup: self.data_backup[bl][self.pol][:,ind] /= G[ind]
 
     def get_gains(self, g_red,  v_mdl = None, g_sky = None):
