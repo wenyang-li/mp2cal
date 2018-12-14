@@ -145,6 +145,7 @@ def omnirun(RD):
         RD.gains.scale_gains()
 
     #************************* metadata parameters ***************************************
+    RD.recover_model_vis_waterfall(info)
     RD.cal_chi_square(info, m2)
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
     m2['jds'] = t_jd
