@@ -81,6 +81,30 @@ class INS(object):
             if ind[0].size == 0: break
             self.ins.mask[ind] = True
 
+    def merge_flagging(self, ncoarse=24, frac_thresh=0.5):
+        """
+        Flag isolated pixels that are surrounded by flagged samples. Also check each coarse band, if huge amount
+        of samples are flagged in this coarse channel, flag the coarse channel.
+        """
+        m = np.copy(self.ins.mask)
+        for ii in range(m.size):
+            x = np.zeros(m.shape, dtype=int32)
+            x[:-1] += np.int32(m[1:])
+            x[1:] += np.int32(m[:-1])
+            x[:,:,:-1,:]+=np.int32(m[:,:,1:,:])
+            x[:,:,1:,:]+=np.int32(m[:,:,:-1,:])
+            ind = np.where(x > 2)
+            sz = np.where(m[ind]==False)[0].size
+            if sz == 0: break
+            m[ind]=True
+        SH = m.shape
+        m = m.reshape(SH[0],SH[1],ncoarse,SH[2]/ncoarse,SH[3])
+        y = np.mean(m,axis=3) > frac_thresh
+        for ii in range(SH[2]/ncoarse):
+            m[:,:,:,ii,:] = np.logical_or(y, m[:,:,:,ii,:])
+        m = m.reshape(SH)
+        self.ins.mask = m
+
     def extend_flagging(self, f_thresh=0.5, t_thresh=0.5):
         """
         Flag the whole time/frequency slice if the number of flagged smaples in that slice is
