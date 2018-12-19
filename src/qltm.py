@@ -88,7 +88,7 @@ class INS(object):
         """
         m = np.copy(self.ins.mask)
         for ii in range(m.size):
-            x = np.zeros(m.shape, dtype=int32)
+            x = np.zeros(m.shape, dtype=np.int32)
             x[:-1] += np.int32(m[1:])
             x[1:] += np.int32(m[:-1])
             x[:,:,:-1,:]+=np.int32(m[:,:,1:,:])
