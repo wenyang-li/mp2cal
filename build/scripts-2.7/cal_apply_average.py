@@ -1,5 +1,6 @@
 from matplotlib import use
 use('Agg')
+import numpy as np
 import aipy, mp2cal, sys, os, optparse
 from scipy.io.idl import readsav
 
