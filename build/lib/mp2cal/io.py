@@ -1,5 +1,24 @@
 import numpy as np
 from scipy.io.idl import readsav
+import pyuvdata.uvdata as uvd
+
+def read(filename):
+    """
+    pyuvdata changed the conjugate convention for uvfits, flip things back here.
+    """
+    uv = uvd.UVData()
+    uv.read_uvfits(filename)
+    uv.data_array = np.conj(uv.data_array)
+    uv.uvw_array = -uv.uvw_array
+    return uv
+
+def write(uv, outname):
+    """
+    pyuvdata changed the conjugate convention for uvfits, flip things back here.
+    """
+    uv.data_array = np.conj(uv.data_array)
+    uv.uvw_array = -uv.uvw_array
+    uv.write_uvfits(uv. outname)
 
 def load_gains_fc(fcfile):
     """
@@ -163,3 +182,5 @@ def load_fhd_global_bandpass(fhdpath, obsid):
             gp[p] = load_bp_txt(fhdpath+'calibration/'+obsid+'_bandpass.txt', p)
             print "averaged bandpass not found for pol "+p+", using bp from the obs"
     return gp
+
+

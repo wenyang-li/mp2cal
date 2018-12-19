@@ -6,8 +6,9 @@ from scipy.io.idl import readsav
 
 ### Options ###
 o = optparse.OptionParser()
-o.set_usage('cal_apply_average.py [options] obs')
+o.set_usage('fhd_apply.py [options] obs')
 o.set_description(__doc__)
+o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string',
              help='path to fhd dir for fhd output visibilities if ftype is fhd. Include final / in path.')
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load omnical solution files. Include final / in path.')
@@ -34,9 +35,8 @@ newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
 
 # Load data
-print "Loading: " + obsid + ".uvfits"
-uv = uvd.UVData()
-uv.read_uvfits(obsid+'.uvfits')
+print "Loading: " + opts.filepath + obsid + ".uvfits"
+uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 
 # Apply cal
 print "Applying cal ..."
@@ -93,10 +93,12 @@ ins = mp2cal.qltm.INS(uv)
 ins.outliers_flagging()
 ins.time_flagging()
 ins.coherence_flagging()
+ins.outliers_flagging()
+ins.merge_flagging()
 ins.apply_flagging()
 ins.saveplots(writepath, obsid.split('/')[-1])
 ins.savearrs(writepath, obsid.split('/')[-1])
 
 #write out uvfits
 print "writing ..."
-ins.uv.write_uvfits(newfile)
+mp2cal.io.write(ins.uv, newfile)

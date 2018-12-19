@@ -3,7 +3,6 @@ import numpy as np, time
 import hera_cal, aipy, mp2cal
 import optparse, os, sys
 from multiprocessing import Pool
-import pyuvdata.uvdata as uvd
 
 o = optparse.OptionParser()
 o.set_usage('omni_run_multi.py [options] obsid') #only takes 1 obsid
@@ -76,8 +75,7 @@ else:
     gfhd = None
 
 #********************************** load and wrap data ******************************************
-uv = uvd.UVData()
-uv.read_uvfits(opts.filepath+obsid+'.uvfits', run_check=False, run_check_acceptability=False)
+uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 t_jd = uv.time_array[::uv.Nbls]
 t_lst = uv.lst_array[::uv.Nbls]
 freqs = uv.freq_array[0]

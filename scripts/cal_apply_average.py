@@ -1,6 +1,5 @@
 from matplotlib import use
 use('Agg')
-import numpy as np, pyuvdata.uvdata as uvd
 import aipy, mp2cal, sys, os, optparse
 from scipy.io.idl import readsav
 
@@ -35,8 +34,7 @@ if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile
 
 # Load data
 print "Loading: " + opts.filepath + obsid + ".uvfits"
-uv = uvd.UVData()
-uv.read_uvfits(opts.filepath+obsid+'.uvfits')
+uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 freqs = uv.freq_array[0]
 graw = mp2cal.gain.RedGain(freqs = freqs)
 gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
@@ -109,4 +107,4 @@ ins.savearrs(writepath, obsid.split('/')[-1])
 
 # Write out uvfits
 print "writing ..."
-ins.uv.write_uvfits(newfile)
+mp2cal.io.write(ins.uv, newfile)

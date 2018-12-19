@@ -7,11 +7,11 @@ import pylab as p, aipy as a
 import sys, optparse, os
 import numpy as np
 from multiprocessing import Pool
-import pyuvdata.uvdata as uvd
 
 o = optparse.OptionParser()
 o.set_usage('firstcal_mwa.py [options] obsid')
 a.scripting.add_standard_options(o,cal=True,pol=True)
+o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
 o.add_option('--ubls', dest='ubls', default='', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ex_ubls', dest='ex_ubls', default='', help='Unique baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated by commas (ex: 1_4,64_49).')
@@ -58,8 +58,7 @@ if not opts.ex_ants == '': ex_ants = ant_parse(opts.ex_ants)
 #********************************** load and wrap data ******************************************
 if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
-uv = uvd.UVData()
-uv.read_uvfits(obsid+'.uvfits', run_check=False, run_check_acceptability=False)
+uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 data_list = []
 for pol in pols:
     RD = mp2cal.data.RedData(pol)
