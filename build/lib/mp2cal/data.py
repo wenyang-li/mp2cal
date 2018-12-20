@@ -132,7 +132,7 @@ class RedData(object):
         """
         reds = info.get_reds()
         chisq = 0.
-        chisqbls = {}
+#        chisqbls = {}
         g = self.gains.red
         mdl = self.gains.mdl
         p1, p2 = self.pol
@@ -148,7 +148,7 @@ class RedData(object):
                 if mdl[self.pol].has_key(bl):
                     yij = np.ma.masked_array(mdl[self.pol][bl], mask=self.mask_waterfall)
                     bl0 = bl
-                    chisqbls[bl0] = 0.
+#                    chisqbls[bl0] = 0.
                     break
             for bl in r:
                 try: md = np.ma.masked_array(data_arr[bl][self.pol], mask=self.mask_waterfall)
@@ -157,8 +157,8 @@ class RedData(object):
                 try: chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl]
                 except(KeyError): chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl[::-1]]
                 chisq += chisqterm
-                chisqbls[bl0] += chisqterm
-            meta['chisq('+str(bl0[0])+','+str(bl0[1])+')'] = chisqbls[bl0].data / (len(r)-1.)
+#                chisqbls[bl0] += chisqterm
+#            meta['chisq('+str(bl0[0])+','+str(bl0[1])+')'] = chisqbls[bl0].data / (len(r)-1.)
         DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
         meta['chisq'] = chisq.data / float(DOF)
         meta['flags'] = self.mask_waterfall
