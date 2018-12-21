@@ -111,8 +111,7 @@ def quick_load_gains(filename):
             p = k[-1]
             if not gains.has_key(p): gains[p] = {}
             a = int(k[:-1])
-            try: gains[p][a] = d[k]*np.logical_not(d['flags'])
-            except: gains[p][a] = d[k]
+            gains[p][a] = d[k]
     return gains
 
 def getpointing(obs):
