@@ -1,13 +1,11 @@
 #! /usr/bin/env python
-import numpy as np, time
-import aipy, mp2cal
-import optparse, os, sys
+import numpy as np, time, mp2cal, optparse, os, sys
 from multiprocessing import Pool
 
 o = optparse.OptionParser()
 o.set_usage('omni_run_multi.py [options] obsid') #only takes 1 obsid
 o.set_description(__doc__)
-aipy.scripting.add_standard_options(o,cal=True,pol=True)
+o.add_option('-p', dest='pol', default='xx,yy', help='Choose polarization (xx, yy, xy, yx) to include, separated by commas.')
 o.add_option('--ubls', dest='ubls', default='', help='Unique baselines to use, separated by commas (ex: 1_4,64_49).')
 o.add_option('--ex_ubls', dest='ex_ubls', default='', help='Unique baselines to exclude, separated by commas (ex: 1_4,64_49).')
 o.add_option('--bls', dest='bls', default='', help='Baselines to use, separated by commas (ex: 1_4,64_49).')

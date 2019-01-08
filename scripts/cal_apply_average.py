@@ -1,8 +1,9 @@
 from matplotlib import use
 use('Agg')
-import numpy as np
-import aipy, mp2cal, sys, os, optparse
+import numpy as np, mp2cal, sys, os, optparse
 from scipy.io.idl import readsav
+
+pol2str = {-8: 'yx', -7: 'xy', -6: 'yy', -5: 'xx'}
 
 ### Options ###
 o = optparse.OptionParser()
@@ -52,7 +53,7 @@ gains = graw.gfit
 # Apply cal
 print "Applying cal ..."
 for pp in range(uv.Npols):
-    p1,p2 = aipy.miriad.pol2str[uv.polarization_array[pp]]
+    p1,p2 = pol2str[uv.polarization_array[pp]]
     for ii in range(uv.Nbls):
         a1 = uv.ant_1_array[ii]
         a2 = uv.ant_2_array[ii]
