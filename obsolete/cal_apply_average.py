@@ -1,17 +1,19 @@
 from matplotlib import use
 use('Agg')
-import numpy as np, pyuvdata.uvdata as uvd
+import numpy as np
 import aipy, mp2cal, sys, os, optparse
 from scipy.io.idl import readsav
 
 ### Options ###
 o = optparse.OptionParser()
-o.set_usage('fhd_apply.py [options] obs')
+o.set_usage('cal_apply_average.py [options] obs')
 o.set_description(__doc__)
 o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string',
-             help='path to fhd dir for fhd output visibilities if ftype is fhd. Include final / in path.')
+             help='path to fhd dir for fhd output. Include final / in path.')
 o.add_option('--omnipath',dest='omnipath',default='',type='string', help='Path to load omnical solution files. Include final / in path.')
+o.add_option('--omniapp',dest='omniapp',default=False,action='store_true',
+             help='Toggle: apply omnical solutions to hex tiles. Default=False')
 o.add_option('--subtract',dest='subtract',default=False,action='store_true',
              help='Toggle: subtract model vis. Default=False')
 o.add_option('--outpath', dest='outpath', default='', type='string',
@@ -22,10 +24,7 @@ opts,args = o.parse_args(sys.argv[1:])
 obsid = args[0]
 
 # Getting cal solutions
-suffix = 'FHD'
-day = int(obsid) / 86164
-print "Get FHD solutions ..."
-gains = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw = False)
+suffix = 'AF'+'O'*opts.omniapp
 if opts.subtract: suffix = suffix + 'S'
 writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath):
@@ -37,7 +36,19 @@ if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile
 # Load data
 print "Loading: " + opts.filepath + obsid + ".uvfits"
 uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
-
+freqs = uv.freq_array[0]
+graw = mp2cal.gain.RedGain(freqs = freqs)
+gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
+graw.get_sky(gfhd)
+if opts.omniapp:
+    gomni = {'x': {}, 'y': {}}
+    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.xx.omni.npz')
+    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.yy.omni.npz')
+    gomni['x'] = gx['x']
+    gomni['y'] = gy['y']
+    graw.get_red(gomni)
+graw.bandpass_fitting(include_red = opts.omniapp)
+gains = graw.gfit
 # Apply cal
 print "Applying cal ..."
 for pp in range(uv.Npols):
@@ -45,13 +56,9 @@ for pp in range(uv.Npols):
     for ii in range(uv.Nbls):
         a1 = uv.ant_1_array[ii]
         a2 = uv.ant_2_array[ii]
-        try:
-            gi = gains[p1][a1]
-            gj = gains[p2][a2]
-        except:
-            uv.flag_array[ii::uv.Nbls,:,:,:] = True
-            continue
-        if(np.any(np.isnan(gi*gj))):
+        gi = gains[p1][a1]
+        gj = gains[p2][a2]
+        if np.any(np.isnan(gi)) or np.any(np.isnan(gj)):
             uv.flag_array[ii::uv.Nbls,:,:,:] = True
             continue
         fi = np.where(gains[p1][a1]!=0)[0]
@@ -99,6 +106,6 @@ ins.apply_flagging()
 ins.saveplots(writepath, obsid.split('/')[-1])
 ins.savearrs(writepath, obsid.split('/')[-1])
 
-#write out uvfits
+# Write out uvfits
 print "writing ..."
 mp2cal.io.write(ins.uv, newfile)

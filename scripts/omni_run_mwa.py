@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import numpy as np, time
-import hera_cal, aipy, mp2cal
+import aipy, mp2cal
 import optparse, os, sys
 from multiprocessing import Pool
 
@@ -15,7 +15,7 @@ o.add_option('--ex_bls', dest='ex_bls', default='', help='Baselines to exclude, 
 o.add_option('--ants', dest='ants', default='', help='Antennas to use, separated by commas (ex: 1,4,64,49).')
 o.add_option('--ex_ants', dest='ex_ants', default='', help='Antennas to exclude, separated by commas (ex: 1,4,64,49).')
 o.add_option('--filepath',dest='filepath',default='/users/wl42/data/wl42/RAWOBS/',type='string', help='Path to input uvfits files. Include final / in path.')
-o.add_option('--omnipath',dest='omnipath',default='calibration/red/',type='string', help='Path to load firstcal files and to save solution files. Include final / in path.')
+o.add_option('--omnipath',dest='omnipath',default='calibration/red/',type='string', help='Path to save solution files. Include final / in path.')
 o.add_option('--fhdpath', dest='fhdpath', default='', type='string', help='path to fhd dir')
 o.add_option('--metafits', dest='metafits', default='', type='string', help='path to metafits files')
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
@@ -71,7 +71,7 @@ if os.path.exists(fhd_sol_path):
             if np.any(np.isnan(gfhd[p][a])):
                 if not a in ex_ants: ex_ants.append(a)
 else:
-    print "No target fhd solutions."
+    print "Warning: No target fhd solutions, the calibration quality could be bad."
     gfhd = None
 
 #********************************** load and wrap data ******************************************
@@ -115,19 +115,14 @@ def omnirun(RD):
         g0 = {p:{}}
         for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
     else:
-        fcfile = opts.omnipath + obsid + '.' + RD.pol + '.fc.npz'
-        if os.path.exists(fcfile):
-            print '     loading firstcal file: ', fcfile
-            g0 = mp2cal.io.load_gains_fc(fcfile)
-        else:
-            print '     firstcal not found, start rough cal'
-            info_rough = mp2cal.wyl.pos_to_info(pols=[p],ubls=[(57,61),(57,62)],ex_ants=RD.dead)
-            g0 = mp2cal.wyl.rough_cal(RD.data,RD.flag,info_rough,pol=RD.pol)
+        print '     start rough cal'
+        info_rough = mp2cal.wyl.pos_to_info(pols=[p],ubls=[(57,61),(57,62)],ex_ants=RD.dead)
+        g0 = mp2cal.wyl.rough_cal(RD.data,RD.flag,info_rough,pol=RD.pol)
 
     #*********************** Calibrate ******************************************
     start_time = time.time()
     print '   Run omnical'
-    m2,g2,v2 = hera_cal.omni.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
+    m2,g2,v2 = mp2cal.wyl.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
         print '   do fine conv'
         g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)

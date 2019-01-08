@@ -1,8 +1,7 @@
-import numpy as np, omnical, aipy
-import hera_cal
+import numpy as np, omnical, aipy, omni
 from pos import *
 
-def pos_to_info(pols=['x'], fcal=False, **kwargs):
+def pos_to_info(pols=['x'], **kwargs):
     nant = antpos['nant']
     _antpos = -np.ones((nant*len(pols),3))
     xmin,ymin = 0,0
@@ -17,17 +16,13 @@ def pos_to_info(pols=['x'], fcal=False, **kwargs):
         except(KeyError): continue
         for z, pol in enumerate(pols):
             z = 2**z
-            i = hera_cal.omni.Antpol(ant,pol,nant)
+            i = omni.Antpol(ant,pol,nant)
             _antpos[i.val,0],_antpos[i.val,1],_antpos[i.val,2] = x,y,z
-    reds = hera_cal.omni.compute_reds(nant, pols, _antpos[:nant],tol=0.01)
-    ex_ants = [hera_cal.omni.Antpol(i,nant).ant() for i in range(_antpos.shape[0]) if _antpos[i,0] < 0]
+    reds = omni.compute_reds(nant, pols, _antpos[:nant],tol=0.01)
+    ex_ants = [omni.Antpol(i,nant).ant() for i in range(_antpos.shape[0]) if _antpos[i,0] < 0]
     kwargs['ex_ants'] = kwargs.get('ex_ants',[]) + ex_ants
-    reds = hera_cal.omni.filter_reds(reds, **kwargs)
-    if fcal:
-        from hera_cal.firstcal import FirstCalRedundantInfo
-        info = FirstCalRedundantInfo(nant)
-    else:
-        info = hera_cal.omni.RedundantInfo(nant)
+    reds = omni.filter_reds(reds, **kwargs)
+    info = omni.RedundantInfo(nant)
     info.init_from_reds(reds, _antpos)
     return info
 
