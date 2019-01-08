@@ -1,4 +1,4 @@
-import numpy as np, omnical, aipy, omni
+import numpy as np, omnical, omni
 from pos import *
 
 def pos_to_info(pols=['x'], **kwargs):
