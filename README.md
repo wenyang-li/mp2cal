@@ -3,16 +3,11 @@ MWA Phase II calibration
 
 Dependencies:
 
-    numpy >= 1.10
-    
+    numpy >= 1.10 
     scipy
-    
     matplotlib
-    
     astropy >= 1.2
-    
     omnical (https://github.com/wenyang-li/omnical)
-    
     pyuvdata (https://github.com/RadioAstronomySoftwareGroup/pyuvdata)
     
 Install as admin:
