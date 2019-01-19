@@ -6,14 +6,12 @@ setup_args = {
     'name': 'mp2cal',
     'author': 'Wenyang Li',
     'author_email': 'wenyang_li at brown.edu',
-    'license': 'Brown',
     'url': 'https://github.com/wenyang-li/mp2cal.git',
     'description': 'MWA Phase II calibration',
     'package_dir': {'mp2cal': 'src'},
     'packages': ['mp2cal'],
     'scripts': glob.glob('scripts/*'),
     'version': __version__,
-    # 'package_data':
 }
 
 
