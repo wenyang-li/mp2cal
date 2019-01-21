@@ -22,6 +22,7 @@ class RedGain(object):
         self.red = None # Gain from redundant cal
         self.sky = None # Gain from sky cal
         self.mdl = None # Model vis from redundant cal
+        self.auto = None # Scaled auto correlations from the data
         self.gbp = None # Global bandpass, needs to be calculated from the input gains
         self.gfit = None # Smoothed gains, needs to be calculated from the input gains
         self.freqs = freqs # Frequency array
@@ -47,6 +48,41 @@ class RedGain(object):
         Load redundant cal model visibilities
         """
         self.mdl = v_mdl
+    
+    def get_auto(self, uv):
+        """
+        Get auto correlations from the data. This is for bandpass fitting
+        """
+        a1 = uv.ant_1_array[:uv.Nbls]
+        a2 = uv.ant_2_array[:uv.Nbls]
+        self.auto = {'x': {}, 'y': {}}
+        ind = np.where(a1 == a2)[0]
+        inx = np.where(a1 != a2)[0]
+        data = uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs,uv.Npols)
+        wgts = np.logical_not(uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs,uv.Npols))
+        wgts = (np.sum(wgts[:,inx,:,:], axis=1) >0)
+        wgts = np.sum(wgts, axis=1)
+        wxmax = np.max(wgts[:,0])
+        wymax = np.max(wgts[:,1])
+        tindx = np.where(wgts[:,0] == wxmax)[0]
+        tindy = np.where(wgts[:,1] == wymax)[0]
+        for ii in ind:
+            a = a1[ii]
+            self.auto['x'][a] = np.sqrt(np.mean(np.abs(data[tindx,ii,:,0]),axis=0))
+            self.auto['y'][a] = np.sqrt(np.mean(np.abs(data[tindy,ii,:,1]),axis=0))
+        amp_ref_x, amp_ref_y = None, None
+        for ii in ind:
+            a = a1[ii]
+            if np.any(np.isnan(self.sky['x'][a])):
+                continue
+            else:
+                amp_ref_x = np.copy(self.auto['x'][a])
+                amp_ref_y = np.copy(self.auto['y'][a])
+                break
+        for ii in ind:
+            a = a1[ii]
+            self.auto['x'][a] /= amp_ref_x
+            self.auto['y'][a] /= amp_ref_y
 
     def scale_gains(self, amp_ave=1.):
         """
@@ -323,6 +359,9 @@ class RedGain(object):
         fit 150 m cable reflection
         """
         self.gfit = copy.deepcopy(self.sky)
+        for p in self.gfit.keys():
+            for a in self.gfit[p].keys():
+                self.gfit[p][a] /= self.auto[p][a]
         if include_red:
             for p in self.red.keys():
                 for a in self.red[p].keys():
@@ -381,4 +420,4 @@ class RedGain(object):
                 if np.any(np.isnan(self.gfit[p][a])): continue
                 ind = np.where(self.gbp[p].data * self.gfit[p][a] != 0)[0]
                 amp = np.mean(np.abs(self.gfit[p][a][ind])) / np.mean(self.gbp[p].data[ind])
-                self.gfit[p][a] = amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
+                self.gfit[p][a] = self.auto[p][a] * amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
