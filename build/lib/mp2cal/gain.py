@@ -359,8 +359,8 @@ class RedGain(object):
         fit 150 m cable reflection
         """
         self.gfit = copy.deepcopy(self.sky)
-        for p in self.gfit.keys():
-            for a in self.gfit[p].keys():
+        for p in self.auto.keys():
+            for a in self.auto[p].keys():
                 self.gfit[p][a] /= self.auto[p][a]
         if include_red:
             for p in self.red.keys():
