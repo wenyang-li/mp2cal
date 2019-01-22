@@ -39,13 +39,13 @@ print "Loading: " + opts.filepath + obsid + ".uvfits"
 uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 freqs = uv.freq_array[0]
 graw = mp2cal.gain.RedGain(freqs = freqs)
-graw.get_auto(uv)
-gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
+gfhd = mp2cal.io.quick_load_gains(opts.omnipath+'sky/'+obsid+'_fhdcal.npz')
 graw.get_sky(gfhd)
+graw.get_auto(uv)
 if opts.omniapp:
     gomni = {'x': {}, 'y': {}}
-    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.xx.omni.npz')
-    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.yy.omni.npz')
+    gx = mp2cal.io.quick_load_gains(opts.omnipath+'red/'+obsid+'.xx.omni.npz')
+    gy = mp2cal.io.quick_load_gains(opts.omnipath+'red/'+obsid+'.yy.omni.npz')
     gomni['x'] = gx['x']
     gomni['y'] = gy['y']
     graw.get_red(gomni)
