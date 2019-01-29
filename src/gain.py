@@ -361,7 +361,7 @@ class RedGain(object):
         self.gfit = copy.deepcopy(self.sky)
         for p in self.auto.keys():
             for a in self.auto[p].keys():
-                self.gfit[p][a] /= self.auto[p][a]
+                self.gfit[p][a] /= (self.auto[p][a]+1e-10)
         if include_red:
             for p in self.red.keys():
                 for a in self.red[p].keys():
@@ -420,4 +420,4 @@ class RedGain(object):
                 if np.any(np.isnan(self.gfit[p][a])): continue
                 ind = np.where(self.gbp[p].data * self.gfit[p][a] != 0)[0]
                 amp = np.mean(np.abs(self.gfit[p][a][ind])) / np.mean(self.gbp[p].data[ind])
-                self.gfit[p][a] = self.auto[p][a] * amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
+                self.gfit[p][a] = (self.auto[p][a]+1e-10) * amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))

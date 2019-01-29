@@ -4,14 +4,31 @@ class INS(object):
     """
     Using incoherence noise spectrum as data quality metric (Wilensky et al, in prep)
     """
-    def __init__(self, uv):
-        self.uv = uv
-        d = uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
-        f = uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
-        md = np.ma.masked_array(d, f)
-        md = md[1:] - md[:-1]
-        self.ins = np.mean(np.abs(md),axis=1)
-        self.mask = np.copy(self.ins.mask)
+    def __init__(self, uv = None, ins_arr = None):
+        """
+        uv:
+            pyuvdata object, which should have read in interferometric data. The incoherence noise spectrum is
+            calculated based on uv.
+        ins_arr:
+            Directly input ins which has already been calculated.
+        If both uv and ins_arr are provided, only use the information of uv object.
+        """
+        if uv is None and ins_arr is None:
+            raise IOError("Object requires either uv object or input INS array")
+        elif uv is None and ins_arr is not None:
+            print "Reads in INS from saved array. apply_flagging cannot be used because uv is None. "
+            self.ins = ins_arr
+            self.mask = ins_arr.mask
+        else:
+            if ins_arr is not None:
+                print "calculate INS from uv object. ins_arr is discarded"
+            self.uv = uv
+            d = uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
+            f = uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
+            md = np.ma.masked_array(d, f)
+            md = md[1:] - md[:-1]
+            self.ins = np.mean(np.abs(md),axis=1)
+            self.mask = np.copy(self.ins.mask)
 
     def outliers_flagging(self, nsig = 5):
         """

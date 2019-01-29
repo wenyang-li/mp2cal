@@ -104,7 +104,7 @@ def omnirun(RD):
     print 'flagged baselines: ', flag_bls
     omnisol = opts.omnipath + obsid + '.' + RD.pol + '.omni.npz'
     #*********************** red info ******************************************
-    info = mp2cal.wyl.pos_to_info(pols=[p],fcal=False,ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
+    info = mp2cal.wyl.pos_to_info(pols=[p],ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
 
     #*********************** generate g0 ***************************************
