@@ -224,13 +224,12 @@ class RedGain(object):
         """
         assert self.red, "Redundant calibration gains do not exit."
         gc = {}
-        if ratio: gc = ratio
-        else:
-            for p in self.red.keys():
-                gc[p] = {}
-                for a in self.red[p].keys():
-                    SH = self.red[p][a].shape
-                    gc[p][a] = self.red[p][a].flatten()
+        if ratio is None: ratio = self.red
+        for p in self.red.keys():
+            gc[p] = {}
+            for a in ratio[p].keys():
+                SH = ratio[p][a].shape
+                gc[p][a] = ratio[p][a].flatten()
         Nsample = np.product(SH)
         phspar = {}
         for p in gc.keys():
