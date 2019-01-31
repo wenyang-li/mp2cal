@@ -32,10 +32,6 @@ class RedGain(object):
         Load redundant cal gains.
         """
         self.red = g_red
-        for p in self.red.keys():
-            for a in self.red[p].keys():
-                if self.red[p][a].ndim == 2:
-                    self.red[p][a] = np.mean(self.red[p][a], axis=0)
 
     def get_sky(self, g_sky):
         """
@@ -157,11 +153,14 @@ class RedGain(object):
         for p in g_input.keys():
             phspar[p] = {}
             a0 = g_input[p].keys()[0]
+            nf = g_input[p][a0].size
+            SH = g_input[p][a0].shape
             if g_input[p][a0].ndim == 2:
-                for a in g_input[p].keys(): g_input[p][a] = np.mean(g_input[p][a],axis=0)
+                for a in g_input[p].keys(): g_input[p][a] = g_input[p][a].flatten()
             if g_target[p][a0].ndim == 2:
-                for a in g_target[p].keys(): g_target[p][a] = np.mean(g_target[p][a],axis=0)
-            nf = g_target[p][a0].size
+                for a in g_target[p].keys(): g_target[p][a] = g_target[p][a].flatten()
+            for a in g_target[p].keys():
+                g_target[p][a] = np.resize(g_target[p][a], g_input[p][a].shape)
             slp1 = []
             slp2 = []
             for ff in range(0,nf):
@@ -213,8 +212,8 @@ class RedGain(object):
                 else:
                     slope = np.unwrap(slope)
                     slp2.append(np.median(slope))
-            phspar[p]['phi1'] = np.array(slp1)
-            phspar[p]['phi2'] = np.array(slp2)
+            phspar[p]['phi1'] = np.array(slp1).reshape(SH)
+            phspar[p]['phi2'] = np.array(slp2).reshape(SH)
         return phspar
 
     def plane_fitting(self, ratio = None):
@@ -225,7 +224,7 @@ class RedGain(object):
         assert self.red, "Redundant calibration gains do not exit."
         gc = {}
         if ratio is None: ratio = self.red
-        for p in self.red.keys():
+        for p in ratio.keys():
             gc[p] = {}
             for a in ratio[p].keys():
                 SH = ratio[p][a].shape
@@ -264,12 +263,15 @@ class RedGain(object):
             phspar[p]['offset_south'] = -C[3].reshape(SH)
         return phspar
 
-    def degen_project_OF(self):
+    def degen_project_OF(self, time_average=True):
         """
         Project degeneracy of redundant cal from raw data to sky cal
         """
         assert self.red, "Redundant calibration gains do not exit."
         assert self.sky, "Sky calibration gains do not exit."
+        if time_average:
+            print "The gains will be averaged in time axis after degeneracy projection by default. \
+                    Set time_average=False if you do not want to."
         for p in self.red.keys():
             a_red = self.red[p].keys()
             a_sky = self.sky[p].keys()
@@ -307,6 +309,8 @@ class RedGain(object):
                 if a > 92: proj *= np.exp(1j*phspar2[p]['offset_south'])
                 else: proj *= np.exp(1j*phspar2[p]['offset_east'])
                 self.red[p][a] *= proj
+                if self.red[p][a].ndim == 2 and time_average:
+                    self.red[p][a] = np.mean(self.red[p][a], axis=0)
             if self.mdl:
                 pp = p + p
                 for bl in self.mdl[pp].keys():
@@ -324,11 +328,14 @@ class RedGain(object):
                     ind = np.where(proj!=0)
                     self.mdl[pp][bl][ind] /= proj[ind]
 
-    def degen_project_FO(self):
+    def degen_project_FO(self, time_average=True):
         """
         Project degeneracy parameters to 1.0
         """
         assert self.red, "Redundant calibration gains does not exit."
+        if time_average:
+            print "The gains will be averaged in time axis after degeneracy projection by default. \
+            Set time_average=False if you do not want to."
         self.scale_gains()
         phspar = self.plane_fitting()
         for p in self.red.keys():
@@ -339,6 +346,8 @@ class RedGain(object):
                 if a > 92: proj *= np.exp(1j*phspar[p]['offset_south'])
                 else: proj *= np.exp(1j*phspar[p]['offset_east'])
                 self.red[p][a] *= proj
+                if self.red[p][a].ndim == 2 and time_average:
+                    self.red[p][a] = np.mean(self.red[p][a], axis=0)
             if self.mdl:
                 pp = p + p
                 for bl in self.mdl[pp].keys():
