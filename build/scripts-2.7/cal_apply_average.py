@@ -30,9 +30,9 @@ obsid = args[0]
 suffix = 'AF'+'O'*opts.omniapp
 if opts.subtract: suffix = suffix + 'S'
 if opts.model:
-    writepath = opts.outpath + 'data' + '_' + suffix + '/'
-else:
     writepath = opts.outpath + 'model' + '/'
+else:
+    writepath = opts.outpath + 'data' + '_' + suffix + '/'
 if not os.path.exists(writepath):
     try: os.makedirs(writepath)
     except: pass
