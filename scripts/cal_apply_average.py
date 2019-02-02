@@ -17,6 +17,8 @@ o.add_option('--omniapp',dest='omniapp',default=False,action='store_true',
              help='Toggle: apply omnical solutions to hex tiles. Default=False')
 o.add_option('--subtract',dest='subtract',default=False,action='store_true',
              help='Toggle: subtract model vis. Default=False')
+o.add_option('--model',dest='model',default=False,action='store_true',
+             help='Toggle: create model vis. Default=False')
 o.add_option('--outpath', dest='outpath', default='', type='string',
              help='path to output calibrated data. Include final / in path.')
 opts,args = o.parse_args(sys.argv[1:])
@@ -27,7 +29,10 @@ obsid = args[0]
 # Getting cal solutions
 suffix = 'AF'+'O'*opts.omniapp
 if opts.subtract: suffix = suffix + 'S'
-writepath = opts.outpath + 'data' + '_' + suffix + '/'
+if opts.model:
+    writepath = opts.outpath + 'data' + '_' + suffix + '/'
+else:
+    writepath = opts.outpath + 'model' + '/'
 if not os.path.exists(writepath):
     try: os.makedirs(writepath)
     except: pass
@@ -68,13 +73,19 @@ for pp in range(uv.Npols):
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
 # Subtracting the model
-if opts.subtract:
-    print "Subtracting model ..."
+if opts.subtract or opts.model:
+    print "Getting model ..."
     modelxx = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_XX.sav')
-    uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
+    if opts.subtract:
+        uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
+    else:
+        uv.data_array[:,0,:,0] = modelxx['vis_model_ptr']
     del modelxx
     modelyy = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_YY.sav')
-    uv.data_array[:,0,:,1] -= modelyy['vis_model_ptr']
+    if opts.subtract:
+        uv.data_array[:,0,:,1] -= modelyy['vis_model_ptr']
+    else:
+        uv.data_array[:,0,:,1] = modelyy['vis_model_ptr']
     del modelyy
 
 # Average data in frequency
@@ -98,15 +109,16 @@ uv.Nfreqs /= 2
 uv.channel_width *= 2
 
 # Noise spectrum flagging
-ins = mp2cal.qltm.INS(uv)
-ins.outliers_flagging()
-ins.time_flagging()
-ins.coherence_flagging()
-ins.outliers_flagging()
-ins.merge_flagging()
-ins.apply_flagging()
-ins.saveplots(writepath, obsid.split('/')[-1])
-ins.savearrs(writepath, obsid.split('/')[-1])
+if not opts.model:
+    ins = mp2cal.qltm.INS(uv)
+    ins.outliers_flagging()
+    ins.time_flagging()
+    ins.coherence_flagging()
+    ins.outliers_flagging()
+    ins.merge_flagging()
+    ins.apply_flagging()
+    ins.saveplots(writepath, obsid.split('/')[-1])
+    ins.savearrs(writepath, obsid.split('/')[-1])
 
 # Write out uvfits
 print "writing ..."
