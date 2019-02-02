@@ -119,7 +119,5 @@ if not opts.model:
     ins.apply_flagging()
     ins.saveplots(writepath, obsid.split('/')[-1])
     ins.savearrs(writepath, obsid.split('/')[-1])
-
-# Write out uvfits
-print "writing ..."
-mp2cal.io.write(ins.uv, newfile)
+    mp2cal.io.write(ins.uv, newfile)
+else: mp2cal.io.write(uv, newfile)
