@@ -78,13 +78,13 @@ if opts.subtract or opts.model:
     modelxx = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_XX.sav')
     if opts.subtract:
         uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
-    else:
+    if opts.model:
         uv.data_array[:,0,:,0] = modelxx['vis_model_ptr']
     del modelxx
     modelyy = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_YY.sav')
     if opts.subtract:
         uv.data_array[:,0,:,1] -= modelyy['vis_model_ptr']
-    else:
+    if opts.model:
         uv.data_array[:,0,:,1] = modelyy['vis_model_ptr']
     del modelyy
 
