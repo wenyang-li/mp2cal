@@ -1,3 +1,5 @@
+from matplotlib import use
+use('Agg')
 import numpy as np, mp2cal, sys, optparse, subprocess
 import pyuvdata.uvdata as uvd
 
