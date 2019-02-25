@@ -1,14 +1,11 @@
 ### Submit the sbatch array command to do omnical
-
-obs_file_name='/users/wl42/IDL/FHD/Observations/AllNov2016'
-#obs_file_name='/users/wl42/IDL/FHD/Observations/obslist'
-#obs_file_name='PROJ'
+#SBATCH --account=jpober-condo
+obs_file_name='obspoint2'
 poscal='PhaseII_cal'
-#pol='xx,yy'
 mem='60G'
-time='2:00:00'
+time='10:00:00'
 
-#Read the obs file and put into an array, skipping blank lines if they exist
+##Read the obs file and put into an array, skipping blank lines if they exist
 i=0
 while read line
 do
@@ -18,13 +15,12 @@ do
    fi
 done < "$obs_file_name"
 
-#Create a list of observations using the specified range, or the full observation id file. 
+##Create a list of observations using the specified range, or the full observation id file. 
 unset good_obs_list
 for obs_id in "${obs_id_array[@]}"; do
      good_obs_list+=($obs_id)
 done
 
-#Find the number of obsids to run in array
-N=${#good_obs_list[@]}                    #Number of files
-#sbatch -o /dev/null  --array=1-$N --mem=$mem -t $time -n 3 --export=N=$N,fname=$fname,paramfile=$paramfile,calfile=$calfile zeros_job.sh
-sbatch -p default-batch --array=0-$(($N - 1)) --mem=$mem -t $time -n 8 --exclude=node934 --export=N=$N,poscal=$poscal, omnical.sh ${good_obs_list[@]}
+
+N=${#good_obs_list[@]}                    
+sbatch --account=jpober-condo --array=0-$(($N - 1))%12 --mem=$mem -t $time -n 8 --export=N=$N,poscal=$poscal, omnical.sh ${good_obs_list[@]}

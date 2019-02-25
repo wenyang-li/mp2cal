@@ -1,8 +1,9 @@
 ### Submit the sbatch array command to do omnical
 #SBATCH --account=jpober-condo
+#obs_file_name='./obspoint0'
 obs_file_name='obspoint2'
 poscal='PhaseII_cal'
-mem='60G'
+mem='80G'
 time='10:00:00'
 
 ##Read the obs file and put into an array, skipping blank lines if they exist
@@ -23,4 +24,5 @@ done
 
 
 N=${#good_obs_list[@]}                    
-sbatch --account=jpober-condo --array=0-$(($N - 1))%12 --mem=$mem -t $time -n 8 --export=N=$N,poscal=$poscal, omnical.sh ${good_obs_list[@]}
+#sbatch -p batch --array=0-$(($N - 1)) --mem=$mem -t $time -n 8 --export=N=$N,poscal=$poscal, noisecheck.sh ${good_obs_list[@]}
+sbatch --account=jpober-condo --array=0-$(($N - 1))%12 --mem=$mem -t $time -n 8 --export=N=$N,poscal=$poscal, ssins.sh ${good_obs_list[@]}
