@@ -1,6 +1,6 @@
 from matplotlib import use
 use('Agg')
-import numpy as np, mp2cal, sys, os, optparse
+import numpy as np, mp2cal, sys, os, optparse, subprocess
 from scipy.io.idl import readsav
 
 pol2str = {-8: 'yx', -7: 'xy', -6: 'yy', -5: 'xx'}
@@ -38,6 +38,10 @@ if not os.path.exists(writepath):
     except: pass
 newfile = writepath + obsid.split('/')[-1] + '.uvfits'
 if os.path.exists(newfile): raise IOError('   %s exists.  Skipping...' % newfile)
+metafits = writepath + obsid.split('/')[-1] + '.metafits'
+if not os.path.exists(metafits):
+    cmd = ['cp', opts.filepath+obsid+'.metafits', metafits]
+    subprocess.call(cmd)
 
 # Load data
 print "Loading: " + opts.filepath + obsid + ".uvfits"
