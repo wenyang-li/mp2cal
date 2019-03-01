@@ -53,8 +53,8 @@ graw.get_sky(gfhd)
 graw.get_auto(uv)
 if opts.omniapp:
     gomni = {'x': {}, 'y': {}}
-    gx = mp2cal.io.quick_load_gains(opts.omnipath+'red/'+obsid+'.xx.omni.npz')
-    gy = mp2cal.io.quick_load_gains(opts.omnipath+'red/'+obsid+'.yy.omni.npz')
+    gx = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.xx.omni.npz')
+    gy = mp2cal.io.quick_load_gains(opts.omnipath+obsid+'.yy.omni.npz')
     gomni['x'] = gx['x']
     gomni['y'] = gy['y']
     graw.get_red(gomni)
