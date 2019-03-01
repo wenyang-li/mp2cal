@@ -48,9 +48,8 @@ def cal_reds_from_pos(**kwargs):
     reds = omnical.arrayinfo.filter_reds(reds,**kwargs)
     return reds
 
-def GaussianKernel(x,y,xp,cl=16):
-    xres = x[1] - x[0]
-    col = cl*xres
+def GPR_interp(x,y,xp,col=1.4e5):
+    # x has to be frequency array in Hz. col is coherence length in Hz, default=140kHz
     kk = np.resize(x,(x.size,x.size))
     pp = np.resize(xp,(xp.size,xp.size))
     kp = np.resize(x,(xp.size,x.size))
