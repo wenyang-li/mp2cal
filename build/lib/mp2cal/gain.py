@@ -1,5 +1,6 @@
 import numpy as np, copy
 from pos import *
+from wyl import GPR_interp
 c_light=299792458.
 
 def unwrap(arr):
@@ -361,6 +362,48 @@ class RedGain(object):
                     proj = np.exp(-1j*(dx*phspar[p]['phix']+dy*phspar[p]['phiy']))
                     self.mdl[pp][bl] *= proj
 
+    def decouple_cross_mode(self, res):
+        ripple = {}
+        dmode = 0.05
+        nmode = 50
+        nf = self.freqs.size
+        band = (self.freqs[-1]-self.freqs[0]) * nf / (nf - 1)
+        fq = self.freqs
+        for p in res.keys():
+            ripple[p] = {}
+            for a in res[p].keys():
+                resautos = []
+                resphase = []
+                ind = np.where(res[p][a]!=0)[0]
+                flg = np.where(res[p][a]==0)[0]
+                for aa in res[p].keys():
+                    if tile_info[aa]['cable'] == tile_info[a]['cable']: continue
+                    amps = self.auto[p][a] / self.auto[p][aa]
+                    amps /= np.mean(amps)
+                    resautos.append(amps)
+                    resphase.append(res[p][a] - res[p][aa])
+                resautos = np.mean(resautos, axis=0)
+                resphase = np.mean(resphase, axis=0)
+                resautos -= np.mean(resautos)
+                reftime = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
+                resautos[flg],_ = GPR_interp(fq[ind], resautos[ind], fq[flg], col=1./reftime)
+                resphase[flg] = 0.
+                resautos[:ind[0]] = 0.
+                resautos[ind[-1]+1:] = 0.
+                modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
+                freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
+                t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resautos, axis=1)
+                t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*resautos, axis=1)
+                i = np.argmax(t1**2+t2**2)
+                mi = modes[i]
+                nu = ind.size
+                t3 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resphase, axis=1)
+                t4 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*resphase, axis=1)
+                phase_ripple = 2*t3[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
+                                2*t4[i]*np.cos(2*np.pi*(mi*np.arange(nf)/nf))/nu
+                ripple[p][a] = phase_ripple
+        return ripple
+
     def bandpass_fitting(self, include_red = False):
         """
         Calculate the global bandpass as the amplitude, fit linear in the phase,
@@ -382,10 +425,11 @@ class RedGain(object):
         if nf == 768:
             for ii in range(nf):
                 if ii%32 in [0,1,16,30,31]: flgc.append(ii)
-        band = (self.freqs[-1]-self.freqs[0]) * nf / (nf - 1)
         self.gbp = {}
+        residuals = {}
         for p in self.gfit.keys():
             self.gbp[p] = []
+            residuals[p] = {}
             for a in self.gfit[p].keys():
                 if np.any(np.isnan(self.gfit[p][a])): continue
                 x = np.copy(self.gfit[p][a])
@@ -401,27 +445,10 @@ class RedGain(object):
                 y = np.unwrap(np.angle(md.data[ind]))
                 z = np.polyfit(x,y,1)
                 res = self.gfit[p][a] * np.exp(-1j*(z[0]*fqc+z[1]))
-                phs = 1.
-                if tile_info[a]['cable']==150:
-                    reftime = 300. / (c_light * tile_info[a]['vf'])
-                    nu = np.sum(np.logical_not(md.mask))
-                    res *= np.logical_not(md.mask)
-                    res0 = np.zeros(res.shape)
-                    indp = np.where(md.mask==False)[0]
-                    res0[indp] = np.angle(res[indp])
-                    dmode = 0.05
-                    nmode = 50
-                    modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
-                    res = np.resize(res, (2*nmode+1, nf))
-                    freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
-                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*res0, axis=1)
-                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*res0, axis=1)
-                    i = np.argmax(t1**2+t2**2)
-                    mi = modes[i]
-                    phase_ripple = 2*t1[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
-                                   2*t2[i]*np.cos(2*np.pi*(mi*np.arange(nf)/nf))/nu
-                    phs = np.exp(1j*phase_ripple)
-                self.gfit[p][a] = np.abs(self.gfit[p][a]) * np.exp(1j*(z[0]*fqc+z[1])) * phs
+                residuals[p][a] = np.zeros(res.shape)
+                indp = np.where(md.mask==False)[0]
+                residuals[p][a][indp] = np.angle(res[indp])
+                self.gfit[p][a] = np.abs(self.gfit[p][a]) * np.exp(1j*(z[0]*fqc+z[1]))
             self.gbp[p] = np.ma.masked_array(self.gbp[p])
             self.gbp[p] = np.mean(self.gbp[p], axis = 0)
             for a in self.gfit[p].keys():
@@ -429,3 +456,7 @@ class RedGain(object):
                 ind = np.where(self.gbp[p].data * self.gfit[p][a] != 0)[0]
                 amp = np.mean(np.abs(self.gfit[p][a][ind])) / np.mean(self.gbp[p].data[ind])
                 self.gfit[p][a] = (self.auto[p][a]+1e-10) * amp * self.gbp[p].data * np.exp(1j*np.angle(self.gfit[p][a]))
+        ripples = self.decouple_cross_mode(residuals)
+        for p in ripples.keys():
+            for a in ripples[p].keys():
+                self.gfit[p][a] *= np.exp(1j*ripples[p][a])
