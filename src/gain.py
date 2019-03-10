@@ -397,10 +397,9 @@ class RedGain(object):
                 i = np.argmax(t1**2+t2**2)
                 mi = modes[i]
                 nu = ind.size
-                t3 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resphase, axis=1)
-                t4 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*resphase, axis=1)
-                phase_ripple = 2*t3[i]*np.sin(2*np.pi*(mi*np.arange(nf)/nf))/nu + \
-                                2*t4[i]*np.cos(2*np.pi*(mi*np.arange(nf)/nf))/nu
+                t1i = np.sum(np.sin(2*np.pi/nf*mi*np.arange(nf))*resphase) / nu
+                t2i = np.sum(np.cos(2*np.pi/nf*mi*np.arange(nf))*resphase) / nu
+                phase_ripple = 2*t1i*np.sin(2*np.pi*(mi*np.arange(nf)/nf)) + 2*t2i*np.cos(2*np.pi*(mi*np.arange(nf)/nf))
                 ripple[p][a] = phase_ripple
         return ripple
 
