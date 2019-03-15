@@ -17,6 +17,9 @@ uv.flag_array = uv.flag_array[:,:,:,:2]
 uv.data_array = uv.data_array[:,:,:,:2]
 uv.nsample_array = uv.nsample_array[:,:,:,:2]
 uv.polarization_array = uv.polarization_array[:2]
+if uv.Nfreqs == 768:
+    for ii in range(768):
+        if ii%32==16: uv.flag_array[:,:,ii,:] = True
 ins = mp2cal.qltm.INS(uv)
 ins.outliers_flagging()
 ins.time_flagging()

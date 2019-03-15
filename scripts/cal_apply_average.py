@@ -64,18 +64,19 @@ gains = graw.gfit
 print "Applying cal ..."
 for pp in range(uv.Npols):
     p1,p2 = pol2str[uv.polarization_array[pp]]
-    for ii in range(uv.Nbls):
+    def apply_cal(ii):
         a1 = uv.ant_1_array[ii]
         a2 = uv.ant_2_array[ii]
         gi = gains[p1][a1]
         gj = gains[p2][a2]
         if np.any(np.isnan(gi)) or np.any(np.isnan(gj)):
             uv.flag_array[ii::uv.Nbls,:,:,:] = True
-            continue
+            return
         fi = np.where(gains[p1][a1]!=0)[0]
         fj = np.where(gains[p2][a2]!=0)[0]
         uv.data_array[ii::uv.Nbls,0,fi,pp] /= gi[fi]
         uv.data_array[ii::uv.Nbls,0,fj,pp] /= gj[fj].conj()
+    map(apply_cal, np.arange(uv.Nbls))
 # Subtracting the model
 if opts.subtract or opts.model:
     print "Getting model ..."

@@ -71,6 +71,52 @@ def fit_data(data,flag,fit_order=2):
     fi, si = GaussianKernel(x[ind], d.data.imag[ind], x)
     return fr + 1j*fi
 
+def getfilter(filter_width = 3):
+    w = filter_width
+    Filter = np.zeros((2*w+1, 2*w+1))
+    for ii in range(2*w+1):
+        for jj in range(2*w+1):
+            Filter[ii][jj] = np.exp(-np.sqrt((ii-w)**2+(jj-w)**2))
+    return Filter
+
+def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
+    if np.sum(np.logical_not(flg))==0: return   #If the whole baseline is flagged, then do nothing
+    w = filter_width
+    md = np.ma.masked_array(vis, flg)
+    wgt = np.logical_not(flg)
+    ind = np.where(np.logical_xor(mask_all, flg))
+    sz = ind[0].size
+    nt, nf = vis.shape
+    def interp(n):
+        t = ind[0][n]
+        f = ind[1][n]
+        st = max(0, t-w)
+        et = min(nt-1, t+w)
+        sf = max(0, f-w)
+        ef = min(nf-1, f+w)
+        fili = Filter[max(w-t,0):min(t+w,nt-1)-t+w+1, max(w-f,0):min(f+w,nf-1)-f+w+1]
+        wgts = fili*np.logical_not(flg[st:et+1, sf:ef+1])
+        vis[t][f] = np.sum(vis[st:et+1, sf:ef+1]*wgts) / np.sum(wgts)
+    map(interp, np.arange(sz))
+
+def impute_mwa(uv, filter_width = 3):
+    Filter = getfilter(filter_width = filter_width)
+    flags = uv.flag_array.reshape(uv.Ntimes, uv.Nbls, uv.Nfreqs, uv.Npols)
+    for ii in range(uv.Npols):
+        flg = flags[:,:,:,ii]
+        t_slots = np.where(np.sum(np.logical_not(flg), axis=(1,2))==0)[0]
+        f_slots = np.where(np.sum(np.logical_not(flg), axis=(0,1))==0)[0]
+        mask_all = np.zeros((uv.Ntimes, uv.Nfreqs), dtype=bool)
+        mask_all[t_slots,:] = True
+        mask_all[:,f_slots] = True
+        def impute_data(b):
+            if uv.ant_1_array[b] == uv.ant_2_array[b]: continue # Do nothing with autos
+            vis = uv.data_array[b::uv.Nbls,0,:,ii]
+            impute_arr(vis, flg[:,b,:], mask_all, Filter, filter_width = filter_width)
+            uv.data_array[b::uv.Nbls,0,:,ii] = vis
+            uv.flag_array[b::uv.Nbls,0,:,ii] = mask_all
+        map(impute_data, np.arange(uv.Nbls))
+
 def rough_cal(data,flag,info,pol='xx'): #The data has to be the averaged over time axis
     p = pol[0]
     g0 = {p: {}}
