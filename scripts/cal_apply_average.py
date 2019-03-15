@@ -124,5 +124,6 @@ if not opts.model:
     ins.apply_flagging()
     ins.saveplots(writepath, obsid.split('/')[-1])
     ins.savearrs(writepath, obsid.split('/')[-1])
+    mp2cal.wyl.impute_mwa(ins.uv)
     mp2cal.io.write(ins.uv, newfile)
 else: mp2cal.io.write(uv, newfile)

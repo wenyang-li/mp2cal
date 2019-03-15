@@ -205,8 +205,8 @@ def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
             ubli = info.bltoubl[bli]
             vs[ubli] = v2[pp][bl].flatten()
             ubl_map[bl] = ubli
-        for ii in range(SH[0]*SH[1]):
-            if mask_arr[ii]: continue #specific for mwa
+        def grad_decent(ii):
+            if mask_arr[ii]: return #specific for mwa
             dt = ii/SH[1]
             df = ii%SH[1]
             nbls = len(bl2d)
@@ -238,7 +238,6 @@ def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
                 A[2*b+1,2*na+2*u+1] = gigj_.real
                 M[2*b] = dvij.real
                 M[2*b+1] = dvij.imag
-                return True
             def updata_sol(n):
                 ds = np.complex64(S[2*n] + 1j*S[2*n+1])
                 if n < na:
@@ -254,6 +253,7 @@ def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
             print (dt,df),"  fine iter: ", iter3, "  conv: ", componentchange
+        map(grad_decent, range(SH[0]*SH[1]))
         for a in g2[p].keys():
             g2[p][a] = np.resize(gs[info.ant_index(a)],SH)
         for bl in v2[pp].keys():

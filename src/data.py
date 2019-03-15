@@ -64,9 +64,9 @@ class RedData(object):
         ind = np.where(a1!=a2)[0]
         self.mask = output_mask_array(flag[:,ind])
         self.mask_waterfall = np.copy(self.mask)
-        for ii in range(uv.Nbls):
-            if a1[ii] < 57 or a2[ii] < 57 or a1[ii] == a2[ii]: continue # hard coded for MWA Phase II
-            if a1[ii] in self.dead or a2[ii] in self.dead: continue
+        def creat_dict(ii):
+            if a1[ii] < 57 or a2[ii] < 57 or a1[ii] == a2[ii]: return # hard coded for MWA Phase II
+            if a1[ii] in self.dead or a2[ii] in self.dead: return
             bl = (a1[ii],a2[ii])
             md = np.ma.masked_array(data[:,ii],flag[:,ii])
             diff = md[1:] - md[:-1]
@@ -78,6 +78,7 @@ class RedData(object):
                 md = np.mean(md,axis=0,keepdims=True)
             self.data[bl] = {self.pol: np.complex64(md.data)}
             self.flag[bl] = {self.pol: md.mask}
+        map(creat_dict, np.arange(uv.Nbls))
         if tave: self.mask= np.product(self.mask, axis=0, keepdims=True).astype(bool)
 
     def apply_fhd(self, gfhd):
