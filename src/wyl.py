@@ -110,7 +110,7 @@ def impute_mwa(uv, filter_width = 3):
         mask_all[t_slots,:] = True
         mask_all[:,f_slots] = True
         def impute_data(b):
-            if uv.ant_1_array[b] == uv.ant_2_array[b]: continue # Do nothing with autos
+            if uv.ant_1_array[b] == uv.ant_2_array[b]: return # Do nothing with autos
             vis = uv.data_array[b::uv.Nbls,0,:,ii]
             impute_arr(vis, flg[:,b,:], mask_all, Filter, filter_width = filter_width)
             uv.data_array[b::uv.Nbls,0,:,ii] = vis
