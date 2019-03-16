@@ -31,8 +31,8 @@ class INS(object):
             self.mask = np.copy(self.ins.mask)
     
     def recal_ins(self):
-        d = self.uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
-        f = self.uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
+        d = self.uv.data_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
+        f = self.uv.flag_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
         md = np.ma.masked_array(d, f)
         md = md[1:] - md[:-1]
         self.ins = np.mean(np.abs(md),axis=1)
