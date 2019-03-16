@@ -87,6 +87,7 @@ def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
     ind = np.where(np.logical_xor(mask_all, flg))
     sz = ind[0].size
     nt, nf = vis.shape
+    flg2 = np.copy(mask_all)
     def interp(n):
         t = ind[0][n]
         f = ind[1][n]
@@ -96,8 +97,12 @@ def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
         ef = min(nf-1, f+w)
         fili = Filter[max(w-t,0):min(t+w,nt-1)-t+w+1, max(w-f,0):min(f+w,nf-1)-f+w+1]
         wgts = fili*np.logical_not(flg[st:et+1, sf:ef+1])
-        vis[t][f] = np.sum(vis[st:et+1, sf:ef+1]*wgts) / np.sum(wgts)
+        if np.sum(wgts) == 0:
+            flg2[t, :] = True
+        else:
+            vis[t][f] = np.sum(vis[st:et+1, sf:ef+1]*wgts) / np.sum(wgts)
     map(interp, np.arange(sz))
+    return flg2
 
 def impute_mwa(uv, filter_width = 3):
     Filter = getfilter(filter_width = filter_width)
@@ -112,9 +117,9 @@ def impute_mwa(uv, filter_width = 3):
         def impute_data(b):
             if uv.ant_1_array[b] == uv.ant_2_array[b]: return # Do nothing with autos
             vis = uv.data_array[b::uv.Nbls,0,:,ii]
-            impute_arr(vis, flg[:,b,:], mask_all, Filter, filter_width = filter_width)
+            flg2 = impute_arr(vis, flg[:,b,:], mask_all, Filter, filter_width = filter_width)
             uv.data_array[b::uv.Nbls,0,:,ii] = vis
-            uv.flag_array[b::uv.Nbls,0,:,ii] = mask_all
+            uv.flag_array[b::uv.Nbls,0,:,ii] = flg2
         map(impute_data, np.arange(uv.Nbls))
 
 def rough_cal(data,flag,info,pol='xx'): #The data has to be the averaged over time axis

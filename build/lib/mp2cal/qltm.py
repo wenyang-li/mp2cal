@@ -29,6 +29,13 @@ class INS(object):
             md = md[1:] - md[:-1]
             self.ins = np.mean(np.abs(md),axis=1)
             self.mask = np.copy(self.ins.mask)
+    
+    def recal_ins(self):
+        d = self.uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
+        f = self.uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
+        md = np.ma.masked_array(d, f)
+        md = md[1:] - md[:-1]
+        self.ins = np.mean(np.abs(md),axis=1)
 
     def outliers_flagging(self, nsig = 5):
         """
@@ -101,7 +108,7 @@ class INS(object):
     def merge_flagging(self, ncoarse=24, frac_thresh=0.5):
         """
         Flag isolated pixels that are surrounded by flagged samples. Also check each coarse band, if huge amount
-        of samples are flagged in this coarse channel, flag the coarse channel.
+        of samples are flagged in this coarse channel, flag the whole time step.
         """
         m = np.copy(self.ins.mask)
         for ii in range(m.size):
@@ -117,22 +124,14 @@ class INS(object):
         SH = m.shape
         m = m.reshape(SH[0],SH[1],ncoarse,SH[2]/ncoarse,SH[3])
         y = np.mean(m,axis=3) > frac_thresh
-        for ii in range(SH[2]/ncoarse):
-            m[:,:,:,ii,:] = np.logical_or(y, m[:,:,:,ii,:])
+        for ii in range(SH[0]):
+            for jj in range(SH[1]):
+                for kk in range(SH[3]):
+                    if np.any(y[ii,jj,:,kk]):
+                        m[ii,:,:,:,:] = True
         m = m.reshape(SH)
         self.ins.mask = m
 
-    def extend_flagging(self, f_thresh=0.5, t_thresh=0.5):
-        """
-        Flag the whole time/frequency slice if the number of flagged smaples in that slice is
-        above a given threshold
-        """
-        mt = np.max(np.mean(self.ins.mask, axis=(1,2)),axis=1)
-        indt = np.where(mt>t_thresh)[0]
-        mf = np.max(np.mean(self.ins.mask, axis=(0,1)),axis=1)
-        indf = np.where(mf>f_thresh)[0]
-        self.ins.mask[indt,:,:,:] = True
-        self.ins.mask[:,:,indf,:] = True
 
     def apply_flagging(self):
         """
