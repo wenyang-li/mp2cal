@@ -124,6 +124,7 @@ if not opts.model:
     ins.apply_flagging()
     mp2cal.wyl.impute_mwa(ins.uv)
     ins.outliers_flagging_extreme()
+    ins.apply_flagging()
     ins.recal_ins()
     ins.saveplots(writepath, obsid.split('/')[-1])
     ins.savearrs(writepath, obsid.split('/')[-1])
