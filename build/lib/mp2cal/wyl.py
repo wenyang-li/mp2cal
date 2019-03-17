@@ -73,9 +73,10 @@ def fit_data(data,flag,fit_order=2):
 
 def getfilter(filter_width = 3):
     w = filter_width
-    Filter = np.zeros((2*w+1))
+    Filter = np.zeros((2*w+1, 2*w+1))
     for ii in range(2*w+1):
-        Filter[ii] = np.exp(-(ii-w)**2)
+        for jj in range(2*w+1):
+            Filter[ii][jj] = np.exp(-np.sqrt((ii-w)**2+(jj-w)**2))
     return Filter
 
 def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
@@ -91,15 +92,17 @@ def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
     def interp(n):
         t = ind[0][n]
         f = ind[1][n]
+        st = max(0, t-w)
+        et = min(nt-1, t+w)
         sf = max(0, f-w)
         ef = min(nf-1, f+w)
-        fili = Filter[max(w-f,0):min(f+w,nf-1)-f+w+1]
-        w0 = np.logical_not(flg[t, sf:ef+1])
+        fili = Filter[max(w-t,0):min(t+w,nt-1)-t+w+1, max(w-f,0):min(f+w,nf-1)-f+w+1]
+        w0 = np.logical_not(flg[st:et+1, sf:ef+1])
         if np.sum(w0)==0:
             flg2[t, :] = True
         else:
             wgts = fili*w0
-            vis[t][f] = np.sum(vis[t, sf:ef+1]*wgts) / np.sum(wgts)
+            vis[t][f] = np.sum(vis[st:et+1, sf:ef+1]*wgts) / np.sum(wgts)
     map(interp, np.arange(sz))
     return flg2
 

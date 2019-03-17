@@ -56,6 +56,18 @@ class INS(object):
             if ind[0].size == 0: break
             else: self.ins.mask[ind] = True
 
+    def outliers_flagging_extreme(self, nsig = 5):
+        """
+        Assuming frac_ins follows Gaussian distribution, flag time samples where there exists any sample
+        that deviate from the mean by nsig sigmas.
+        """
+        frac_diff = self.ins / np.ma.median(self.ins, axis=0) - 1
+        m = np.mean(frac_diff)
+        s = np.std(frac_diff)
+        ind = np.where(abs(frac_diff-m).data*np.logical_not(self.ins.mask) > nsig*s)
+        for ii in range(ind[0].size):
+            self.ins.mask[ind[0][ii],:,:,ind[3][ii]] = True
+
     def smooth_over_freq(self, fc=1):
         """
         Using Gaussian Kernel to smooth the frac ins over frequency for each time step.
