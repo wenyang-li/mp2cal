@@ -23,17 +23,9 @@ class INS(object):
             if ins_arr is not None:
                 print "calculate INS from uv object. ins_arr is discarded"
             self.uv = uv
-            d = uv.data_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
-            f = uv.flag_array.reshape(uv.Ntimes,uv.Nbls,uv.Nspws,uv.Nfreqs,uv.Npols)
-            a1 = uv.ant_1_array[:uv.Nbls]
-            a2 = uv.ant_2_array[:uv.Nbls]
-            ind = np.where(a1!=a2)[0]
-            md = np.ma.masked_array(d[:,ind,:,:], f[:,ind,:,:])
-            md = md[1:] - md[:-1]
-            self.ins = np.mean(np.abs(md),axis=1)
-            self.mask = np.copy(self.ins.mask)
+            self.cal_ins()
     
-    def recal_ins(self):
+    def cal_ins(self):
         d = self.uv.data_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
         f = self.uv.flag_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
         a1 = self.uv.ant_1_array[:self.uv.Nbls]
@@ -42,6 +34,7 @@ class INS(object):
         md = np.ma.masked_array(d[:,ind,:,:], f[:,ind,:,:])
         md = md[1:] - md[:-1]
         self.ins = np.mean(np.abs(md),axis=1)
+        self.mask = np.copy(self.ins.mask)
 
     def outliers_flagging(self, nsig = 5):
         """
