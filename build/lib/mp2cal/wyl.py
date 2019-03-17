@@ -94,12 +94,12 @@ def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
         sf = max(0, f-w)
         ef = min(nf-1, f+w)
         fili = Filter[max(w-f,0):min(f+w,nf-1)-f+w+1]
-        w0 = np.logical_not(flg[sf:ef+1])
+        w0 = np.logical_not(flg[t, sf:ef+1])
         if np.sum(w0)==0:
             flg2[t, :] = True
         else:
             wgts = fili*w0
-            vis[t][f] = np.sum(vis[sf:ef+1]*wgts) / np.sum(wgts)
+            vis[t][f] = np.sum(vis[t, sf:ef+1]*wgts) / np.sum(wgts)
     map(interp, np.arange(sz))
     return flg2
 
