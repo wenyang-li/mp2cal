@@ -77,6 +77,10 @@ def getfilter(filter_width = 3):
     for ii in range(2*w+1):
         for jj in range(2*w+1):
             Filter[ii][jj] = np.exp(-np.sqrt((ii-w)**2+(jj-w)**2))
+    Filter[w,w] = 0.
+    Filter[w,w-1] = 0.
+    Filter[w,w+1] = 0.
+    # This is for avoiding underestimation of noise
     return Filter
 
 def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
