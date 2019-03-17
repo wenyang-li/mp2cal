@@ -36,8 +36,8 @@ class INS(object):
     def recal_ins(self):
         d = self.uv.data_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
         f = self.uv.flag_array.reshape(self.uv.Ntimes, self.uv.Nbls, self.uv.Nspws, self.uv.Nfreqs, self.uv.Npols)
-        a1 = uv.ant_1_array[:self.uv.Nbls]
-        a2 = uv.ant_2_array[:self.uv.Nbls]
+        a1 = self.uv.ant_1_array[:self.uv.Nbls]
+        a2 = self.uv.ant_2_array[:self.uv.Nbls]
         ind = np.where(a1!=a2)[0]
         md = np.ma.masked_array(d[:,ind,:,:], f[:,ind,:,:])
         md = md[1:] - md[:-1]
