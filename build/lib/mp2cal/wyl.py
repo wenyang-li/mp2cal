@@ -75,7 +75,7 @@ def getfilter(filter_width = 3):
     w = filter_width
     Filter = np.zeros((2*w+1))
     for ii in range(2*w+1):
-        Filter[ii][jj] = np.exp(-(ii-w)**2)
+        Filter[ii] = np.exp(-(ii-w)**2)
     return Filter
 
 def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
