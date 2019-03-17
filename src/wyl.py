@@ -80,12 +80,13 @@ def getfilter(filter_width = 3):
     return Filter
 
 def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
-    if np.sum(np.logical_not(flg))==0: return   #If the whole baseline is flagged, then do nothing
+    if np.sum(np.logical_not(flg))==0: return flg   #If the whole baseline is flagged, then do nothing
     w = filter_width
     md = np.ma.masked_array(vis, flg)
     wgt = np.logical_not(flg)
     ind = np.where(np.logical_xor(mask_all, flg))
     sz = ind[0].size
+    if sz==0: return mask_all
     nt, nf = vis.shape
     flg2 = np.copy(mask_all)
     def interp(n):
@@ -96,10 +97,11 @@ def impute_arr(vis, flg, mask_all, Filter, filter_width = 3):
         sf = max(0, f-w)
         ef = min(nf-1, f+w)
         fili = Filter[max(w-t,0):min(t+w,nt-1)-t+w+1, max(w-f,0):min(f+w,nf-1)-f+w+1]
-        wgts = fili*np.logical_not(flg[st:et+1, sf:ef+1])
-        if np.sum(wgts) == 0:
+        w0 = np.logical_not(flg[st:et+1, sf:ef+1])
+        if np.sum(w0)==0:
             flg2[t, :] = True
         else:
+            wgts = fili*w0
             vis[t][f] = np.sum(vis[st:et+1, sf:ef+1]*wgts) / np.sum(wgts)
     map(interp, np.arange(sz))
     return flg2
