@@ -1,4 +1,4 @@
-import numpy as np, copy
+import numpy as np, copy, warnings
 from pos import *
 from wyl import GPR_interp
 c_light=299792458.
@@ -19,7 +19,7 @@ class RedGain(object):
     """
     gain object, supporting degeneracy parameters manipulatioin.
     """
-    def __init__(self, freqs = None):
+    def __init__(self, freqs = None, mask = None):
         self.red = None # Gain from redundant cal
         self.sky = None # Gain from sky cal
         self.mdl = None # Model vis from redundant cal
@@ -27,6 +27,19 @@ class RedGain(object):
         self.gbp = None # Global bandpass, needs to be calculated from the input gains
         self.gfit = None # Smoothed gains, needs to be calculated from the input gains
         self.freqs = freqs # Frequency array
+        self.mask = mask # Frequency mask boolean array, same shape as frequency array
+        if freqs is None:
+            warnings.warn("Frequency array is None. Bandpass fitting cannot work without frequency array")
+        if mask is None:
+            warnings.warn("Frequency mask not provided, using MWA default.")
+            nf = self.freqs.size
+            self.mask = np.zeros(self.freqs.shape, dtype=bool)
+            if nf == 384:
+                for ii in range(nf):
+                    if ii%16 in [0, 15]: self.mask[ii] = True
+            if nf == 768:
+                for ii in range(nf):
+                    if ii%32 in [0,1,16,30,31]: self.mask[ii] = True
 
     def get_red(self, g_red):
         """
@@ -184,7 +197,7 @@ class RedGain(object):
                         slope.append(z[0])
                     except: pass
                 if len(slope) == 0:
-                    print "invalid value of gain in channel " + str(ff)
+                    warnings.warn("invalid value of gain in channel " + str(ff))
                     slp1.append(0)
                 else:
                     slope = np.unwrap(slope)
@@ -208,7 +221,7 @@ class RedGain(object):
                         slope.append(z[0])
                     except: pass
                 if len(slope) == 0:
-                    print "invalid value of gain in channel " + str(ff)
+                    warnings.warn("invalid value of gain in channel " + str(ff))
                     slp2.append(0)
                 else:
                     slope = np.unwrap(slope)
@@ -271,8 +284,8 @@ class RedGain(object):
         assert self.red, "Redundant calibration gains do not exit."
         assert self.sky, "Sky calibration gains do not exit."
         if time_average:
-            print "The gains will be averaged in time axis after degeneracy projection by default. \
-                    Set time_average=False if you do not want to."
+            print("The gains will be averaged in time axis after degeneracy projection by default. \
+                    Set time_average=False if you do not want to.")
         for p in self.red.keys():
             a_red = self.red[p].keys()
             a_sky = self.sky[p].keys()
@@ -335,8 +348,8 @@ class RedGain(object):
         """
         assert self.red, "Redundant calibration gains does not exit."
         if time_average:
-            print "The gains will be averaged in time axis after degeneracy projection by default. \
-            Set time_average=False if you do not want to."
+            print("The gains will be averaged in time axis after degeneracy projection by default. \
+            Set time_average=False if you do not want to.")
         self.scale_gains()
         phspar = self.plane_fitting()
         for p in self.red.keys():
@@ -417,13 +430,7 @@ class RedGain(object):
                 for a in self.red[p].keys():
                     self.gfit[p][a] *= self.red[p][a]
         nf = self.freqs.size
-        flgc = []
-        if nf == 384:
-            for ii in range(nf):
-                if ii%16 in [0, 15]: flgc.append(ii)
-        if nf == 768:
-            for ii in range(nf):
-                if ii%32 in [0,1,16,30,31]: flgc.append(ii)
+        flgc = np.where(self.mask)[0]
         self.gbp = {}
         residuals = {}
         for p in self.gfit.keys():

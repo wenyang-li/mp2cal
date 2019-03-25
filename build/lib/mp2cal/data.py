@@ -1,4 +1,4 @@
-import numpy as np, os
+import numpy as np, os, warnings
 from astropy.io import fits
 from gain import RedGain
 
@@ -15,15 +15,15 @@ class RedData(object):
     containing calibration gains.
     """
     def __init__(self, pol):
-        self.pol = pol
-        self.data = {}
-        self.flag = {}
-        self.noise = {}
-        self.dead = []
-        self.mask = None
-        self.mask_waterfall = None
-        self.gains = RedGain()
-        self.data_backup = {}
+        self.pol = pol # Polarization
+        self.data = {} # Data dictionary for omnical. data={bl:{pol:{data_array}}}
+        self.flag = {} # Flag dictionary for omnical, flag={bl:{pol:{flag_array}}}
+        self.noise = {}# Noise dictionary
+        self.dead = [] # Flagged antenna
+        self.mask = None # mask for all baselines, with shape (Ntime, Nfreq) if not tave, else (1, Nfreq)
+        self.mask_waterfall = None # mask for all baselines, with shape (Ntime, Nfreq)
+        self.gains = RedGain() # calibrations
+        self.data_backup = {} # unaveraged raw data backup for chi-square calculation
 
     def get_ex_ants(self, ex_ants):
         """
@@ -38,7 +38,7 @@ class RedData(object):
         Get dead dipole information from metafits. Add antennas with dead dipoles to excluded antennas
         """
         if os.path.exists(metafits):
-            print '    Finding dead dipoles in metafits'
+            print("    Finding dead dipoles in metafits")
             hdu = fits.open(metafits)
             inds = np.where(hdu[1].data['Delays']==32)[0]
             for ind in inds:
@@ -46,7 +46,7 @@ class RedData(object):
                 if hdu[1].data['Pol'][ind].lower() in self.pol and not a in self.dead:
                     self.dead.append(a)
         else:
-            print '    Warning: Metafits not found. Cannot get the information of dead dipoles'
+            warnings.warn("    Warning: Metafits not found. Cannot get the information of dead dipoles")
 
     def read_data(self, uv, tave=False):
         """
@@ -111,7 +111,7 @@ class RedData(object):
         v_mdl = {self.pol: {}}
         g = self.gains.red
         if not self.data_backup:
-            print "The tave is set to False, no need to recalculate vis model."
+            print("The tave is set to False, no need to recalculate vis model.")
             return
         for r in reds:
             bl0 = r[0]
