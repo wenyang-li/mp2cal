@@ -30,7 +30,7 @@ class RedGain(object):
         self.mask = mask # Frequency mask boolean array, same shape as frequency array
         if freqs is None:
             warnings.warn("Frequency array is None. Bandpass fitting cannot work without frequency array")
-        if mask is None:
+        elif mask is None:
             warnings.warn("Frequency mask not provided, using MWA default.")
             nf = self.freqs.size
             self.mask = np.zeros(self.freqs.shape, dtype=bool)
