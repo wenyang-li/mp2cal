@@ -178,8 +178,8 @@ class RedData(object):
                 i,j = bl
                 chis += (np.abs(di-g[p1][i]*g[p2][j].conj()*yij))**2 * wi / (ni + 1e-10)
                 wgts += wi
-            iuse = np.where(wgts>1)
-            self.chisq_base[bl0] = np.median(chis[iuse]/wgts[iuse])
+            iuse = np.where(wgts>2)
+            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1))
             chisq += chis
             weight += wgts
         meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
