@@ -95,10 +95,6 @@ antpos = {
         127: {'top_x':   38.51 + south_x,  'top_y': 83.84393304 + south_y},
 }
 
-for a in range(57,128):
-    antpos[a]['top_x'] /= 100
-    antpos[a]['top_y'] /= 100
-
 realpos={
  0: {'top_x': -149.785, 'top_y': 265.814, 'top_z': 377.01099},
  1: {'top_x': -95.364998, 'top_y': 270.18799, 'top_z': 377.285},

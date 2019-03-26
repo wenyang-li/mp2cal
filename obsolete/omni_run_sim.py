@@ -100,7 +100,7 @@ def omnirun(RD):
     
     #*********************** project degeneracy *********************************
     RD.get_gains(g2, v2)
-    RD.gains.degen_project_FO()
+    RD.gains.degen_project_to_unit()
 
     #************************* metadata parameters ***************************************
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'

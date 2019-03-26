@@ -277,7 +277,7 @@ class RedGain(object):
             phspar[p]['offset_south'] = -C[3].reshape(SH)
         return phspar
 
-    def degen_project_OF(self, time_average=True):
+    def degen_project_to_sky(self, time_average=True):
         """
         Project degeneracy of redundant cal from raw data to sky cal
         """
@@ -301,13 +301,11 @@ class RedGain(object):
             phspar = self.phs_proj()
             for a in self.red[p].keys():
                 if a < 93:
-                    dx = np.argwhere(EastHex==a)[0][1] - np.argwhere(EastHex==ref1)[0][1]
-                    dy = np.argwhere(EastHex==a)[0][0] - np.argwhere(EastHex==ref1)[0][0]
+                    nx = np.argwhere(EastHex==a)[0][1] - np.argwhere(EastHex==ref1)[0][1]
+                    ny = np.argwhere(EastHex==a)[0][0] - np.argwhere(EastHex==ref1)[0][0]
                 else:
-                    dx = np.argwhere(SouthHex==a)[0][1] - np.argwhere(SouthHex==ref2)[0][1]
-                    dy = np.argwhere(SouthHex==a)[0][0] - np.argwhere(SouthHex==ref2)[0][0]
-                nx = dx
-                ny = dy
+                    nx = np.argwhere(SouthHex==a)[0][1] - np.argwhere(SouthHex==ref2)[0][1]
+                    ny = np.argwhere(SouthHex==a)[0][0] - np.argwhere(SouthHex==ref2)[0][0]
                 proj = amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))
                 self.red[p][a] *= proj
             ratio = {p: {}}
@@ -329,20 +327,30 @@ class RedGain(object):
                 pp = p + p
                 for bl in self.mdl[pp].keys():
                     i,j = bl
-                    if i < 93: self.mdl[pp][bl] *= (ref_exp1*np.exp(-1j*phspar2[p]['offset_east']))
-                    else: self.mdl[pp][bl] *= (ref_exp2*np.exp(-1j*phspar2[p]['offset_south']))
-                    if i < 93: self.mdl[pp][bl] *= (ref_exp1.conj()*np.exp(1j*phspar2[p]['offset_east']))
-                    else: self.mdl[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
+                    if i < 93:
+                        self.mdl[pp][bl] *= (ref_exp1*np.exp(-1j*phspar2[p]['offset_east']))
+                        nxi = np.argwhere(EastHex==i)[0][1] - np.argwhere(EastHex==ref1)[0][1]
+                        nyi = np.argwhere(EastHex==i)[0][0] - np.argwhere(EastHex==ref1)[0][0]
+                    else:
+                        self.mdl[pp][bl] *= (ref_exp2*np.exp(-1j*phspar2[p]['offset_south']))
+                        nxi = np.argwhere(SouthHex==i)[0][1] - np.argwhere(SouthHex==ref2)[0][1]
+                        nyi = np.argwhere(SouthHex==i)[0][0] - np.argwhere(SouthHex==ref2)[0][0]
+                    if j < 93:
+                        self.mdl[pp][bl] *= (ref_exp1.conj()*np.exp(1j*phspar2[p]['offset_east']))
+                        nxj = np.argwhere(EastHex==j)[0][1] - np.argwhere(EastHex==ref1)[0][1]
+                        nyj = np.argwhere(EastHex==j)[0][0] - np.argwhere(EastHex==ref1)[0][0]
+                    else:
+                        self.mdl[pp][bl] *= (ref_exp2.conj()*np.exp(1j*phspar2[p]['offset_south']))
+                        nxj = np.argwhere(SouthHex==j)[0][1] - np.argwhere(SouthHex==ref2)[0][1]
+                        nyj = np.argwhere(SouthHex==j)[0][0] - np.argwhere(SouthHex==ref2)[0][0]
                     dx = antpos[i]['top_x']-antpos[j]['top_x']
                     dy = antpos[i]['top_y']-antpos[j]['top_y']
-                    nx = np.round(dx/0.14-dy/np.sqrt(3)/0.14)
-                    ny = np.round(-2*dy/np.sqrt(3)/0.14)
-                    proj = amppar[p]*amppar[p]*np.exp(1j*(nx*phspar[p]['phi1']+ny*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
+                    proj = amppar[p]*amppar[p]*np.exp(1j*((nxi-nxj)*phspar[p]['phi1']+(nyi-nyj)*phspar[p]['phi2']))*np.exp(1j*(dx*phspar2[p]['phix']+dy*phspar2[p]['phiy']))
                     proj = np.resize(proj, self.mdl[pp][bl].shape)
                     ind = np.where(proj!=0)
                     self.mdl[pp][bl][ind] /= proj[ind]
 
-    def degen_project_FO(self, time_average=True):
+    def degen_project_to_unit(self, time_average=True):
         """
         Project degeneracy parameters to 1.0
         """
@@ -368,7 +376,7 @@ class RedGain(object):
                     i,j = bl
                     if i < 93: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_east'])
                     else: self.mdl[pp][bl] *= np.exp(-1j*phspar[p]['offset_south'])
-                    if i < 93: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
+                    if j < 93: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_east'])
                     else: self.mdl[pp][bl] *= np.exp(1j*phspar[p]['offset_south'])
                     dx = antpos[i]['top_x']-antpos[j]['top_x']
                     dy = antpos[i]['top_y']-antpos[j]['top_y']

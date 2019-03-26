@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, matplotlib.pyplot as plt
 from scipy.io.idl import readsav
 import pyuvdata.uvdata as uvd
 
@@ -182,4 +182,4 @@ def load_fhd_global_bandpass(fhdpath, obsid):
             print "averaged bandpass not found for pol "+p+", using bp from the obs"
     return gp
 
-
+def plot_sols(omnipath, obsname):

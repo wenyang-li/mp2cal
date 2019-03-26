@@ -59,6 +59,12 @@ if not len(args) == 1: raise IOError('Do not support multiple files.')
 obsid = args[0]
 print "OBSID: " + obsid
 
+#********************************* path for output plots ******************************************
+plot_path = opts.omnipath + 'plots/'
+if not os.path.exists(plot_path):
+    try: os.makedirs(plot_path)
+    except: pass
+
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
 if os.path.exists(fhd_sol_path):
@@ -131,13 +137,14 @@ def omnirun(RD):
     #*********************** project degeneracy *********************************
     RD.get_gains(g2, v2, gfhd)
     if os.path.exists(fhd_sol_path):
-        RD.gains.degen_project_FO()
+        RD.gains.degen_project_to_unit()
     else:
         RD.gains.scale_gains()
 
     #************************* metadata parameters ***************************************
     RD.recover_model_vis_waterfall(info)
     RD.cal_chi_square(info, m2)
+    plot_chisq_per_bl(plot_path, obsid)
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
     m2['jds'] = t_jd
     m2['lsts'] = t_lst

@@ -138,7 +138,7 @@ def omnirun(RD):
     #*********************** project degeneracy *********************************
     RD.get_gains(g2, v2, gfhd)
     if os.path.exists(fhd_sol_path):
-        RD.gains.degen_project_FO()
+        RD.gains.degen_project_to_unit()
     else:
         RD.gains.scale_gains()
 

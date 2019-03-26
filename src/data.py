@@ -1,6 +1,7 @@
-import numpy as np, os, warnings
+import numpy as np, os, warnings, matplotlib.pyplot as plt
 from astropy.io import fits
 from gain import RedGain
+from pos import *
 
 pol_lookup = {'xx': -5, 'yy': -6, 'xy': -7, 'yx': -8}
 
@@ -21,9 +22,11 @@ class RedData(object):
         self.noise = {}# Noise dictionary
         self.dead = [] # Flagged antenna
         self.mask = None # mask for all baselines, with shape (Ntime, Nfreq) if not tave, else (1, Nfreq)
-        self.mask_waterfall = None # mask for all baselines, with shape (Ntime, Nfreq)
+        self.shape_waterfall = None # shape (Ntime, Nfreq)
         self.gains = RedGain() # calibrations
         self.data_backup = {} # unaveraged raw data backup for chi-square calculation
+        self.flag_backup = {} # unaveraged raw flag backup for chi-square calculation
+        self.chisq_base = {} # this is for chi-square visualization for different redundant baseline group
 
     def get_ex_ants(self, ex_ants):
         """
@@ -63,7 +66,7 @@ class RedData(object):
         flag = uv.flag_array[:,0,:,pid].reshape(uv.Ntimes,uv.Nbls,uv.Nfreqs)
         ind = np.where(a1!=a2)[0]
         self.mask = output_mask_array(flag[:,ind])
-        self.mask_waterfall = np.copy(self.mask)
+        self.shape_waterfall = (uv.Ntimes, uv.Nfreqs)
         def creat_dict(ii):
             if a1[ii] < 57 or a2[ii] < 57 or a1[ii] == a2[ii]: return # hard coded for MWA Phase II
             if a1[ii] in self.dead or a2[ii] in self.dead: return
@@ -75,6 +78,7 @@ class RedData(object):
             md.mask[:,zerofq] = True
             if tave:
                 self.data_backup[bl] = {self.pol: np.complex64(md.data)}
+                self.flag_backup[bl] = {self.pol: md.mask}
                 md = np.mean(md,axis=0,keepdims=True)
             self.data[bl] = {self.pol: np.complex64(md.data)}
             self.flag[bl] = {self.pol: md.mask}
@@ -110,6 +114,7 @@ class RedData(object):
         p1, p2 = self.pol
         v_mdl = {self.pol: {}}
         g = self.gains.red
+        SH = self.shape_waterfall
         if not self.data_backup:
             print("The tave is set to False, no need to recalculate vis model.")
             return
@@ -119,11 +124,15 @@ class RedData(object):
             den = 0
             for bl in r:
                 i,j = bl
-                try: md = np.ma.masked_array(self.data_backup[bl][self.pol], self.mask_waterfall)
-                except: md = np.ma.masked_array(self.data_backup[bl[::-1]][self.pol].conj(), self.mask_waterfall)
-                num += md * g[p1][i].conj() * g[p2][j]
-                den += g[p1][i].conj() * g[p1][i] * g[p2][j].conj() * g[p2][j]
-            v_mdl[self.pol][bl0] = (num / den).data
+                try:
+                    di = self.data_backup[bl][self.pol]
+                    wi = np.logical_not(self.flag_backup[bl][self.pol])
+                except:
+                    di = self.data_backup[bl[::-1]][self.pol].conj()
+                    wi = np.logical_not(self.flag_backup[bl[::-1]][self.pol])
+                num += di * g[p1][i].conj() * g[p2][j] * wi
+                den += np.resize(g[p1][i].conj() * g[p1][i] * g[p2][j].conj() * g[p2][j], SH) * wi
+            v_mdl[self.pol][bl0] = num / (den+1e-10)
         self.gains.get_mdl(v_mdl)
 
 
@@ -132,34 +141,64 @@ class RedData(object):
         Compute omnical chi-square, add them into meta container.
         """
         reds = info.get_reds()
-        chisq = 0.
-#        chisqbls = {}
+        SH = self.shape_waterfall
+        chisq = np.zeros(SH)
+        weight = np.zeros(SH)
         g = self.gains.red
         mdl = self.gains.mdl
         p1, p2 = self.pol
         data_arr = None
+        flag_arr = None
         if self.data_backup:
             data_arr = self.data_backup
+            flag_arr = self.flag_backup
         else:
             data_arr = self.data
+            flag_arr = self.flag
         for r in reds:
             bl0 = None
             yij = None
             for bl in r:
                 if mdl[self.pol].has_key(bl):
-                    yij = np.ma.masked_array(mdl[self.pol][bl], mask=self.mask_waterfall)
+                    yij = mdl[self.pol][bl]
                     bl0 = bl
-#                    chisqbls[bl0] = 0.
                     break
+            if bl0 is None: continue
+            chis = np.zeros(SH)
+            wgts = np.zeros(SH)
             for bl in r:
-                try: md = np.ma.masked_array(data_arr[bl][self.pol], mask=self.mask_waterfall)
-                except(KeyError): md = np.ma.masked_array(data_arr[bl[::-1]][self.pol].conj(), mask=self.mask_waterfall)
+                try:
+                    di = data_arr[bl][self.pol]
+                    wi = np.logical_not(flag_arr[bl][self.pol])
+                    ni = self.noise[bl]
+                except(KeyError):
+                    di = data_arr[bl[::-1]][self.pol].conj()
+                    wi = np.logical_not(flag_arr[bl[::-1]][self.pol])
+                    ni = self.noise[bl[::-1]]
                 i,j = bl
-                try: chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl]
-                except(KeyError): chisqterm = (np.abs(md-g[p1][i]*g[p2][j].conj()*yij))**2/self.noise[bl[::-1]]
-                chisq += chisqterm
-#                chisqbls[bl0] += chisqterm
-#            meta['chisq('+str(bl0[0])+','+str(bl0[1])+')'] = chisqbls[bl0].data / (len(r)-1.)
-        DOF = (info.nBaseline - info.nAntenna - info.ublcount.size)
-        meta['chisq'] = chisq.data / float(DOF)
-        meta['flags'] = self.mask_waterfall
+                chis += (np.abs(di-g[p1][i]*g[p2][j].conj()*yij))**2 * wi / (ni + 1e-10)
+                wgts += wi
+            iuse = np.where(wgts>1)
+            chisq_base[bl0] = np.median(chis[iuse]/wgts[iuse])
+            chisq += chis
+            weight += wgts
+        meta['chisq'] = chisq / (weight + 1e-10)
+        meta['flags'] = weight < 2
+
+    def plot_chisq_per_bl(self, outdir, obsname):
+        x, y, c = [], [], []
+        for bl in self.chisq_base.keys():
+            i,j = bl
+            r1 = antpos[i]
+            r2 = antpos[j]
+            x.append(r2['top_x'] - r1['top_x'])
+            y.append(r2['top_y'] - r1['top_y'])
+            c.append(chisq_base[bl])
+        plt.scatter(x, y, c=c, cmap='coolwarm')
+        plt.xlabel('East-West Coordinate (m)')
+        plt.ylabel('North-South Coordinate (m)')
+        plt.colorbar()
+        plt.grid(True)
+        plt.title(obsname + '_' + self.pol)
+        plt.savefig(outdir + obsname + '_bl_chisq_'+self.pol + '.png')
+
