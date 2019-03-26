@@ -144,7 +144,7 @@ def omnirun(RD):
     #************************* metadata parameters ***************************************
     RD.recover_model_vis_waterfall(info)
     RD.cal_chi_square(info, m2)
-    plot_chisq_per_bl(plot_path, obsid)
+    RD.plot_chisq_per_bl(plot_path, obsid)
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
     m2['jds'] = t_jd
     m2['lsts'] = t_lst
