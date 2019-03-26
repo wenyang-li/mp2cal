@@ -182,4 +182,5 @@ def load_fhd_global_bandpass(fhdpath, obsid):
             print "averaged bandpass not found for pol "+p+", using bp from the obs"
     return gp
 
-def plot_sols(omnipath, obsname):
+#def plot_sols(omnipath, obsname):
+
