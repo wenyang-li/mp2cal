@@ -179,7 +179,7 @@ class RedData(object):
                 chis += (np.abs(di-g[p1][i]*g[p2][j].conj()*yij))**2 * wi / (ni + 1e-10)
                 wgts += wi
             iuse = np.where(wgts>1)
-            chisq_base[bl0] = np.median(chis[iuse]/wgts[iuse])
+            self.chisq_base[bl0] = np.median(chis[iuse]/wgts[iuse])
             chisq += chis
             weight += wgts
         meta['chisq'] = chisq / (weight + 1e-10)
@@ -193,7 +193,7 @@ class RedData(object):
             r2 = antpos[j]
             x.append(r2['top_x'] - r1['top_x'])
             y.append(r2['top_y'] - r1['top_y'])
-            c.append(chisq_base[bl])
+            c.append(self.chisq_base[bl])
         plt.scatter(x, y, c=c, cmap='coolwarm')
         plt.xlabel('East-West Coordinate (m)')
         plt.ylabel('North-South Coordinate (m)')
