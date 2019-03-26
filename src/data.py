@@ -182,7 +182,7 @@ class RedData(object):
             self.chisq_base[bl0] = np.median(chis[iuse]/wgts[iuse])
             chisq += chis
             weight += wgts
-        meta['chisq'] = chisq / (weight + 1e-10)
+        meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
         meta['flags'] = weight < 2
 
     def plot_chisq_per_bl(self, outdir, obsname):

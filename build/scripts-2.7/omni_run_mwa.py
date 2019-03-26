@@ -1,5 +1,5 @@
 #!//anaconda/bin/python
-import numpy as np, time, mp2cal, optparse, os, sys
+import numpy as np, time, mp2cal, optparse, os, sys, warnings
 from multiprocessing import Pool
 
 o = optparse.OptionParser()
@@ -75,7 +75,7 @@ if os.path.exists(fhd_sol_path):
             if np.any(np.isnan(gfhd[p][a])):
                 if not a in ex_ants: ex_ants.append(a)
 else:
-    print "Warning: No target fhd solutions, the calibration quality could be bad."
+    warnings.warn("Warning: No target fhd solutions, the calibration quality could be bad.")
     gfhd = None
 
 #********************************** load and wrap data ******************************************
