@@ -83,7 +83,8 @@ class RedGain(object):
         amp_ref_x, amp_ref_y = None, None
         for ii in ind:
             a = a1[ii]
-            if np.any(np.isnan(self.sky['x'][a])):
+            p = self.sky.keys()[0]
+            if np.any(np.isnan(self.sky[p][a])):
                 continue
             else:
                 amp_ref_x = np.copy(self.auto['x'][a])
@@ -392,17 +393,21 @@ class RedGain(object):
         fq = self.freqs
         for p in res.keys():
             ripple[p] = {}
-            for a in res[p].keys():
+            antpol = res[p].keys()
+            def fit_ripple(n0):
+                a = antpol[n0]
                 resautos = []
                 resphase = []
                 ind = np.where(res[p][a]!=0)[0]
                 flg = np.where(res[p][a]==0)[0]
-                for aa in res[p].keys():
+                def append_res(n1):
+                    aa = antpol[n1]
                     if tile_info[aa]['cable'] == tile_info[a]['cable']: continue
                     amps = self.auto[p][a] / self.auto[p][aa]
                     amps /= np.mean(amps)
                     resautos.append(amps)
                     resphase.append(res[p][a] - res[p][aa])
+                map(append_res, range(len(antpol)))
                 resautos = np.mean(resautos, axis=0)
                 resphase = np.mean(resphase, axis=0)
                 resautos -= np.mean(resautos)
@@ -422,6 +427,7 @@ class RedGain(object):
                 t2i = np.sum(np.cos(2*np.pi/nf*mi*np.arange(nf))*resphase) / nu
                 phase_ripple = 2*t1i*np.sin(2*np.pi*(mi*np.arange(nf)/nf)) + 2*t2i*np.cos(2*np.pi*(mi*np.arange(nf)/nf))
                 ripple[p][a] = phase_ripple
+            map(fit_ripple, range(len(antpol)))
         return ripple
 
     def bandpass_fitting(self, include_red = False):
