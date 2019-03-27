@@ -238,7 +238,7 @@ def plot_sols(gains, freq, outdir, obsname):
     ly=[phsmin,(phsmax+phsmin)/2,phsmax]
     lay=['%.2f'%(phsmin),'%.2f'%((phsmax+phsmin)/2),'%.2f'%(phsmax)]
     fig=plt.figure()
-    plt.suptitle(obs.split('/')[-1],y=0.99,size=15.0)
+    plt.suptitle(obsname,y=0.99,size=15.0)
     for ii in range(0,6):
         for jj in range(0,12):
             ind=ii*12+jj
