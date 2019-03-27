@@ -402,7 +402,7 @@ class RedGain(object):
                 flg = np.where(res[p][a]==0)[0]
                 def append_res(n1):
                     aa = antpol[n1]
-                    if tile_info[aa]['cable'] == tile_info[a]['cable']: continue
+                    if tile_info[aa]['cable'] == tile_info[a]['cable']: return
                     amps = self.auto[p][a] / self.auto[p][aa]
                     amps /= np.mean(amps)
                     resautos.append(amps)
