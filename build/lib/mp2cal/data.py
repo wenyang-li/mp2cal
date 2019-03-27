@@ -188,7 +188,7 @@ class RedData(object):
             weight += wgts
         nparam = info.nAntenna + info.ublcount.size
         meta['chisq'] = chisq * (weight > nparam) / (weight - nparam)
-        meta['flags'] = weight < 2
+        meta['flags'] = weight <= nparam
 
     def plot_chisq_per_bl(self, outdir, obsname):
         x, y, c = [], [], []
