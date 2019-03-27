@@ -1,4 +1,6 @@
 #!//anaconda/bin/python
+from matplotlib import use
+use('Agg')
 import numpy as np, time, mp2cal, optparse, os, sys, warnings
 from multiprocessing import Pool
 
