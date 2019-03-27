@@ -212,7 +212,7 @@ def plot_sols(gains, freq, outdir, obsname):
     # label of y axis for amplitude
     ly=[ampmin,(ampmax+ampmin)/2,ampmax]
     lay=['%.2f'%(ampmin),'%.2f'%((ampmax+ampmin)/2),'%.2f'%(ampmax)]
-    fig=plt.figure(figsize=(20,20))
+    fig=plt.figure(figsize=(10,10))
     plt.suptitle(obsname,y=0.99,size=15.0)
     for ii in range(0,12):
         for jj in range(0,6):
@@ -237,7 +237,7 @@ def plot_sols(gains, freq, outdir, obsname):
     # label of y axis for phase
     ly=[phsmin,(phsmax+phsmin)/2,phsmax]
     lay=['%.2f'%(phsmin),'%.2f'%((phsmax+phsmin)/2),'%.2f'%(phsmax)]
-    fig=plt.figure(figsize=(20,20))
+    fig=plt.figure(figsize=(10,10))
     plt.suptitle(obsname,y=0.99,size=15.0)
     for ii in range(0,12):
         for jj in range(0,6):

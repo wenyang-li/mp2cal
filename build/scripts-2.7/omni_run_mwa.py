@@ -64,7 +64,6 @@ plot_path = opts.omnipath + 'plots/'
 if not os.path.exists(plot_path):
     try: os.makedirs(plot_path)
     except: pass
-gfit_diff = {}
 
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
@@ -107,7 +106,6 @@ def omnirun(RD):
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
     print 'flagged baselines: ', flag_bls
-    omnisol = opts.omnipath + obsid + '.' + RD.pol + '.omni.npz'
     #*********************** red info ******************************************
     info = mp2cal.wyl.pos_to_info(pols=[p],ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
@@ -136,7 +134,7 @@ def omnirun(RD):
 
     #*********************** Do bandpass fitting ********************************
     RD.gains.bandpass_fitting(include_red = False)
-    gfit_diff[p] = {}
+    gfit_diff = {p: {}}
     for a in RD.gains.red[p].keys():
         gfit_diff[p][a] = np.zeros_like(RD.gains.gfit[p][a])
         ind = np.where(RD.gains.gfit[p][a]!=0)[0]
@@ -155,11 +153,15 @@ def omnirun(RD):
     m2['freqs'] = freqs
 
     #************************** Saving cal ************************************************
-    print '     saving %s' % omnisol
-    mp2cal.io.save_gains_omni(omnisol, m2, RD.gains.red, RD.gains.mdl) #save raw calibrations
+    print '     saving %s' % (opts.omnipath + obsid + '.' + RD.pol)
+    mp2cal.io.save_gains_omni(opts.omnipath + obsid + '.' + RD.pol + '.omni.npz', m2, RD.gains.red, RD.gains.mdl)
+    mp2cal.io.save_gains_omni(opts.omnipath + obsid + '.' + RD.pol + '.difffit.npz', {}, gfit_diff, {})
 
 par = Pool(2)
 npzlist = par.map(omnirun, data_list)
 par.close()
-
+gfit_diff = {}
+for p in pols:
+    g = mp2cal.io.quick_load_gains(opts.omnipath + obsid + '.' + p + '.difffit.npz')
+    gfit_diff[p[0]] = g[p[0]]
 mp2cal.io.plot_sols(gfit_diff, freqs/1e6, plot_path, obsid)
