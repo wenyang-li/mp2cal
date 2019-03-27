@@ -1,6 +1,7 @@
 import numpy as np, matplotlib.pyplot as plt
 from scipy.io.idl import readsav
 import pyuvdata.uvdata as uvd
+from pos import *
 
 def read(filename):
     """
@@ -182,5 +183,78 @@ def load_fhd_global_bandpass(fhdpath, obsid):
             print "averaged bandpass not found for pol "+p+", using bp from the obs"
     return gp
 
-#def plot_sols(omnipath, obsname):
+def plot_sols(gains, freq, outdir, obsname):
+    ampmax = 0
+    ampmin = 1e10
+    phsmax = -np.pi
+    phsmin = np.pi
+    SH = freq.shape
+    sols = {}
+    for p in gains.keys():
+        sols[p] = {}
+        for a in gains[p].keys():
+            iuse = np.where(gains[p][a]!=0)[0]
+            ampmax = max(ampmax, np.max(np.abs(gains[p][a][iuse])))
+            ampmin = min(ampmin, np.min(np.abs(gains[p][a][iuse])))
+            phsmax = max(phsmax, np.max(np.angle(gains[p][a][iuse])))
+            phsmin = min(phsmin, np.min(np.angle(gains[p][a][iuse])))
+            tile = tile_info[a]['Tile']
+            sols[p][tile] = gains[p][a]
+    # label of x axis
+    amplim = ampmax-ampmin
+    phslim = phsmax-phsmin
+    ampmax += 0.02*amplim
+    ampmin -= 0.02*amplim
+    phsmax += 0.02*phslim
+    phsmin -= 0.02*phslim
+    lx=[freq[37*freq.size/384],freq[287*freq.size/384]]
+    lax=np.int32(np.round(lx))
+    # label of y axis for amplitude
+    ly=[ampmin,(ampmax+ampmin)/2,ampmax]
+    lay=['%.2f'%(ampmin),'%.2f'%((ampmax+ampmin)/2),'%.2f'%(ampmax)]
+    fig=plt.figure()
+    plt.suptitle(obsname,y=0.99,size=15.0)
+    for ii in range(0,6):
+        for jj in range(0,12):
+            ind=ii*12+jj
+            p=fig.add_subplot(6,12,ind+1)
+            try: p.scatter(freq[iuse],np.abs(sols['x'][ind+1001][iuse]),color='blue',s=0.01)
+            except: pass
+            try: p.scatter(freq[iuse],np.abs(sols['y'][ind+1001][iuse]),color='red',s=0.01)
+            except: pass
+            plt.ylim((ampmin,ampmax))
+            plt.xlim((freq[0],freq[-1]))
+            p.set_xticks(lx)
+            p.set_yticks(ly)
+            if jj==0: p.yaxis.set_ticklabels(lay,size=6.5)
+            else: p.yaxis.set_ticklabels([])
+            if ii==5: p.xaxis.set_ticklabels(lax,size=6.5)
+            else: p.xaxis.set_ticklabels([])
+            p.set_title(str(ind+1001),size=6.5,y=0.9)
+    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.06,right=0.98)
+    fig.savefig(outdir+obsname+'_amp_omnical.png')
 
+    # label of y axis for phase
+    ly=[phsmin,(phsmax+phsmin)/2,phsmax]
+    lay=['%.2f'%(phsmin),'%.2f'%((phsmax+phsmin)/2),'%.2f'%(phsmax)]
+    fig=plt.figure()
+    plt.suptitle(obs.split('/')[-1],y=0.99,size=15.0)
+    for ii in range(0,6):
+        for jj in range(0,12):
+            ind=ii*12+jj
+            p=fig.add_subplot(6,12,ind+1)
+            try: p.scatter(freq[iuse],np.angle(sols['x'][ind+1001][iuse]),color='blue',s=0.01)
+            except: pass
+            try: p.scatter(freq[iuse],np.angle(sols['y'][ind+1001][iuse]),color='red',s=0.01)
+            except: pass
+            plt.ylim((phsmin,phsmax))
+            plt.xlim((freq[0],freq[-1]))
+            p.set_xticks(lx)
+            p.set_yticks(ly)
+            if jj==0: p.yaxis.set_ticklabels(lay,size=6.5)
+            else: p.yaxis.set_ticklabels([])
+            if ii==5: p.xaxis.set_ticklabels(lax,size=6.5)
+            else: p.xaxis.set_ticklabels([])
+            p.set_title(str(ind+1001),size=6.5,y=0.9)
+    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.06,right=0.98)
+    fig.savefig(outdir+obsname+'_phs_omnical.png')

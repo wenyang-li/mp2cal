@@ -17,15 +17,16 @@ class RedData(object):
     """
     def __init__(self, pol):
         self.pol = pol # Polarization
+        self.freqs = None # Frequency
         self.data = {} # Data dictionary for omnical. data={bl:{pol:{data_array}}}
         self.flag = {} # Flag dictionary for omnical, flag={bl:{pol:{flag_array}}}
         self.noise = {}# Noise dictionary
         self.dead = [] # Flagged antenna
         self.mask = None # mask for all baselines, with shape (Ntime, Nfreq) if not tave, else (1, Nfreq)
         self.shape_waterfall = None # shape (Ntime, Nfreq)
-        self.gains = RedGain() # calibrations
-        self.data_backup = {} # unaveraged raw data backup for chi-square calculation
-        self.flag_backup = {} # unaveraged raw flag backup for chi-square calculation
+        self.gains = None # calibrations
+        self.data_backup = {} # raw data backup for chi-square calculation and model vis calculation
+        self.flag_backup = {} # raw flag backup for chi-square calculation and model vis calculation
         self.chisq_base = {} # this is for chi-square visualization for different redundant baseline group
 
     def get_ex_ants(self, ex_ants):
@@ -56,6 +57,7 @@ class RedData(object):
         Read data from a pyuvdata obsject.
         tave: average data over time.
         """
+        self.freqs = uv.freq_array[0]
         a1 = uv.ant_1_array[:uv.Nbls]
         a2 = uv.ant_2_array[:uv.Nbls]
         for a in uv.antenna_numbers:
@@ -76,9 +78,9 @@ class RedData(object):
             self.noise[bl] = np.var(diff,axis=0).data/2
             zerofq = np.where(np.sum(np.logical_not(diff.mask),axis=0) < 3)[0]
             md.mask[:,zerofq] = True
+            self.data_backup[bl] = {self.pol: np.complex64(md.data)}
+            self.flag_backup[bl] = {self.pol: np.copy(md.mask)}
             if tave:
-                self.data_backup[bl] = {self.pol: np.complex64(md.data)}
-                self.flag_backup[bl] = {self.pol: md.mask}
                 md = np.mean(md,axis=0,keepdims=True)
             self.data[bl] = {self.pol: np.complex64(md.data)}
             self.flag[bl] = {self.pol: md.mask}
@@ -95,13 +97,14 @@ class RedData(object):
             G = gfhd[p1][i]*gfhd[p2][j].conj()
             ind = np.where(G != 0)[0]
             self.data[bl][self.pol][:,ind] /= G[ind]
-            self.noise[bl][ind] /= np.abs(G[ind])**2
-            if self.data_backup: self.data_backup[bl][self.pol][:,ind] /= G[ind]
 
     def get_gains(self, g_red,  v_mdl = None, g_sky = None):
         """
         Read gain solutions and add to this object
         """
+        mask = np.copy(self.mask)
+        if mask.ndim == 2: mask = np.product(self.mask, axis=0).astype(bool)
+        self.gains = RedGain(freqs=self.freqs, mask=mask)
         self.gains.get_red(g_red)
         if g_sky: self.gains.get_sky(g_sky)
         if v_mdl: self.gains.get_mdl(v_mdl)
@@ -113,7 +116,7 @@ class RedData(object):
         reds = info.get_reds()
         p1, p2 = self.pol
         v_mdl = {self.pol: {}}
-        g = self.gains.red
+        g = self.gains.gfit
         SH = self.shape_waterfall
         if not self.data_backup:
             print("The tave is set to False, no need to recalculate vis model.")
@@ -144,7 +147,7 @@ class RedData(object):
         SH = self.shape_waterfall
         chisq = np.zeros(SH)
         weight = np.zeros(SH)
-        g = self.gains.red
+        g = self.gains.gfit
         mdl = self.gains.mdl
         p1, p2 = self.pol
         data_arr = None

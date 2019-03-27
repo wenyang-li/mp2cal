@@ -55,7 +55,7 @@ if not opts.ants == '':
 if not opts.ex_ants == '':
     ex_ants = ant_parse(opts.ex_ants)
 
-if not len(args) == 1: raise IOError('Do not support multiple files.')
+if not len(args) == 1: raise IOError("Do not support multiple files.")
 obsid = args[0]
 print "OBSID: " + obsid
 
@@ -64,6 +64,7 @@ plot_path = opts.omnipath + 'plots/'
 if not os.path.exists(plot_path):
     try: os.makedirs(plot_path)
     except: pass
+gfit_diff = {}
 
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
@@ -75,8 +76,7 @@ if os.path.exists(fhd_sol_path):
             if np.any(np.isnan(gfhd[p][a])):
                 if not a in ex_ants: ex_ants.append(a)
 else:
-    warnings.warn("Warning: No target fhd solutions, the calibration quality could be bad.")
-    gfhd = None
+    raise IOError("No sky calibration found. Please do sky calibration first")
 
 #********************************** load and wrap data ******************************************
 uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
@@ -92,10 +92,9 @@ for pol in pols:
         metafits_path = opts.metafits + obsid + '.metafits'
         RD.get_dead_dipole(metafits_path)
     RD.read_data(uv, tave = opts.tave)
-    if gfhd: RD.apply_fhd(gfhd)
+    RD.apply_fhd(gfhd)
     print "ex_ants for "+pol+":", RD.dead
     data_list.append(RD)
-del uv
 
 #******************************** omni run *******************************************************
 def omnirun(RD):
@@ -114,14 +113,9 @@ def omnirun(RD):
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
 
     #*********************** generate g0 ***************************************
-    if os.path.exists(fhd_sol_path):
-        print '     setting g0 as units'
-        g0 = {p:{}}
-        for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
-    else:
-        print '     start rough cal'
-        info_rough = mp2cal.wyl.pos_to_info(pols=[p],ubls=[(57,61),(57,62)],ex_ants=RD.dead)
-        g0 = mp2cal.wyl.rough_cal(RD.data,RD.flag,info_rough,pol=RD.pol)
+    print '     setting g0 as units'
+    g0 = {p:{}}
+    for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
 
     #*********************** Calibrate ******************************************
     start_time = time.time()
@@ -135,11 +129,21 @@ def omnirun(RD):
     print '   time expense: ', caltime
 
     #*********************** project degeneracy *********************************
-    RD.get_gains(g2, v2, gfhd)
-    if os.path.exists(fhd_sol_path):
-        RD.gains.degen_project_to_unit()
-    else:
-        RD.gains.scale_gains()
+    gsky = {p: gfhd[p]}
+    RD.get_gains(g2, v2, gsky)
+    RD.gains.get_auto(uv)
+    RD.gains.degen_project_to_unit()
+
+    #*********************** Do bandpass fitting ********************************
+    RD.gains.bandpass_fitting(include_red = False)
+    gfit_diff[p] = {}
+    for a in RD.gains.red[p].keys():
+        gfit_diff[p][a] = np.zeros_like(RD.gains.gfit[p][a])
+        ind = np.where(RD.gains.gfit[p][a]!=0)[0]
+        gfit_diff[p][a][ind] = 1./RD.gains.gfit[p][a][ind]
+    RD.gains.bandpass_fitting(include_red = True)
+    for a in RD.gains.red[p].keys():
+        gfit_diff[p][a] *= RD.gains.gfit[p][a]
 
     #************************* metadata parameters ***************************************
     RD.recover_model_vis_waterfall(info)
@@ -152,8 +156,10 @@ def omnirun(RD):
 
     #************************** Saving cal ************************************************
     print '     saving %s' % omnisol
-    mp2cal.io.save_gains_omni(omnisol, m2, RD.gains.red, RD.gains.mdl)
+    mp2cal.io.save_gains_omni(omnisol, m2, RD.gains.red, RD.gains.mdl) #save raw calibrations
 
 par = Pool(2)
 npzlist = par.map(omnirun, data_list)
 par.close()
+
+plot_sols(gfit_diff, freqs/1e6, plot_path, obsid)
