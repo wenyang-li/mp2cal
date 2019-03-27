@@ -212,15 +212,15 @@ def plot_sols(gains, freq, outdir, obsname):
     # label of y axis for amplitude
     ly=[ampmin,(ampmax+ampmin)/2,ampmax]
     lay=['%.2f'%(ampmin),'%.2f'%((ampmax+ampmin)/2),'%.2f'%(ampmax)]
-    fig=plt.figure()
+    fig=plt.figure(figsize=(20,20))
     plt.suptitle(obsname,y=0.99,size=15.0)
-    for ii in range(0,6):
-        for jj in range(0,12):
-            ind=ii*12+jj
-            p=fig.add_subplot(6,12,ind+1)
-            try: p.scatter(freq[iuse],np.abs(sols['x'][ind+1001][iuse]),color='blue',s=0.01)
+    for ii in range(0,12):
+        for jj in range(0,6):
+            ind=ii*6+jj
+            p=fig.add_subplot(12,6,ind+1)
+            try: p.scatter(freq[iuse],np.abs(sols['x'][ind+1001][iuse]),color='blue',s=0.005)
             except: pass
-            try: p.scatter(freq[iuse],np.abs(sols['y'][ind+1001][iuse]),color='red',s=0.01)
+            try: p.scatter(freq[iuse],np.abs(sols['y'][ind+1001][iuse]),color='red',s=0.005)
             except: pass
             plt.ylim((ampmin,ampmax))
             plt.xlim((freq[0],freq[-1]))
@@ -228,24 +228,24 @@ def plot_sols(gains, freq, outdir, obsname):
             p.set_yticks(ly)
             if jj==0: p.yaxis.set_ticklabels(lay,size=6.5)
             else: p.yaxis.set_ticklabels([])
-            if ii==5: p.xaxis.set_ticklabels(lax,size=6.5)
+            if ii==11: p.xaxis.set_ticklabels(lax,size=6.5)
             else: p.xaxis.set_ticklabels([])
             p.set_title(str(ind+1001),size=6.5,y=0.9)
-    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.06,right=0.98)
+    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.035,right=0.98,hspace=0.55)
     fig.savefig(outdir+obsname+'_amp_omnical.png')
 
     # label of y axis for phase
     ly=[phsmin,(phsmax+phsmin)/2,phsmax]
     lay=['%.2f'%(phsmin),'%.2f'%((phsmax+phsmin)/2),'%.2f'%(phsmax)]
-    fig=plt.figure()
+    fig=plt.figure(figsize=(20,20))
     plt.suptitle(obsname,y=0.99,size=15.0)
-    for ii in range(0,6):
-        for jj in range(0,12):
-            ind=ii*12+jj
-            p=fig.add_subplot(6,12,ind+1)
-            try: p.scatter(freq[iuse],np.angle(sols['x'][ind+1001][iuse]),color='blue',s=0.01)
+    for ii in range(0,12):
+        for jj in range(0,6):
+            ind=ii*6+jj
+            p=fig.add_subplot(12,6,ind+1)
+            try: p.scatter(freq[iuse],np.angle(sols['x'][ind+1001][iuse]),color='blue',s=0.005)
             except: pass
-            try: p.scatter(freq[iuse],np.angle(sols['y'][ind+1001][iuse]),color='red',s=0.01)
+            try: p.scatter(freq[iuse],np.angle(sols['y'][ind+1001][iuse]),color='red',s=0.005)
             except: pass
             plt.ylim((phsmin,phsmax))
             plt.xlim((freq[0],freq[-1]))
@@ -253,8 +253,8 @@ def plot_sols(gains, freq, outdir, obsname):
             p.set_yticks(ly)
             if jj==0: p.yaxis.set_ticklabels(lay,size=6.5)
             else: p.yaxis.set_ticklabels([])
-            if ii==5: p.xaxis.set_ticklabels(lax,size=6.5)
+            if ii==11: p.xaxis.set_ticklabels(lax,size=6.5)
             else: p.xaxis.set_ticklabels([])
             p.set_title(str(ind+1001),size=6.5,y=0.9)
-    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.06,right=0.98)
+    plt.subplots_adjust(top=0.93,bottom=0.05,left=0.035,right=0.98,hspace=0.55)
     fig.savefig(outdir+obsname+'_phs_omnical.png')
