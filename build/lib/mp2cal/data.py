@@ -183,10 +183,11 @@ class RedData(object):
                 chis += (np.abs(di-g[p1][i]*g[p2][j].conj()*yij))**2 * wi / (ni + 1e-10)
                 wgts += wi
             iuse = np.where(wgts>2)
-            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1))
+            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1.288))#1.288 comes from a fit. It only says we might overfitted small baselines groups
             chisq += chis
             weight += wgts
-        meta['chisq'] = chisq * (weight > 1) / (weight - 1.288) #1.288 comes from a fit. It only says we might overfitted small baselines groups
+        nparam = info.nAntenna + info.ublcount.size
+        meta['chisq'] = chisq * (weight > nparam) / (weight - nparam)
         meta['flags'] = weight < 2
 
     def plot_chisq_per_bl(self, outdir, obsname):
