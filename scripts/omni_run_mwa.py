@@ -64,7 +64,7 @@ plot_path = opts.omnipath + 'plots/'
 if not os.path.exists(plot_path):
     try: os.makedirs(plot_path)
     except: pass
-omnical_gains = {}
+gfit_diff = {}
 
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
