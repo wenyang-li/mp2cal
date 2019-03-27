@@ -64,7 +64,7 @@ plot_path = opts.omnipath + 'plots/'
 if not os.path.exists(plot_path):
     try: os.makedirs(plot_path)
     except: pass
-gfit_diff = {}
+omnical_gains = {}
 
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
@@ -162,4 +162,4 @@ par = Pool(2)
 npzlist = par.map(omnirun, data_list)
 par.close()
 
-plot_sols(gfit_diff, freqs/1e6, plot_path, obsid)
+mp2cal.io.plot_sols(gfit_diff, freqs/1e6, plot_path, obsid)

@@ -159,6 +159,7 @@ class RedData(object):
             data_arr = self.data
             flag_arr = self.flag
         for r in reds:
+            if len(r) < 5: continue
             bl0 = None
             yij = None
             for bl in r:
