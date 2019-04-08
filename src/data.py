@@ -106,6 +106,7 @@ class RedData(object):
         """
         Read gain solutions and add to this object
         """
+        self.gains.get_red(g_red)
         if g_sky: self.gains.get_sky(g_sky)
         if v_mdl: self.gains.get_mdl(v_mdl)
     
