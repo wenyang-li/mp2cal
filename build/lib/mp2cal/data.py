@@ -86,6 +86,10 @@ class RedData(object):
             self.flag[bl] = {self.pol: md.mask}
         map(creat_dict, np.arange(uv.Nbls))
         if tave: self.mask= np.product(self.mask, axis=0, keepdims=True).astype(bool)
+        mask = np.copy(self.mask)
+        if mask.ndim == 2: mask = np.product(self.mask, axis=0).astype(bool)
+        self.gains = RedGain(freqs=self.freqs, mask=mask)
+        self.gains.get_auto(uv)
 
     def apply_fhd(self, gfhd):
         """
@@ -102,10 +106,6 @@ class RedData(object):
         """
         Read gain solutions and add to this object
         """
-        mask = np.copy(self.mask)
-        if mask.ndim == 2: mask = np.product(self.mask, axis=0).astype(bool)
-        self.gains = RedGain(freqs=self.freqs, mask=mask)
-        self.gains.get_red(g_red)
         if g_sky: self.gains.get_sky(g_sky)
         if v_mdl: self.gains.get_mdl(v_mdl)
     
@@ -116,6 +116,8 @@ class RedData(object):
         reds = info.get_reds()
         p1, p2 = self.pol
         v_mdl = {self.pol: {}}
+        if self.gains.gfit is None:
+            self.gains.bandpass_fitting(include_red = True)
         g = self.gains.gfit
         SH = self.shape_waterfall
         if not self.data_backup:
@@ -147,9 +149,20 @@ class RedData(object):
         SH = self.shape_waterfall
         chisq = np.zeros(SH)
         weight = np.zeros(SH)
-        g = self.gains.gfit
-        mdl = self.gains.mdl
+        if self.gains.gfit is None:
+            self.gains.bandpass_fitting(include_red = True)
         p1, p2 = self.pol
+        g = self.gains.gfit
+        noise = []
+        for bl in self.noise.keys():
+            i,j = bl
+            try: G = np.abs(g[p1][i]*g[p2][j])
+            except: continue
+            noise.append(self.noise[bl]/(G*G+1e-10))
+        noise = np.ma.masked_array(noise, np.zeros((len(noise), len(noise[0]))))
+        noise = np.mean(noise, axis=0).data
+        if self.gains.mdl is None: self.recover_model_vis_waterfall(info)
+        mdl = self.gains.mdl
         data_arr = None
         flag_arr = None
         if self.data_backup:
@@ -174,16 +187,15 @@ class RedData(object):
                 try:
                     di = data_arr[bl][self.pol]
                     wi = np.logical_not(flag_arr[bl][self.pol])
-                    ni = self.noise[bl]
                 except(KeyError):
                     di = data_arr[bl[::-1]][self.pol].conj()
                     wi = np.logical_not(flag_arr[bl[::-1]][self.pol])
-                    ni = self.noise[bl[::-1]]
                 i,j = bl
-                chis += (np.abs(di-g[p1][i]*g[p2][j].conj()*yij))**2 * wi / (ni + 1e-10)
+                chis += (np.abs(di/(g[p1][i]*g[p2][j].conj()+1e-10)-yij))**2 * wi / (noise + 1e-10)
                 wgts += wi
             iuse = np.where(wgts>2)
-            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1.288))#1.288 comes from a fit. It only says we might overfitted small baselines groups
+#            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1.288))#1.288 comes from a fit. It only says we might overfitted small baselines groups
+            self.chisq_base[bl0] = np.mean(chis[iuse]/(wgts[iuse]-1.))
             chisq += chis
             weight += wgts
         nparam = info.nAntenna + info.ublcount.size
