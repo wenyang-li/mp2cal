@@ -80,16 +80,18 @@ class RedGain(object):
             a = a1[ii]
             self.auto['x'][a] = np.sqrt(np.mean(np.abs(data[tindx,ii,:,0]),axis=0))
             self.auto['y'][a] = np.sqrt(np.mean(np.abs(data[tindy,ii,:,1]),axis=0))
-        amp_ref_x, amp_ref_y = None, None
-        for ii in ind:
-            a = a1[ii]
-            p = self.sky.keys()[0]
-            if np.any(np.isnan(self.sky[p][a])):
-                continue
-            else:
-                amp_ref_x = np.copy(self.auto['x'][a])
-                amp_ref_y = np.copy(self.auto['y'][a])
-                break
+        aref = 1
+        if self.sky:
+            for ii in ind:
+                a = a1[ii]
+                p = self.sky.keys()[0]
+                if np.any(np.isnan(self.sky[p][a])):
+                    continue
+                else:
+                    aref = a
+                    break
+        amp_ref_x = np.copy(self.auto['x'][aref])
+        amp_ref_y = np.copy(self.auto['y'][aref])
         for ii in ind:
             a = a1[ii]
             self.auto['x'][a] /= amp_ref_x
