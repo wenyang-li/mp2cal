@@ -161,6 +161,7 @@ class RedData(object):
             except: continue
             noise.append(self.noise[bl]/(G*G+1e-10))
         noise = np.ma.masked_array(noise, np.zeros((len(noise), len(noise[0]))))
+        noise.mask[np.where(noise==0)] = True
         noise = np.mean(noise, axis=0).data
         if self.gains.mdl is None: self.recover_model_vis_waterfall(info)
         mdl = self.gains.mdl
@@ -194,7 +195,7 @@ class RedData(object):
                 i,j = bl
                 chis += (np.abs(di/(g[p1][i]*g[p2][j].conj()+1e-10)-yij))**2 * wi / (noise + 1e-10)
                 wgts += wi
-            iuse = np.where(wgts>2)
+            iuse = np.where(wgts==len(r))
 #            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1.288))#1.288 comes from a fit. It only says we might overfitted small baselines groups
             self.chisq_base[bl0] = np.mean(chis[iuse]/(wgts[iuse]-1.))
             chisq += chis
