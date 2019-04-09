@@ -195,13 +195,11 @@ class RedData(object):
                 i,j = bl
                 chis += (np.abs(di/(g[p1][i]*g[p2][j].conj()+1e-10)-yij))**2 * wi / (noise + 1e-10)
                 wgts += wi
-            iuse = np.where(wgts==len(r))
-#            self.chisq_base[bl0] = np.median(chis[iuse]/(wgts[iuse]-1.288))#1.288 comes from a fit. It only says we might overfitted small baselines groups
-            self.chisq_base[bl0] = np.mean(chis[iuse]/(wgts[iuse]-1.))
+            iuse = np.where(wgts>1)
+            self.chisq_base[bl0] = np.mean(chis[iuse]-(wgts[iuse]-1))
             chisq += chis
             weight += wgts
-        nparam = info.nAntenna + info.ublcount.size
-        meta['chisq'] = chisq * (weight > nparam) / (weight - nparam)
+        meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
         meta['flags'] = weight <= nparam
 
     def plot_chisq_per_bl(self, outdir, obsname):
