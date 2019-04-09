@@ -200,7 +200,7 @@ class RedData(object):
             chisq += chis
             weight += wgts
         meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
-        meta['flags'] = weight <= nparam
+        meta['flags'] = weight < 2
 
     def plot_chisq_per_bl(self, outdir, obsname):
         x, y, c = [], [], []
