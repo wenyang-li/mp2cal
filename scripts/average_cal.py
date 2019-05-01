@@ -25,7 +25,7 @@ for p in g.keys():
     for a in g[p].keys():
         g[p][a] = np.array(g[p][a])
         ind = np.logical_or(g[p][a]==1, g[p][a]==0)
-        d = np.ma.masked_array(g[p][a], np.zeros(g[p][a], dtype=bool))
+        d = np.ma.masked_array(g[p][a], np.zeros(g[p][a].shape, dtype=bool))
         d.mask[ind] = True
         g[p][a] = np.mean(d,axis=0).data
 mp2cal.io.save_gains_omni(outpath + sys.argv[1].split('/')[-1] + '_ave.npz',{},g,{})
