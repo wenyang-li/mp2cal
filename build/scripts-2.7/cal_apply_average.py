@@ -21,6 +21,8 @@ o.add_option('--model',dest='model',default=False,action='store_true',
              help='Toggle: create model vis. Default=False')
 o.add_option('--outpath', dest='outpath', default='', type='string',
              help='path to output calibrated data. Include final / in path.')
+o.add_option('--nofit',dest='nofit',default=False,action='store_true',
+             help='Toggle: directly use FHD calibration, no ad hoc fitting')
 opts,args = o.parse_args(sys.argv[1:])
 
 
@@ -28,6 +30,7 @@ obsid = args[0]
 
 # Getting cal solutions
 suffix = 'AF'+'O'*opts.omniapp
+if opts.nofit: suffix = 'FP'
 if opts.subtract: suffix = suffix + 'S'
 if opts.model:
     writepath = opts.outpath + 'model' + '/'
@@ -59,8 +62,12 @@ if opts.omniapp:
     gomni['x'] = gx['x']
     gomni['y'] = gy['y']
     graw.get_red(gomni)
-graw.bandpass_fitting(include_red = opts.omniapp)
-gains = graw.gfit
+if opts.nofit:
+    print "nofit is on. Only use FHD calibration, no ad hoc fitting applied."
+    gains = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=False)
+else:
+    graw.bandpass_fitting(include_red = opts.omniapp)
+    gains = graw.gfit
 # Apply cal
 print "Applying cal ..."
 for pp in range(uv.Npols):
