@@ -220,7 +220,7 @@ class RedData(object):
         p2.plot(b,1/np.sqrt(2*np.pi)/sig*np.exp(-(b-mu)**2/2/sig**2))
         p2.set_yscale('log')
         p2.set_xlabel('$\chi^2$')
-        plt.suptitle(obsname+' '+pol)
+        plt.suptitle(obsname+' '+self.pol)
         plt.tight_layout()
         plt.subplots_adjust(top=0.92,hspace=0.25,right=1)
         plt.savefig(outdir + obsname + '_chisq_waterfall_'+self.pol + '.png')
