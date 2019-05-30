@@ -222,7 +222,7 @@ class RedData(object):
         p2.set_xlabel('$\chi^2$')
         plt.suptitle(obsname+' '+self.pol)
         plt.tight_layout()
-        plt.subplots_adjust(top=0.92,hspace=0.25,right=1)
+        plt.subplots_adjust(top=0.92,hspace=0.25)
         plt.savefig(outdir + obsname + '_chisq_waterfall_'+self.pol + '.png')
 
     def plot_chisq_per_bl(self, outdir, obsname):
