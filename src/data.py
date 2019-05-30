@@ -210,7 +210,7 @@ class RedData(object):
         m = np.ma.masked_array(meta['chisq'], meta['flags'])
         fig = plt.figure(figsize=(10,5))
         p1 = fig.add_subplot(2,1,1)
-        i1 = p1.imshow(m,aspect='auto',cmap='coolwarm',extent=(fq[0],fq[-1],len(dx)-1,0))
+        i1 = p1.imshow(m,aspect='auto',cmap='coolwarm',extent=(fq[0],fq[-1],len(m)-1,0))
         plt.colorbar(i1)
         p2 = fig.add_subplot(2,1,2)
         mu=np.mean(m)
