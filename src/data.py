@@ -142,7 +142,7 @@ class RedData(object):
         self.gains.get_mdl(v_mdl)
 
 
-    def cal_chi_square(self, info, meta):
+    def cal_chi_square(self, info, meta, per_bl_chi2=False):
         """
         Compute omnical chi-square, add them into meta container.
         """
@@ -197,10 +197,33 @@ class RedData(object):
                 wgts += wi
             iuse = np.where(wgts>1)
             self.chisq_base[bl0] = np.mean(chis[iuse]-(wgts[iuse]-1))
+            if per_bl_chi2:
+                meta['chisq'+'('+str(bl0[0])+','+str(bl0[1])+')'] = chis
+                meta['wgts'+'('+str(bl0[0])+','+str(bl0[1])+')'] = wgts
             chisq += chis
             weight += wgts
         meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
         meta['flags'] = weight < 2
+
+    def plot_chisq(self, meta, outdir, obsname):
+        fq = self.freqs / 1e6
+        m = np.ma.masked_array(meta['chisq'], meta['flags'])
+        fig = plt.figure(figsize=(10,5))
+        p1 = fig.add_subplot(2,1,1)
+        i1 = p1.imshow(m,aspect='auto',cmap='coolwarm',extent=(fq[0],fq[-1],len(dx)-1,0))
+        plt.colorbar(i1)
+        p2 = fig.add_subplot(2,1,2)
+        mu=np.mean(m)
+        sig=np.std(m)
+        b=np.linspace(mu-5*sig,mu+5*sig,100)
+        p2.hist(m[np.where(m.mask==False)],bins=b,normed=1,histtype='step')
+        p2.plot(b,1/np.sqrt(2*np.pi)/sig*np.exp(-(b-mu)**2/2/sig**2))
+        p2.set_yscale('log')
+        p2.set_xlabel('$\chi^2$')
+        plt.suptitle(obs+' '+pol)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92,hspace=0.25,right=1)
+        plt.savefig(outdir + obsname + '_chisq_waterfall_'+self.pol + '.png')
 
     def plot_chisq_per_bl(self, outdir, obsname):
         x, y, c = [], [], []

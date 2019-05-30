@@ -21,6 +21,7 @@ o.add_option('--metafits', dest='metafits', default='', type='string', help='pat
 o.add_option('--tave', dest='tave', default=False, action='store_true', help='Toggle: average data in time')
 o.add_option('--conv', dest='conv', default=False, action='store_true', help='do fine iterations for further convergence')
 o.add_option('--ex_dipole', dest='ex_dipole', default=False, action='store_true', help='Toggle: exclude tiles which have dead dipoles')
+o.add_option('--pbc', dest='pbc', default=False, action='store_true', help='Toggle: output per baseline type chisquare')
 opts,args = o.parse_args(sys.argv[1:])
 
 #*****************************************************************************
@@ -147,8 +148,9 @@ def omnirun(RD):
 
     #************************* metadata parameters ***************************************
     RD.recover_model_vis_waterfall(info)
-    RD.cal_chi_square(info, m2)
+    RD.cal_chi_square(info, m2, per_bl_chi2=opts.pbc)
     RD.plot_chisq_per_bl(plot_path, obsid)
+    RD.plot_chisq(m2, plot_path, obsid)
     m2['history'] = 'OMNI_RUN: '+' '.join(sys.argv) + '\n'
     m2['jds'] = t_jd
     m2['lsts'] = t_lst
