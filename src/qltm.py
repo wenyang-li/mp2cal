@@ -92,7 +92,7 @@ class INS(object):
         dt_ind = np.where(np.abs(dt_slice) > nthresh)[0]
         self.ins.mask[dt_ind] = True
 
-    def freq_flagging(self, nsig=6):
+    def freq_flagging(self, nsig=6, frac_thresh=0.5):
         """
         Flag bad frequency channels
         """
@@ -102,6 +102,9 @@ class INS(object):
         df_slice -= np.mean(df_slice)
         df_ind = np.where(df_slice>nsig*np.std(df_slice))[0]
         self.ins.mask[:,:,df_ind,:] = True
+        wgts = np.mean(self.ins.mask, axis=(0,1,3))
+        ind = np.where(wgts > frac_thresh)[0]
+        self.ins.mask[:,:,ind,:] = True
 
     def coherence_flagging(self, fc=0.25, nsig=5):
         """
