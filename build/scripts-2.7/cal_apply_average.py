@@ -129,6 +129,7 @@ if not opts.model:
     ins.coherence_flagging()
     ins.outliers_flagging()
     ins.merge_flagging()
+    ins.freq_flagging()
     ins.apply_flagging()
     ins.saveplots(writepath, obsid.split('/')[-1])
     ins.savearrs(writepath, obsid.split('/')[-1])
