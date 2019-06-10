@@ -120,6 +120,7 @@ del sample
 uv.freq_array = (uv.freq_array[:,0::2]+uv.freq_array[:,1::2])/2
 uv.Nfreqs /= 2
 uv.channel_width *= 2
+uv.vis_units = 'Jy'
 
 # Noise spectrum flagging
 if not opts.model:
