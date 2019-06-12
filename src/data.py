@@ -117,9 +117,10 @@ class RedData(object):
         reds = info.get_reds()
         p1, p2 = self.pol
         v_mdl = {self.pol: {}}
-        if self.gains.gfit is None:
-            self.gains.bandpass_fitting(include_red = True)
-        if g is None: g = self.gains.gfit
+        if g is None:
+            if self.gains.gfit is None:
+                self.gains.bandpass_fitting(include_red = True)
+            g = self.gains.gfit
         SH = self.shape_waterfall
         if not self.data_backup:
             print("The tave is set to False, no need to recalculate vis model.")
@@ -150,10 +151,11 @@ class RedData(object):
         SH = self.shape_waterfall
         chisq = np.zeros(SH)
         weight = np.zeros(SH)
-        if self.gains.gfit is None:
-            self.gains.bandpass_fitting(include_red = True)
         p1, p2 = self.pol
-        if g is None: g = self.gains.gfit
+        if g is None:
+            if self.gains.gfit is None:
+                self.gains.bandpass_fitting(include_red = True)
+            g = self.gains.gfit
         noise = []
         for bl in self.noise.keys():
             i,j = bl

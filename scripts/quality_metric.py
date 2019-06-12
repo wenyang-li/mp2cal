@@ -34,13 +34,13 @@ ins.saveplots(opts.outpath, obs.split('/')[-1])
 ins.savearrs(opts.outpath, obs.split('/')[-1])
 #Chi-square
 pols = ['xx', 'yy']
-reds=mp2cal.wyl.cal_reds_from_pos()
-g0 = mp2cal.firstcal.firstcal(uv, reds)
 data_list = []
 for pol in pols:
     RD = mp2cal.data.RedData(pol)
     RD.read_data(uv, tave=True)
     data_list.append(RD)
+reds=mp2cal.wyl.cal_reds_from_pos(ex_ants=RD.dead,ex_ubls=[(57,58),(57,59)])
+g0 = mp2cal.firstcal.firstcal(uv, reds)
 def omnirun(RD):
     p = RD.pol[0]
     info = mp2cal.wyl.pos_to_info(pols=[p],ex_ubls=[(57,58),(57,59)])
