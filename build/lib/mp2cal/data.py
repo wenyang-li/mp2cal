@@ -165,7 +165,7 @@ class RedData(object):
         noise = np.ma.masked_array(noise, np.zeros((len(noise), len(noise[0]))))
         noise.mask[np.where(noise==0)] = True
         noise = np.mean(noise, axis=0).data
-        if self.gains.mdl is None: self.recover_model_vis_waterfall(info, g = g)
+        self.recover_model_vis_waterfall(info, g = g)
         mdl = self.gains.mdl
         data_arr = None
         flag_arr = None

@@ -108,7 +108,7 @@ def omnirun(RD):
         wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
-    print 'flagged baselines: ', flag_bls
+    print 'exclude baselines in omnical: ', flag_bls
     #*********************** red info ******************************************
     info = mp2cal.wyl.pos_to_info(pols=[p],ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
