@@ -2,6 +2,7 @@ from matplotlib import use
 use('Agg')
 import numpy as np, mp2cal, sys, optparse, subprocess
 import pyuvdata.uvdata as uvd
+from multiprocessing import Pool
 
 o = optparse.OptionParser()
 o.set_usage('ssins_flag.py [options] obsid')
@@ -20,6 +21,7 @@ uv.polarization_array = uv.polarization_array[:2]
 if uv.Nfreqs == 768:
     for ii in range(768):
         if ii%32==16: uv.flag_array[:,:,ii,:] = True
+#SSINS
 ins = mp2cal.qltm.INS(uv)
 ins.outliers_flagging()
 ins.time_flagging()
@@ -30,4 +32,29 @@ ins.freq_flagging()
 ins.apply_flagging()
 ins.saveplots(opts.outpath, obs.split('/')[-1])
 ins.savearrs(opts.outpath, obs.split('/')[-1])
-ins.uv.write_uvfits(opts.outpath+obs+'.uvfits')
+#Chi-square
+pols = ['xx', 'yy']
+reds=mp2cal.wyl.cal_reds_from_pos()
+g0 = mp2cal.firstcal.firstcal(uv, reds)
+data_list = []
+for pol in pols:
+    RD = mp2cal.data.RedData(pol)
+    RD.read_data(uv, tave=True)
+    data_list.append(RD)
+def omnirun(RD):
+    p = RD.pol[0]
+    info = mp2cal.wyl.pos_to_info(pols=[p],ex_ubls=[(57,58),(57,59)])
+    m2,g2,v2 = mp2cal.wyl.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
+    RD.cal_chi_square(info, m2, per_bl_chi2=True, g=g2)
+    m2['freqs'] = uv.freq_array[0]
+    outdir = opts.outpath + 'arrs/'
+    if not os.path.exists(arrpath):
+        try: os.makedirs(arrpath)
+        except: pass
+    mp2cal.io.save_gains_omni(outdir + obs + '.' + RD.pol + '.firstcal.npz', m2, RD.gains.red, RD.gains.mdl)
+    plotdir = opts.outpath + 'plots/'
+    RD.plot_chisq(m2, plotdir, obs)
+par = Pool(2)
+npzlist = par.map(omnirun, data_list)
+par.close()
+uv.write_uvfits(opts.outpath+obs+'.uvfits')

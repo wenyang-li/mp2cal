@@ -110,7 +110,7 @@ class RedData(object):
         if g_sky: self.gains.get_sky(g_sky)
         if v_mdl: self.gains.get_mdl(v_mdl)
     
-    def recover_model_vis_waterfall(self, info):
+    def recover_model_vis_waterfall(self, info, g = None):
         """
         If tave is set to true, recover model vis using calibration solutions
         """
@@ -119,7 +119,7 @@ class RedData(object):
         v_mdl = {self.pol: {}}
         if self.gains.gfit is None:
             self.gains.bandpass_fitting(include_red = True)
-        g = self.gains.gfit
+        if g is None: g = self.gains.gfit
         SH = self.shape_waterfall
         if not self.data_backup:
             print("The tave is set to False, no need to recalculate vis model.")
@@ -142,7 +142,7 @@ class RedData(object):
         self.gains.get_mdl(v_mdl)
 
 
-    def cal_chi_square(self, info, meta, per_bl_chi2=False):
+    def cal_chi_square(self, info, meta, per_bl_chi2=False, g = None):
         """
         Compute omnical chi-square, add them into meta container.
         """
@@ -153,7 +153,7 @@ class RedData(object):
         if self.gains.gfit is None:
             self.gains.bandpass_fitting(include_red = True)
         p1, p2 = self.pol
-        g = self.gains.gfit
+        if g is None: g = self.gains.gfit
         noise = []
         for bl in self.noise.keys():
             i,j = bl
@@ -163,7 +163,7 @@ class RedData(object):
         noise = np.ma.masked_array(noise, np.zeros((len(noise), len(noise[0]))))
         noise.mask[np.where(noise==0)] = True
         noise = np.mean(noise, axis=0).data
-        if self.gains.mdl is None: self.recover_model_vis_waterfall(info)
+        if self.gains.mdl is None: self.recover_model_vis_waterfall(info, g = g)
         mdl = self.gains.mdl
         data_arr = None
         flag_arr = None
