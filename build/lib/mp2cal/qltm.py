@@ -82,7 +82,7 @@ class INS(object):
             m2[:,:,ff,:] = dm.data/dn
         return m2
 
-    def time_flagging(self, nsig=6):
+    def time_flagging(self, nsig=10):
         """
         Flag bad time slices
         """
