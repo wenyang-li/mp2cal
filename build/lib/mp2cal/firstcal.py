@@ -40,17 +40,16 @@ def firstcal(uv, reds, pols=['x', 'y']):
     a2 = uv.ant_2_array[:uv.Nbls]
     bls = 128 * a1 + a2
     md = np.ma.masked_array(d0, f0)
-    md = np.mean(md, axis=0)
     data = {}
     for r in reds:
         for b in r:
             i,j = b
             try:
                 ind = np.where(bls==128*i+j)[0][0]
-                data[b] = md[ind, :]
+                data[b] = md[:, ind, :, :]
             except:
                 ind = np.where(bls==128*j+i)[0][0]
-                data[b] = md[ind, :].conj()
+                data[b] = md[:, ind, :, :].conj()
     pol2num = {'x': 0, 'y': 1}
     nbls, ants, a2n = cal_dim(reds)
     g0 = {}
@@ -64,13 +63,13 @@ def firstcal(uv, reds, pols=['x', 'y']):
         for r in reds:
             for ii in range(len(r)-1):
                 b1 = r[ii]
-                d1 = data[b1][:,pol2num[p]]
+                d1 = data[b1][:, :,pol2num[p]]
                 i, j = b1
                 for jj in range(ii+1, len(r)):
                     b2 = r[jj]
-                    d2 = data[b2][:,pol2num[p]]
+                    d2 = data[b2][:, :,pol2num[p]]
                     k, l = b2
-                    y = d1.conj()*d2
+                    y = np.mean(d1.conj()*d2, axis=0)
                     med = np.ma.median(np.abs(y))
                     ind = np.where(y.mask==False)[0]
                     ind2 = np.where(np.abs(y[ind]) > med)

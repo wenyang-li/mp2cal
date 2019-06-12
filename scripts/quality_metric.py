@@ -45,6 +45,8 @@ def omnirun(RD):
     p = RD.pol[0]
     info = mp2cal.wyl.pos_to_info(pols=[p],ex_ubls=[(57,58),(57,59)])
     m2,g2,v2 = mp2cal.wyl.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
+    for a in g2[p[0]].keys():
+        g2[p[0]][a] = np.mean(g2[p[0]][a], axis=0)
     RD.cal_chi_square(info, m2, per_bl_chi2=True, g=g2)
     m2['freqs'] = uv.freq_array[0]
     outdir = opts.outpath + 'arrs/'
