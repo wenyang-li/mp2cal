@@ -18,7 +18,7 @@ class INS(object):
         elif uv is None and ins_arr is not None:
             print "Reads in INS from saved array. apply_flagging cannot be used because uv is None. "
             self.ins = ins_arr
-            self.mask = ins_arr.mask
+            self.mask = np.copy(ins_arr.mask)
         else:
             if ins_arr is not None:
                 print "calculate INS from uv object. ins_arr is discarded"
@@ -82,15 +82,17 @@ class INS(object):
             m2[:,:,ff,:] = dm.data/dn
         return m2
 
-    def time_flagging(self, nthresh=1e-5):
+    def time_flagging(self, nsig=6):
         """
         Flag bad time slices
         """
-        frac_smt = self.smooth_over_freq(fc=1)
-        frac_co = frac_smt[:,:,1:,:]*frac_smt[:,:,:-1,:]
-        dt_slice = np.max(np.mean(frac_co,axis=(1,2)),axis=1)
-        dt_ind = np.where(np.abs(dt_slice) > nthresh)[0]
-        self.ins.mask[dt_ind] = True
+        frac_diff = self.ins / np.ma.median(self.ins, axis=0) - 1
+        s = np.std(frac_diff)
+        dt_slice = np.sum(frac_diff,axis=(1,2,3))
+        nsample = np.sum(np.logical_not(frac_diff.mask), axis=(1,2,3))
+        dt_slice /= np.sqrt(nsample+1e-10)
+        ind = np.where(dt_slice > nsig * s)[0]
+        self.ins.mask[ind] = True
 
     def freq_flagging(self, nsig=6, frac_thresh=0.5):
         """
@@ -162,7 +164,7 @@ class INS(object):
         for ii in range(self.uv.Nbls):
             self.uv.flag_array[ii::self.uv.Nbls] = np.logical_or(self.uv.flag_array[ii::self.uv.Nbls], mask_all)
 
-    def saveplots(self, outdir, obsname):
+    def saveplots(self, outdir, obsname, clim=(-5,5)):
         """
         Save incoherence noise plots before and after the extra flagging
         """
@@ -172,10 +174,15 @@ class INS(object):
         flabel = np.int32(fq[fi])
         d0 = np.ma.masked_array(self.ins.data, self.mask)
         d0 = d0 / np.ma.median(d0, axis=0) - 1
+        d0[:,0,:,0] /= np.std(d0[:,0,:,0])
+        d0[:,0,:,1] /= np.std(d0[:,0,:,1])
         d1 = self.ins / np.ma.median(self.ins, axis=0) - 1
+        d1[:,0,:,0] /= np.std(d1[:,0,:,0])
+        d1[:,0,:,1] /= np.std(d1[:,0,:,1])
         fig = plt.figure(figsize=(20,8))
         p1 = fig.add_subplot(2,2,1)
-        i1 = p1.imshow(d0[:,0,:,0], aspect='auto', cmap='coolwarm')
+        s0 = np.std(d0[:,0,:,0])
+        i1 = p1.imshow(d0[:,0,:,0], aspect='auto', cmap='coolwarm', clim=clim)
         p1.set_xlabel('Frequency (MHz)')
         p1.set_ylabel('Time steps')
         p1.set_xticks(fi)
@@ -183,7 +190,7 @@ class INS(object):
         p1.set_title('XX masked')
         plt.colorbar(i1)
         p2 = fig.add_subplot(2,2,2)
-        i2 = p2.imshow(d0[:,0,:,1], aspect='auto', cmap='coolwarm')
+        i2 = p2.imshow(d0[:,0,:,1], aspect='auto', cmap='coolwarm', clim=clim)
         p2.set_xticks(fi)
         p2.xaxis.set_ticklabels(flabel)
         p2.set_xlabel('Frequency (MHz)')
@@ -191,7 +198,7 @@ class INS(object):
         p2.set_title('YY masked')
         plt.colorbar(i2)
         p3 = fig.add_subplot(2,2,3)
-        i3 = p3.imshow(d1[:,0,:,0], aspect='auto', cmap='coolwarm')
+        i3 = p3.imshow(d1[:,0,:,0], aspect='auto', cmap='coolwarm', clim=clim)
         p3.set_xlabel('Frequency (MHz)')
         p3.set_ylabel('Time steps')
         p3.set_xticks(fi)
@@ -199,7 +206,7 @@ class INS(object):
         p3.set_title('XX post flagging')
         plt.colorbar(i3)
         p4 = fig.add_subplot(2,2,4)
-        i4 = p4.imshow(d1[:,0,:,1], aspect='auto', cmap='coolwarm')
+        i4 = p4.imshow(d1[:,0,:,1], aspect='auto', cmap='coolwarm', clim=clim)
         p4.set_xlabel('Frequency (MHz)')
         p4.set_ylabel('Time steps')
         p4.set_xticks(fi)

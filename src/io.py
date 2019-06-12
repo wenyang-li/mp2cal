@@ -19,7 +19,7 @@ def write(uv, outname):
     """
     uv.data_array = np.conj(uv.data_array)
     uv.uvw_array = -uv.uvw_array
-    uv.write_uvfits(outname)
+    uv.write_uvfits(outname, write_lst=False)
 
 def load_gains_fc(fcfile):
     """

@@ -12,8 +12,7 @@ o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
 print "Reading..."
-uv = uvd.UVData()
-uv.read_uvfits(opts.inpath+obs+'.uvfits')
+uv = mp2cal.io.read(opts.inpath+obs+'.uvfits')
 uv.Npols = 2
 uv.flag_array = uv.flag_array[:,:,:,:2]
 uv.data_array = uv.data_array[:,:,:,:2]
@@ -75,4 +74,4 @@ def omnirun(RD):
 par = Pool(2)
 npzlist = par.map(omnirun, data_list)
 par.close()
-uv.write_uvfits(opts.outpath+obs+'.uvfits')
+mp2cal.io.write(uv, opts.outpath+obs+'.uvfits')
