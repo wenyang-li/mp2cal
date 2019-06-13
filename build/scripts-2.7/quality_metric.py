@@ -11,7 +11,7 @@ o.add_option('-i',dest='inpath',default='./',help='path to input uvfits')
 o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
-print "Reading..."
+print "Reading " + obs + "..."
 uv = mp2cal.io.read(opts.inpath+obs+'.uvfits')
 uv.Npols = 2
 uv.flag_array = uv.flag_array[:,:,:,:2]
@@ -33,6 +33,8 @@ ins.freq_flagging()
 ins.apply_flagging()
 ins.saveplots(opts.outpath, obs.split('/')[-1])
 ins.savearrs(opts.outpath, obs.split('/')[-1])
+if np.sum(np.logical_not(ins.ins.mask)) < uv.Nfreqs*2:
+    raise IOError("All time steps are flagged by SSINS. Skip subsequent steps. Please exclude "+obs)
 #Chi-square
 print "FirstCal..."
 pols = ['xx', 'yy']
@@ -69,11 +71,17 @@ def omnirun(RD):
     cc.ch7det()
     cc.freq_flagging()
     cc.plot_chisq(opts.outpath, obs.split('/')[-1])
+    outdir = opts.outpath + 'arrs/'
+    if not os.path.exists(outdir):
+        try: os.makedirs(outdir)
+        except: pass
     mp2cal.io.save_gains_omni(outdir + obs + '.' + RD.pol + '.firstcal.npz', m2, RD.gains.red, RD.gains.mdl)
     return cc
 par = Pool(2)
 cclist = par.map(omnirun, data_list)
 par.close()
 for cc in cclist:
+    if np.sum(np.logical_not(cc.chi.mask)) < uv.Nfreqs*2:
+        raise IOError("All time steps are flagged Chisq. Skip overwriting. Please exclude "+obs)
     cc.apply_to_uv(uv)
 mp2cal.io.write(uv, opts.outpath+obs+'.uvfits')
