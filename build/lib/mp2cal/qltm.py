@@ -220,6 +220,7 @@ class INS(object):
             try: os.makedirs(figpath)
             except: pass
         plt.savefig(figpath+obsname+'_INS.png')
+        plt.clf()
 
     def savearrs(self, outdir, obsname):
         """
@@ -232,3 +233,108 @@ class INS(object):
         d0 = np.ma.masked_array(self.ins.data, self.mask)
         d0.dump(arrpath + obsname + '_Original_INS.npym')
         self.ins.dump(arrpath + obsname + '_Postflag_INS.npym')
+
+class Chisq(object):
+    """
+        Use omnical chi-square as a quality metric
+    """
+    def __init__(self, pol, m):
+        """
+            m: npz class or dictionary containing flags and chisq from omnical
+            pol: polarization (xx or yy)
+        """
+        self.pol = pol
+        self.chi = np.ma.masked_array(m['chisq'], m['flags']) - 1
+        self.mask = np.copy(m['flags'])
+        self.freqs = m['freqs'] #Hz
+
+    def ch7det(self, nsig=5):
+        """
+            detect any structure from channel 7
+        """
+        fqr = np.logical_and(self.freqs > 1.811e8, self.freqs < 1.8785e8)
+        testset = self.chi[:,np.logical_not(fqr)]
+        ch7 = self.chi[:,fqr]
+        m0 = np.mean(testset)
+        s0 = np.std(testset)
+        x = (np.mean(ch7, axis=1) - m0) / s0 * np.sqrt(np.sum(ch7.mask, axis=1)+1e-10)
+        ind = np.where(x > nsig)[0]
+        for ii in ind: self.chi.mask[ii, fqr] = True
+
+    def outliers_flagging(self, nsig = 6):
+        """
+            Assuming chisqure follows Gaussian distribution, flag (time,freq,pol) samples that deviate
+            from the mean by nsig sigmas.
+        """
+        for niter in range(self.chi.size):
+            m = np.mean(self.chi)
+            s = np.std(self.chi)
+            ind = np.where(abs(self.chi-m).data*np.logical_not(self.chi.mask) > nsig*s)
+            if ind[0].size == 0: break
+            else: self.chi.mask[ind] = True
+
+    def freq_flagging(self, nsig=6, frac_thresh=0.5):
+        """
+            Flag bad frequency channels
+        """
+        chi = self.chi - np.mean(self.chi)
+        df_slice = chi[1:]*chi[:-1]
+        df_slice = np.mean(df_slice, axis = 0)
+        df_slice -= np.mean(df_slice)
+        df_ind = np.where(df_slice>nsig*np.std(df_slice))[0]
+        self.chi.mask[:,df_ind] = True
+        wgts = np.mean(self.chi.mask, axis= 0)
+        ind = np.where(wgts > frac_thresh)[0]
+        self.chi.mask[:,ind] = True
+
+    def apply_to_uv(self, uv):
+        """
+            Apply Chisq flagging to uv object
+        """
+        pol_look_up = {'xx': -5, 'yy': -6}
+        pid = np.where(uv.polarization_array==pol_look_up[self.pol])[0][0]
+        for ii in range(self.uv.Nbls):
+            uv.flag_array[ii::uv.Nbls,0,:,pid] = np.logical_or(uv.flag_array[ii::uv.Nbls,0,:,pid], self.chi.mask)
+
+    def plot_chisq(self, outdir, obsname, clim=(-5,5)):
+        """
+            Plot Chisq Flagging
+        """
+        fq = self.freqs / 1e6
+        d0 = np.ma.masked_array(self.chi.data, self.mask)
+        d0 -= np.ma.median(d0)
+        d0 /= np.std(d0)
+        d1 = self.chi - np.ma.median(self.chi)
+        d1 /= np.std(d1)
+        b = np.linspace(clim[0], clim[1], 100)
+        fig = plt.figure(figsize=(12,6))
+        p1 = fig.add_subplot(2,2,1)
+        i1 = p1.imshow(d0,aspect='auto',cmap='coolwarm',extent=(fq[0],fq[-1],len(d0)-1,0), clim=clim)
+        plt.colorbar(i1)
+        p1.set_xlabel('Frequency (MHz)')
+        p1.set_title('Chi-square')
+        p2 = fig.add_subplot(2,2,2)
+        p2.hist(d0[np.where(d0.mask==False)], bins=b, density=True, histtype='step')
+        p2.plot(b, 1/np.sqrt(2*np.pi)*np.exp(-b*b/2))
+        p2.set_yscale('log')
+        p2.set_xlabel('$\chi^2$')
+        p3 = fig.add_subplot(2,2,3)
+        i3 = p3.imshow(d1,aspect='auto',cmap='coolwarm',extent=(fq[0],fq[-1],len(d1)-1,0), clim=clim)
+        plt.colorbar(i3)
+        p3.set_xlabel('Frequency (MHz)')
+        p3.set_title('Post Flagging')
+        p4 = fig.add_subplot(2,2,4)
+        p4.hist(d1[np.where(d1.mask==False)], bins=b, density=True, histtype='step')
+        p4.plot(b, 1/np.sqrt(2*np.pi)*np.exp(-b*b/2))
+        p4.set_yscale('log')
+        p4.set_xlabel('$\chi^2$')
+        plt.suptitle(obsname+' '+self.pol)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92,hspace=0.55)
+        figpath = outdir + 'plots/'
+        if not os.path.exists(figpath):
+            try: os.makedirs(figpath)
+            except: pass
+        plt.savefig(figpath+obsname+'_'+self.pol+'_Chisq.png')
+        plt.clf()
+

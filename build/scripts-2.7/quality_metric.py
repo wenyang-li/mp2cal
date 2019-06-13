@@ -64,14 +64,16 @@ def omnirun(RD):
     print 'Getting chi-square...'
     RD.cal_chi_square(info, m2, per_bl_chi2=True, g=g2)
     m2['freqs'] = uv.freq_array[0]
-    outdir = opts.outpath + 'arrs/'
-    if not os.path.exists(outdir):
-        try: os.makedirs(outdir)
-        except: pass
+    cc = mp2cal.qltm.Chisq(RD.pol, m2)
+    cc.outliers_flagging()
+    cc.ch7det()
+    cc.freq_flagging()
+    cc.plot_chisq(opts.outpath, obs.split('/')[-1])
     mp2cal.io.save_gains_omni(outdir + obs + '.' + RD.pol + '.firstcal.npz', m2, RD.gains.red, RD.gains.mdl)
-    plotdir = opts.outpath + 'plots/'
-    RD.plot_chisq(m2, plotdir, obs)
+    return cc
 par = Pool(2)
-npzlist = par.map(omnirun, data_list)
+cclist = par.map(omnirun, data_list)
 par.close()
+for cc in cclist:
+    cc.apply_to_uv(uv)
 mp2cal.io.write(uv, opts.outpath+obs+'.uvfits')

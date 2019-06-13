@@ -218,7 +218,7 @@ class RedData(object):
         mu=np.mean(m)
         sig=np.std(m)
         b=np.linspace(mu-5*sig,mu+5*sig,100)
-        p2.hist(m[np.where(m.mask==False)],bins=b,normed=1,histtype='step')
+        p2.hist(m[np.where(m.mask==False)],bins=b,density=True,histtype='step')
         p2.plot(b,1/np.sqrt(2*np.pi)/sig*np.exp(-(b-mu)**2/2/sig**2))
         p2.set_yscale('log')
         p2.set_xlabel('$\chi^2$')
