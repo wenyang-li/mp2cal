@@ -47,7 +47,7 @@ if not os.path.exists(metafits):
     subprocess.call(cmd)
 
 # Load data
-print "Loading: " + opts.filepath + obsid + ".uvfits"
+print("Loading: " + opts.filepath + obsid + ".uvfits")
 uv = mp2cal.io.read(opts.filepath+obsid+'.uvfits')
 freqs = uv.freq_array[0]
 mask = np.sum(np.logical_not(uv.flag_array),axis=(0,1,3)) == 0
@@ -63,13 +63,13 @@ if opts.omniapp:
     gomni['y'] = gy['y']
     graw.get_red(gomni)
 if opts.nofit:
-    print "nofit is on. Only use FHD calibration, no ad hoc fitting applied."
+    print("nofit is on. Only use FHD calibration, no ad hoc fitting applied.")
     gains = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=False)
 else:
     graw.bandpass_fitting(include_red = opts.omniapp)
     gains = graw.gfit
 # Apply cal
-print "Applying cal ..."
+print("Applying cal ...")
 for pp in range(uv.Npols):
     p1,p2 = pol2str[uv.polarization_array[pp]]
     def apply_cal(ii):
@@ -87,7 +87,7 @@ for pp in range(uv.Npols):
     map(apply_cal, np.arange(uv.Nbls))
 # Subtracting the model
 if opts.subtract or opts.model:
-    print "Getting model ..."
+    print("Getting model ...")
     modelxx = readsav(opts.fhdpath + 'cal_prerun/vis_data/' + obsid + '_vis_model_XX.sav')
     if opts.subtract:
         uv.data_array[:,0,:,0] -= modelxx['vis_model_ptr']
@@ -102,7 +102,7 @@ if opts.subtract or opts.model:
     del modelyy
 
 # Average data in frequency
-print "Averaging in frequency channel ..."
+print("Averaging in frequency channel ...")
 data1 = np.ma.masked_array(uv.data_array[:,:,0::2,:], uv.flag_array[:,:,0::2,:])
 data2 = np.ma.masked_array(uv.data_array[:,:,1::2,:], uv.flag_array[:,:,1::2,:])
 data = np.ma.masked_array([data1,data2])

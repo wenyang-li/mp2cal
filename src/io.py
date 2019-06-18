@@ -177,10 +177,10 @@ def load_fhd_global_bandpass(fhdpath, obsid):
     for p in ['x', 'y']:
         try:
             gp[p] = np.load(fhdpath+'calibration/'+str(day)+'_p'+pointing+'_'+p+p+'.npy')
-            print "get averaged bandpass for pol " + p
+            print("get averaged bandpass for pol " + p)
         except:
             gp[p] = load_bp_txt(fhdpath+'calibration/'+obsid+'_bandpass.txt', p)
-            print "averaged bandpass not found for pol "+p+", using bp from the obs"
+            print("averaged bandpass not found for pol "+p+", using bp from the obs")
     return gp
 
 def plot_sols(gains, freq, outdir, obsname):

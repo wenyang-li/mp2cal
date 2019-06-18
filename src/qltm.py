@@ -16,12 +16,12 @@ class INS(object):
         if uv is None and ins_arr is None:
             raise IOError("Object requires either uv object or input INS array")
         elif uv is None and ins_arr is not None:
-            print "Reads in INS from saved array. apply_flagging cannot be used because uv is None. "
+            print("Reads in INS from saved array. apply_flagging cannot be used because uv is None. ")
             self.ins = ins_arr
             self.mask = np.copy(ins_arr.mask)
         else:
             if ins_arr is not None:
-                print "calculate INS from uv object. ins_arr is discarded"
+                print("calculate INS from uv object. ins_arr is discarded")
             self.uv = uv
             self.cal_ins()
     

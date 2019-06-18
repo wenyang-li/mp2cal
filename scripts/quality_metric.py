@@ -11,8 +11,9 @@ o.add_option('-i',dest='inpath',default='./',help='path to input uvfits')
 o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
-print "Reading " + obs + "..."
-uv = mp2cal.io.read(opts.inpath+obs+'.uvfits')
+filepath = opts.inpath+obs+".uvfits"
+print("Reading " + filepath + "...")
+uv = mp2cal.io.read(filepath)
 uv.Npols = 2
 uv.flag_array = uv.flag_array[:,:,:,:2]
 uv.data_array = uv.data_array[:,:,:,:2]
@@ -22,7 +23,7 @@ if uv.Nfreqs == 768:
     for ii in range(768):
         if ii%32==16: uv.flag_array[:,:,ii,:] = True
 #SSINS
-print "Evaluating SSINS..."
+print("Evaluating SSINS...")
 ins = mp2cal.qltm.INS(uv)
 ins.outliers_flagging()
 ins.time_flagging()
@@ -36,7 +37,7 @@ ins.savearrs(opts.outpath, obs.split('/')[-1])
 if np.sum(np.logical_not(ins.ins.mask)) < uv.Nfreqs*2:
     raise IOError("All time steps are flagged by SSINS. Skip subsequent steps. Please exclude "+obs)
 #Chi-square
-print "FirstCal..."
+print("FirstCal...")
 pols = ['xx', 'yy']
 data_list = []
 for pol in pols:
@@ -45,7 +46,7 @@ for pol in pols:
     data_list.append(RD)
 reds=mp2cal.wyl.cal_reds_from_pos(ex_ants=RD.dead,ex_ubls=[(57,58),(57,59)])
 g0 = mp2cal.firstcal.firstcal(uv, reds)
-print "OmniCal..."
+print("OmniCal...")
 def omnirun(RD):
     p = RD.pol[0]
     flagged_fqs = np.sum(np.logical_not(RD.mask),axis=0).astype(bool)
@@ -55,15 +56,15 @@ def omnirun(RD):
         wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
-    print 'exclude baselines in omnical: ', flag_bls
+    print("exclude baselines in omnical: ", flag_bls)
     for a in g0[p].keys():
         g0[p][a] *= RD.gains.auto[p][a]
-    info = mp2cal.wyl.pos_to_info(pols=[p],ex_ubls=[(57,58),(57,59)],ex_bls=flag_bls)
+    info = mp2cal.wyl.pos_to_info(pols=[p],ex_ubls=[(57,58),(57,59)],ex_bls=flag_bls,ex_ants=RD.dead)
     m2,g2,v2 = mp2cal.wyl.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
     for a in g2[p[0]].keys():
         g2[p[0]][a] = np.mean(g2[p[0]][a], axis=0)
     RD.get_gains(g2)
-    print 'Getting chi-square...'
+    print("Getting chi-square...")
     RD.cal_chi_square(info, m2, per_bl_chi2=True, g=g2)
     m2['freqs'] = uv.freq_array[0]
     cc = mp2cal.qltm.Chisq(RD.pol, m2)

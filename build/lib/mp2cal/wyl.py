@@ -259,7 +259,7 @@ def fine_iter(g2,v2,data,mask,info,conv=1e-7,maxiter=500):
                 S = np.linalg.pinv(A.transpose().dot(A),rcond=1e-8).dot(A.transpose()).dot(M)
                 componentchange = np.max(map(updata_sol,np.arange(na+nubl)))
                 if componentchange < conv: break
-            print (dt,df),"  fine iter: ", iter3, "  conv: ", componentchange
+            print((dt,df),"  fine iter: ", iter3, "  conv: ", componentchange)
         map(grad_decent, range(SH[0]*SH[1]))
         for a in g2[p].keys():
             g2[p][a] = np.resize(gs[info.ant_index(a)],SH)

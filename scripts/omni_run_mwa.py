@@ -42,25 +42,25 @@ pols = opts.pol.split(',')
 ubls, ex_ubls, bls, ex_bls, ants, ex_ants = None, [], None, [], None, []
 if not opts.ubls == '':
     ubls = bl_parse(opts.ubls)
-    print '     ubls: ', ubls
+    print('     ubls: ', ubls)
 if not opts.ex_ubls == '':
     ex_ubls = bl_parse(opts.ex_ubls)
-    print '     ex_ubls: ', ex_ubls
+    print('     ex_ubls: ', ex_ubls)
 if not opts.bls == '':
     bls = bl_parse(opts.bls)
-    print '     bls: ', bls
+    print('     bls: ', bls)
 if not opts.ex_bls == '':
     ex_bls = bl_parse(opts.ex_bls)
-    print '     ex_bls: ', ex_bls
+    print('     ex_bls: ', ex_bls)
 if not opts.ants == '':
     ants = ant_parse(opts.ants)
-    print '   ants: ', ants
+    print('   ants: ', ants)
 if not opts.ex_ants == '':
     ex_ants = ant_parse(opts.ex_ants)
 
 if not len(args) == 1: raise IOError("Do not support multiple files.")
 obsid = args[0]
-print "OBSID: " + obsid
+print("PATH": + opts.filepath + "      OBSID: " + obsid)
 
 #********************************* path for output plots ******************************************
 plot_path = opts.omnipath + 'plots/'
@@ -71,7 +71,7 @@ if not os.path.exists(plot_path):
 #********************************** load fhd ***************************************************
 fhd_sol_path = opts.fhdpath+'calibration/'+obsid+'_cal.sav'
 if os.path.exists(fhd_sol_path):
-    print "fhd solutions exist: " + fhd_sol_path
+    print("fhd solutions exist: " + fhd_sol_path)
     gfhd = mp2cal.io.load_gains_fhd(opts.fhdpath+'calibration/'+obsid+'_cal.sav', raw=True)
     for p in gfhd.keys():
         for a in gfhd[p].keys():
@@ -95,7 +95,7 @@ for pol in pols:
         RD.get_dead_dipole(metafits_path)
     RD.read_data(uv, tave = opts.tave)
     RD.apply_fhd(gfhd)
-    print "ex_ants for "+pol+":", RD.dead
+    print("ex_ants for "+pol+":", RD.dead)
     data_list.append(RD)
 
 #******************************** omni run *******************************************************
@@ -108,26 +108,26 @@ def omnirun(RD):
         wgt_data = np.sum(wgt_data,axis=0) + np.logical_not(flagged_fqs)
         ind = np.where(wgt_data==0)
         if ind[0].size > 0: flag_bls.append(bl)
-    print 'exclude baselines in omnical: ', flag_bls
+    print('exclude baselines in omnical: ', flag_bls)
     #*********************** red info ******************************************
     info = mp2cal.wyl.pos_to_info(pols=[p],ubls=ubls,ex_ubls=ex_ubls,bls=bls, \
                                   ex_bls=ex_bls+flag_bls,ants=ants,ex_ants=RD.dead)
 
     #*********************** generate g0 ***************************************
-    print '     setting g0 as units'
+    print('     setting g0 as units')
     g0 = {p:{}}
     for a in info.subsetant: g0[p][a] = np.ones((1,freqs.size),dtype=np.complex64)
 
     #*********************** Calibrate ******************************************
     start_time = time.time()
-    print '   Run omnical'
+    print('   Run omnical')
     m2,g2,v2 = mp2cal.wyl.run_omnical(RD.data,info,gains0=g0, maxiter=500, conv=1e-12)
     if opts.conv:
-        print '   do fine conv'
+        print('   do fine conv')
         g2,v2 = mp2cal.wyl.fine_iter(g2,v2,RD.data,RD.mask,info,conv=1e-5,maxiter=500)
     end_time = time.time()
     caltime = (end_time - start_time)/60.
-    print '   time expense: ', caltime
+    print('   time expense: ', caltime)
 
     #*********************** project degeneracy *********************************
     gsky = {p: gfhd[p]}
@@ -157,7 +157,7 @@ def omnirun(RD):
     m2['freqs'] = freqs
 
     #************************** Saving cal ************************************************
-    print '     saving %s' % (opts.omnipath + obsid + '.' + RD.pol)
+    print('     saving %s' % (opts.omnipath + obsid + '.' + RD.pol))
     mp2cal.io.save_gains_omni(opts.omnipath + obsid + '.' + RD.pol + '.omni.npz', m2, RD.gains.red, RD.gains.mdl)
     mp2cal.io.save_gains_omni(opts.omnipath + obsid + '.' + RD.pol + '.difffit.npz', {}, gfit_diff, {})
 
