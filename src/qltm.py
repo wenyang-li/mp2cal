@@ -245,7 +245,7 @@ class Chisq(object):
             pol: polarization (xx or yy)
         """
         self.pol = pol
-        self.chi = np.ma.masked_array(m['chisq'], m['flags']) - 1
+        self.chi = np.ma.masked_array(m['chisq'], m['flags'])
         self.mask = np.copy(m['flags'])
         self.freqs = m['freqs'] #Hz
 
