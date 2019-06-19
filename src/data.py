@@ -203,8 +203,8 @@ class RedData(object):
                 meta['chisq'+'('+str(bl0[0])+','+str(bl0[1])+')'] = chis
                 meta['wgts'+'('+str(bl0[0])+','+str(bl0[1])+')'] = wgts
             chisq += chis
-            weight += wgts
-        meta['chisq'] = chisq * (weight > 1) / (weight - 1 + 1e-10)
+            weight += (wgts - 1)
+        meta['chisq'] = chisq * (weight > 1) / (weight + 1e-10)
         meta['flags'] = weight < 2
 
     def plot_chisq(self, meta, outdir, obsname):
