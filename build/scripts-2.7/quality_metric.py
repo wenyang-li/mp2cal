@@ -104,6 +104,10 @@ if not opts.hex:
         uv.write_uvfits(filepath,write_lst=False)
     else:
         outdir = opts.outpath + '/PostFlag/'
+        metafits = outdir + obs + '.metafits'
+        if not os.path.exists(metafits):
+            cmd = ['cp', opts.inpath+obs+".metafits", metafits]
+            subprocess.call(cmd)
         fout = outdir + obs + '.uvfits'
         print("Write obs to " + fout)
         if not os.path.exists(outdir):
