@@ -9,17 +9,20 @@ o.set_usage('ssins_flag.py [options] obsid')
 o.set_description(__doc__)
 o.add_option('-i',dest='inpath',default='./',help='path to input uvfits')
 o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
+o.add_option('--xpol', dest='xpol', default=False, action='store_true', help='Toggle: cut out cross polarization')
+o.add_option('--fc', dest='fc', default=False, action='store_true', help='Toggle: flag 40kHz channel at coarse band center')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
 filepath = opts.inpath+obs+".uvfits"
 print("Reading " + filepath + "...")
 uv = mp2cal.io.read(filepath)
-uv.Npols = 2
-uv.flag_array = uv.flag_array[:,:,:,:2]
-uv.data_array = uv.data_array[:,:,:,:2]
-uv.nsample_array = uv.nsample_array[:,:,:,:2]
-uv.polarization_array = uv.polarization_array[:2]
-if uv.Nfreqs == 768:
+if opts.xpol:
+    uv.Npols = 2
+    uv.flag_array = uv.flag_array[:,:,:,:2]
+    uv.data_array = uv.data_array[:,:,:,:2]
+    uv.nsample_array = uv.nsample_array[:,:,:,:2]
+    uv.polarization_array = uv.polarization_array[:2]
+if opts.fc and uv.Nfreqs == 768:
     for ii in range(768):
         if ii%32==16: uv.flag_array[:,:,ii,:] = True
 #SSINS
@@ -34,7 +37,7 @@ ins.freq_flagging()
 ins.apply_flagging()
 ins.saveplots(opts.outpath, obs.split('/')[-1])
 ins.savearrs(opts.outpath, obs.split('/')[-1])
-if np.sum(np.logical_not(ins.ins.mask)) < uv.Nfreqs*2:
+if np.sum(np.logical_not(ins.ins.mask)) < uv.Nfreqs * uv.Npols:
     raise IOError("All time steps are flagged by SSINS. Skip subsequent steps. Please exclude "+obs)
 #Chi-square
 print("FirstCal...")
