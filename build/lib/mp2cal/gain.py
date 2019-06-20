@@ -80,7 +80,7 @@ class RedGain(object):
             a = a1[ii]
             self.auto['x'][a] = np.sqrt(np.mean(np.abs(data[tindx,ii,:,0]),axis=0))
             self.auto['y'][a] = np.sqrt(np.mean(np.abs(data[tindy,ii,:,1]),axis=0))
-        aref = 1
+        aref = a1[ind][1]
         if self.sky:
             for ii in ind:
                 a = a1[ii]

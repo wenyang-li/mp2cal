@@ -11,11 +11,20 @@ o.add_option('-i',dest='inpath',default='./',help='path to input uvfits')
 o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
 o.add_option('--xpol', dest='xpol', default=False, action='store_true', help='Toggle: cut out cross polarization')
 o.add_option('--fc', dest='fc', default=False, action='store_true', help='Toggle: flag 40kHz channel at coarse band center')
+o.add_option('--hex', dest='hex', default=False, action='store_true', help='Toggle: use only hex baselines for SSINS')
+o.add_option('--ow', dest='ow', default=False, action='store_true', help='Toggle: overwrite flags to original data, use with caution')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
 filepath = opts.inpath+obs+".uvfits"
 print("Reading " + filepath + "...")
-uv = mp2cal.io.read(filepath)
+antenna_nums = None
+if opts.hex:
+    from astropy.io import fits
+    h = fits.open(opts.inpath+obs+".metafits")
+    ants = np.unique(h[1].data['Antenna'][np.where(h[1].data['FLAG']==0)])
+    antenna_nums = ants[np.where(ants>56)]
+uv = uvd.UVData()
+uv.read_uvfits(filepath, antenna_nums=antenna_nums)
 if opts.xpol:
     uv.Npols = 2
     uv.flag_array = uv.flag_array[:,:,:,:2]
@@ -35,8 +44,8 @@ ins.outliers_flagging()
 ins.merge_flagging()
 ins.freq_flagging()
 ins.apply_flagging()
-ins.saveplots(opts.outpath, obs.split('/')[-1])
-ins.savearrs(opts.outpath, obs.split('/')[-1])
+ins.saveplots(opts.outpath, obs.split('/')[-1]+'_hex'*opts.hex)
+ins.savearrs(opts.outpath, obs.split('/')[-1]+'_hex'*opts.hex)
 if np.sum(np.logical_not(ins.ins.mask)) < uv.Nfreqs * uv.Npols:
     raise IOError("All time steps are flagged by SSINS. Skip subsequent steps. Please exclude "+obs)
 #Chi-square
@@ -88,4 +97,11 @@ for cc in cclist:
     if np.sum(np.logical_not(cc.chi.mask)) < uv.Nfreqs*2:
         raise IOError("All time steps are flagged Chisq. Skip overwriting. Please exclude "+obs)
     cc.apply_to_uv(uv)
-mp2cal.io.write(uv, opts.outpath+obs+'.uvfits')
+if opts.ow:
+    uv.write_uvfits(filepath,write_lst=False)
+else:
+    outdir = opts.outpath + '/PostFlag/'
+    if not os.path.exists(outdir):
+        try: os.makedirs(outdir)
+        except: pass
+    uv.write_uvfits(outdir+obs+'.uvfits',write_lst=False)
