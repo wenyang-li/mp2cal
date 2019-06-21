@@ -60,7 +60,7 @@ if not opts.ex_ants == '':
 
 if not len(args) == 1: raise IOError("Do not support multiple files.")
 obsid = args[0]
-print("PATH": + opts.filepath + "      OBSID: " + obsid)
+print("PATH: " + opts.filepath + "      OBSID: " + obsid)
 
 #********************************* path for output plots ******************************************
 plot_path = opts.omnipath + 'plots/'
