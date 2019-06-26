@@ -292,10 +292,9 @@ class Chisq(object):
         """
             Apply Chisq flagging to uv object
         """
-        pol_look_up = {'xx': -5, 'yy': -6}
-        pid = np.where(uv.polarization_array==pol_look_up[self.pol])[0][0]
         for ii in range(uv.Nbls):
-            uv.flag_array[ii::uv.Nbls,0,:,pid] = np.logical_or(uv.flag_array[ii::uv.Nbls,0,:,pid], self.chi.mask)
+            for pid in range(uv.polarization_array.size):
+                uv.flag_array[ii::uv.Nbls,0,:,pid] = np.logical_or(uv.flag_array[ii::uv.Nbls,0,:,pid], self.chi.mask)
 
     def plot_chisq(self, outdir, obsname, clim=(-5,5)):
         """
