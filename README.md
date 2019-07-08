@@ -26,5 +26,5 @@ Main Scripts (listed in pipeline order):
 
 Examples:
 
-1. test/orbcomm.ipynb: This notebook shows how omnical is working using orbcomm observation as an example. This also demostrates how degeneracy projection is working (see src/gains.py)
+1. test/orbcomm.ipynb: This notebook shows how omnical is working using orbcomm observation as an example. This also demostrates how degeneracy projection is working (see src/gain.py)
 2. test/bandpass_fitting.ipynb: This notebook demostrates how bandpass fitting using auto-correlations works. 
