@@ -4,6 +4,23 @@ use('Agg')
 import numpy as np, time, mp2cal, optparse, os, sys, warnings
 from multiprocessing import Pool
 
+#################################################################################################################################################
+#
+#                                              output as obs.omni.pol.npz
+#   ************                                              ^                                                     output as obs.difffit.pol.npz
+#   * Raw Data * =========                                    |                                                                                 ^
+#   ************        ||     ***************           ***************                                                                        |
+#                       ||===> * FHD applied * ========> * Per Freq    * ===                                                                    |
+#   ****************    ||     *    data     *  omnical  * redundant   *  ||  multiply     **************  bandpass fit   *****************     |
+#   * FHD per Freq * =====     ***************           * calibration *  ||============>  * Hybrid Cal * ==============> * Fitted Hybrid *     |
+#   * calibration  *                                     ***************  ||               **************                 *****************     |
+#   **************** =======================================================                                            (up divided by bottom)--|
+#           ||                                                                                             bandpass fit   *****************
+#           ============================================================================================================> * Fitted FHDCal *
+#                                                                                                                         *****************
+#
+#################################################################################################################################################
+
 o = optparse.OptionParser()
 o.set_usage('omni_run_multi.py [options] obsid') #only takes 1 obsid
 o.set_description(__doc__)

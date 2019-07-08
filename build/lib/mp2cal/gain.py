@@ -437,7 +437,7 @@ class RedGain(object):
     def bandpass_fitting(self, include_red = False, hyperresolve=True):
         """
         Calculate the global bandpass as the amplitude, fit linear in the phase,
-        fit 150 m cable reflection
+        fit 90 m, 150 m, 230 m, 320 m cable reflection
         """
         self.gfit = copy.deepcopy(self.sky)
         for p in self.gfit.keys():

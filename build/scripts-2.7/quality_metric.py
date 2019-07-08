@@ -4,15 +4,30 @@ import numpy as np, mp2cal, sys, optparse, subprocess, os
 import pyuvdata.uvdata as uvd
 from multiprocessing import Pool
 
+###########################################################################################
+#  ************
+#  * Raw Data *        *********      *****************     **********
+#  * (After   *  ===>  * SSINS * ===> * omnical chi^2 * ==> * Finish *
+#  * COTTER)  *        *********      *****************     **********
+#  ************            |                  |
+#     if all being flagged |                  | if all being flagged
+#                          v                  |
+#                      ************           |
+#                      * Quit &   *           |
+#                      * Toss obs *   <--------
+#                      ************
+#
+###########################################################################################
+
 o = optparse.OptionParser()
 o.set_usage('ssins_flag.py [options] obsid')
 o.set_description(__doc__)
 o.add_option('-i',dest='inpath',default='./',help='path to input uvfits')
 o.add_option('-o',dest='outpath',default='./',help='path to output uvfits')
-o.add_option('--xpol', dest='xpol', default=False, action='store_true', help='Toggle: cut out cross polarization')
-o.add_option('--fc', dest='fc', default=False, action='store_true', help='Toggle: flag 40kHz channel at coarse band center')
-o.add_option('--hex', dest='hex', default=False, action='store_true', help='Toggle: use only hex baselines for SSINS and output')
-o.add_option('--ow', dest='ow', default=False, action='store_true', help='Toggle: overwrite flags to original data, use with caution')
+o.add_option('--xpol', dest='xpol', default=False, action='store_true', help='Toggle: cut out cross polarization, default=False.')
+o.add_option('--fc', dest='fc', default=False, action='store_true', help='Toggle: flag 40kHz channel at coarse band center, default=False.')
+o.add_option('--hex', dest='hex', default=False, action='store_true', help='Toggle: use only hex baselines for quality metric. This button is for diagnose. No output flagged data should be produced, default=False.')
+o.add_option('--ow', dest='ow', default=False, action='store_true', help='Toggle: overwrite flags to original data, use with caution, default=False.')
 opts,args = o.parse_args(sys.argv[1:])
 obs = args[0]
 filepath = opts.inpath+obs+".uvfits"
