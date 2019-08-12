@@ -393,29 +393,37 @@ class RedGain(object):
         nf = self.freqs.size
         band = (self.freqs[-1]-self.freqs[0]) * nf / (nf - 1)
         fq = self.freqs
+        ind = np.where(self.mask==False)[0]
+        flg = np.where(self.mask)[0]
+        interp_M = {}
+        if hyperresolve:
+            for a in tile_info.keys():
+                if not interp_M.has_key(tile_info[a]['cable']):
+                    c = tile_info[a]['cable']
+                    t = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
+                    interp_M[c] = GPR_interp(fq[ind], fq[flg], col=1./t)
         for p in res.keys():
             ripple[p] = {}
-            antpol = res[p].keys()
+            antpol = np.array(res[p].keys())
+            cables = np.zeros_like(antpol)
+            auto_arr = np.zeros((antpol.size, nf))
+            phase_arr = np.zeros((antpol.size, nf))
+            for ii in range(antpol.size):
+                ai = antpol[ii]
+                cables[ii] = tile_info[ai]['cable']
+                auto_arr[ii] = self.auto[p][ai]
+                phase_arr[ii] = res[p][ai]
             def fit_ripple(n0):
                 a = antpol[n0]
-                resautos = []
-                resphase = []
-                def append_res(n1):
-                    aa = antpol[n1]
-                    if tile_info[aa]['cable'] == tile_info[a]['cable']: return
-                    amps = self.auto[p][a] / self.auto[p][aa]
-                    amps /= np.mean(amps)
-                    resautos.append(amps)
-                    resphase.append(res[p][a] - res[p][aa])
-                map(append_res, range(len(antpol)))
+                a_ind = np.where(cables!=cables[n0])[0]
+                resautos = self.auto[p][a] / auto_arr[a_ind,:]
+                resautos = (resautos.T / np.mean(resautos, axis=1)).T
                 resautos = np.mean(resautos, axis=0)
-                resphase = np.mean(resphase, axis=0)
+                resphase = res[p][a] - np.mean(phase_arr[a_ind,:], axis=0)
                 resautos -= np.mean(resautos)
-                ind = np.where(resphase!=0)[0]
-                flg = np.where(resphase==0)[0]
                 reftime = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
                 if hyperresolve:
-                    resautos[flg],_ = GPR_interp(fq[ind], resautos[ind], fq[flg], col=1./reftime)
+                    resautos[flg] = interp_M[cables[n0]].dot(resautos[ind])
                     resphase[flg] = 0.
                     resautos[:ind[0]] = 0.
                     resautos[ind[-1]+1:] = 0.
@@ -431,7 +439,7 @@ class RedGain(object):
                 t2i = np.sum(np.cos(2*np.pi/nf*mi*np.arange(nf))*resphase) / nu
                 phase_ripple = 2*t1i*np.sin(2*np.pi*(mi*np.arange(nf)/nf)) + 2*t2i*np.cos(2*np.pi*(mi*np.arange(nf)/nf))
                 ripple[p][a] = phase_ripple
-            map(fit_ripple, range(len(antpol)))
+            map(fit_ripple, range(antpol.size))
         return ripple
 
     def bandpass_fitting(self, include_red = False, hyperresolve=True):

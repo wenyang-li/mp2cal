@@ -48,7 +48,7 @@ def cal_reds_from_pos(**kwargs):
     reds = omnical.arrayinfo.filter_reds(reds,**kwargs)
     return reds
 
-def GPR_interp(x,y,xp,col=1.4e5):
+def GPR_interp(x,xp,col=1.4e5):
     # x has to be frequency array in Hz. col is coherence length in Hz, default=140kHz
     kk = np.resize(x,(x.size,x.size))
     pp = np.resize(xp,(xp.size,xp.size))
@@ -58,7 +58,7 @@ def GPR_interp(x,y,xp,col=1.4e5):
     Kxp = np.exp(-((kp-pk.T)/col)**2)
     Kpx = Kxp.T
     Kpp = np.exp(-((pp-pp.T)/col)**2)
-    return Kxp.dot(np.linalg.pinv(Kxx)).dot(y), Kpp - Kxp.dot(np.linalg.pinv(Kxx)).dot(Kpx)
+    return Kxp.dot(np.linalg.pinv(Kxx))
 
 def fit_data(data,flag,fit_order=2):
     md = np.ma.masked_array(data, flag)
