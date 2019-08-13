@@ -1,6 +1,6 @@
 import numpy as np, copy, warnings
 from pos import *
-from wyl import GPR_interp
+from scipy.interpolate import interp1d
 c_light=299792458.
 
 def unwrap(arr):
@@ -395,13 +395,6 @@ class RedGain(object):
         fq = self.freqs
         ind = np.where(self.mask==False)[0]
         flg = np.where(self.mask)[0]
-        interp_M = {}
-        if hyperresolve:
-            for a in tile_info.keys():
-                if not interp_M.has_key(tile_info[a]['cable']):
-                    c = tile_info[a]['cable']
-                    t = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
-                    interp_M[c] = GPR_interp(fq[ind], fq[flg], col=1./t)
         for p in res.keys():
             ripple[p] = {}
             antpol = np.array(res[p].keys())
@@ -423,10 +416,14 @@ class RedGain(object):
                 resautos -= np.mean(resautos)
                 reftime = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
                 if hyperresolve:
-                    resautos[flg] = interp_M[cables[n0]].dot(resautos[ind])
+                    j1 = np.where(flg>ind[0])[0][0]
+                    j2 = np.where(flg<ind[-1])[0][-1]
+                    intinds = flg[j1:j2+1]
+                    interp3 = interp1d(ind, resautos[ind],kind='cubic')
                     resphase[flg] = 0.
                     resautos[:ind[0]] = 0.
                     resautos[ind[-1]+1:] = 0.
+                    resautos[intinds] = interp3(intinds)
                     modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
                     freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
                     t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resautos, axis=1)
