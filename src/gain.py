@@ -1,6 +1,5 @@
 import numpy as np, copy, warnings
 from pos import *
-from scipy.interpolate import interp1d
 c_light=299792458.
 
 def unwrap(arr):
@@ -416,18 +415,11 @@ class RedGain(object):
                 resautos -= np.mean(resautos)
                 reftime = 2.*tile_info[a]['cable'] / (c_light * tile_info[a]['vf'])
                 if hyperresolve:
-                    j1 = np.where(flg>ind[0])[0][0]
-                    j2 = np.where(flg<ind[-1])[0][-1]
-                    intinds = flg[j1:j2+1]
-                    interp3 = interp1d(ind, resautos[ind],kind='cubic')
                     resphase[flg] = 0.
-                    resautos[:ind[0]] = 0.
-                    resautos[ind[-1]+1:] = 0.
-                    resautos[intinds] = interp3(intinds)
                     modes = np.linspace(-dmode*nmode, dmode*nmode, 2*nmode+1) + band * reftime
-                    freq_mat = np.resize(np.arange(nf), (2*nmode+1, nf))
-                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resautos, axis=1)
-                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*resautos, axis=1)
+                    freq_mat = np.resize(ind, (2*nmode+1, ind.size))
+                    t1 = np.sum(np.sin(2*np.pi/nf*modes*freq_mat.T).T*resautos[ind], axis=1)
+                    t2 = np.sum(np.cos(2*np.pi/nf*modes*freq_mat.T).T*resautos[ind], axis=1)
                     i = np.argmax(t1**2+t2**2)
                     mi = modes[i]
                 else: mi = band * reftime
